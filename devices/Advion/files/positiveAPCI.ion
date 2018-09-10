@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ionSourceOptimization xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.1" xsi:noNamespaceSchemaLocation="IonSource.xsd">
+    <negative>false</negative>
+    <capillaryTemp>250.0</capillaryTemp>
+    <capillaryVoltage>180.0</capillaryVoltage>
+    <sourceVoltage>20.0</sourceVoltage>
+    <sourceVoltageDynamic>30.0</sourceVoltageDynamic>
+    <ionSource xsi:type="ApciSource">
+        <temperature>350.0</temperature>
+        <coronaDischarge>5.0</coronaDischarge>
+    </ionSource>
+    <description></description>
+</ionSourceOptimization>
+

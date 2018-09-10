@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<tuneParameters version="1.2" xsi:noNamespaceSchemaLocation="TuneParameters.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <extractionElectrode>9.0</extractionElectrode>
+    <hexapoleBias>8.0</hexapoleBias>
+    <hexapoleRF>5.0</hexapoleRF>
+    <hexapoleRFDynamic>150.0</hexapoleRFDynamic>
+    <ionEnergy>-1.2</ionEnergy>
+    <ionEnergyDynamic>-0.4</ionEnergyDynamic>
+    <resolutionOffset>-0.0026376766592803</resolutionOffset>
+    <resolutionGain>-0.67</resolutionGain>
+    <detector>1600.0</detector>
+    <calibration>
+        <segment>
+            <minMass>112.99</minMass>
+            <maxMass>431.98</maxMass>
+            <slope>0.99978208383586</slope>
+            <intercept>0.59660117130625</intercept>
+        </segment>
+        <segment>
+            <minMass>431.98</minMass>
+            <maxMass>601.98</maxMass>
+            <slope>1.0007368915336</slope>
+            <intercept>0.18414334204823</intercept>
+        </segment>
+        <segment>
+            <minMass>601.98</minMass>
+            <maxMass>1033.99</maxMass>
+            <slope>1.0008054704621</slope>
+            <intercept>0.14286019862607</intercept>
+        </segment>
+        <segment>
+            <minMass>1033.99</minMass>
+            <maxMass>1633.99</maxMass>
+            <slope>1.0000154935826</slope>
+            <intercept>0.95968839229818</intercept>
+        </segment>
+    </calibration>
+</tuneParameters>
+

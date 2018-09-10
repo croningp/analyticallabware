@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<method version="2.0" xsi:noNamespaceSchemaLocation="Method.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <description></description>
+    <runTime>600</runTime>
+    <scanMode xsi:type="RangeScanMode">
+        <start>100.0</start>
+        <end>2000.0</end>
+        <scanTime>1000.0</scanTime>
+        <scanDelay>10.0</scanDelay>
+        <deltaBackgroundParameters>
+            <startTime>0.0</startTime>
+            <endTime>10.0</endTime>
+            <threshold>3.0</threshold>
+            <minWidth>0.4</minWidth>
+            <noiseOffset>1000000</noiseOffset>
+        </deltaBackgroundParameters>
+        <useTwoIonSourceOptimizations>false</useTwoIonSourceOptimizations>
+    </scanMode>
+    <smoothing>
+        <radius>7</radius>
+        <iterations>0</iterations>
+    </smoothing>
+    <removeNoise>true</removeNoise>
+    <analogInputs>
+        <input>
+            <enabled>false</enabled>
+            <name>Analog Input 1</name>
+            <maxIntensity>1.0E9</maxIntensity>
+            <maxVoltage>1v</maxVoltage>
+        </input>
+        <input>
+            <enabled>false</enabled>
+            <name>Analog Input 2</name>
+            <maxIntensity>1.0E9</maxIntensity>
+            <maxVoltage>1v</maxVoltage>
+        </input>
+        <input>
+            <enabled>false</enabled>
+            <name>Analog Input 3</name>
+            <maxIntensity>1.0E9</maxIntensity>
+            <maxVoltage>1v</maxVoltage>
+        </input>
+        <input>
+            <enabled>false</enabled>
+            <name>Analog Input 4</name>
+            <maxIntensity>1.0E9</maxIntensity>
+            <maxVoltage>1v</maxVoltage>
+        </input>
+    </analogInputs>
+    <contactClosureIn>
+        <start>
+            <enabled>false</enabled>
+            <line>0</line>
+            <onLowToHigh>true</onLowToHigh>
+            <delayMS>0</delayMS>
+        </start>
+        <stop>
+            <enabled>false</enabled>
+            <line>0</line>
+            <onLowToHigh>true</onLowToHigh>
+            <delayMS>0</delayMS>
+        </stop>
+    </contactClosureIn>
+    <additionalInfo>
+        <name>IonSourceFile1</name>
+        <value>Positive</value>
+    </additionalInfo>
+    <additionalInfo>
+        <name>TuneFile1</name>
+        <value>Positive</value>
+    </additionalInfo>
+    <quantitation>
+        <qcOnly>false</qcOnly>
+        <isotopeRatio>false</isotopeRatio>
+    </quantitation>
+</method>
+
