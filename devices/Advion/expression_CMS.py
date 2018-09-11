@@ -1,7 +1,7 @@
 # coding=utf-8
 # !/usr/bin/env python
 """
-"IKA_microstar_75" -- API for IKA microstar 7.5 remote controllable overhead stirrer
+"expression_CMS" -- API for Advion expression CMS mass spectrometer
 ====================================================================================
 
 .. module:: expression_CMS
@@ -12,11 +12,6 @@
 .. moduleauthor:: Jaroslaw Granda <Jaroslaw.Granda@chem.gla.ac.uk>
 
 (c) 2018 The Cronin Group, University of Glasgow
-
-This provides a python class for the IKA microstar 7.5 overhead stirrer based on software developed by Stefan Glatzel.
-The command implementation is based on the German manual pages 32-34.
-
-For style guide used see http://xkcd.com/1513/
 """
 
 import logging
