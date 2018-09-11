@@ -66,7 +66,7 @@ class AdvionCMS:
         logging.info(f'Exiting {self.__class__.__name__}')
         #check if ms can be put into standby mode
         while not self.controller.canStandby():
-            time.sleep(0.1)
+            sleep(0.1)
         #puts ms into standby mode
         self.controller.standby()
         #stop mscontroller

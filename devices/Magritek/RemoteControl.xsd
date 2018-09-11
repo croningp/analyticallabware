@@ -1,0 +1,580 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xsd:schema xmlns:xsd='http://www.w3.org/2001/XMLSchema' >
+
+  <xsd:element name='Message'>
+    <xsd:complexType>
+      <xsd:choice>
+        <xsd:element name='Set'                                       type='SetType'                                      minOccurs='0' />
+        <xsd:element name='Start'                                     type='StartType'                                    minOccurs='0' />
+        <xsd:element name='Abort'                                     type='AbortType'                                    minOccurs='0' />
+        <xsd:element name='Execute'                                   type='ExecuteType'                                  minOccurs='0' />
+
+        <xsd:element name='GetRequest'                                type='GetRequestType'                               minOccurs='0' />
+        <xsd:element name='GetResponse'                               type='GetResponseType'                              minOccurs='0' />
+
+        <xsd:element name='AvailableProtocolsRequest'                 type='AvailableProtocolsRequestType'                minOccurs='0' />
+        <xsd:element name='AvailableProtocolsResponse'                type='AvailableProtocolsResponseType'               minOccurs='0' />
+
+        <xsd:element name='AvailableOptionsRequest'                   type='AvailableOptionsRequestType'                  minOccurs='0' />
+        <xsd:element name='AvailableOptionsResponse'                  type='AvailableOptionsResponseType'                 minOccurs='0' />
+
+        <xsd:element name='AvailableProtocolOptionsRequest'           type='AvailableProtocolOptionsRequestType'          minOccurs='0' />
+        <xsd:element name='AvailableProtocolOptionsResponse'          type='AvailableProtocolOptionsResponseType'         minOccurs='0' />
+
+        <xsd:element name='SelectionSubscription'                     type='SelectionSubscriptionType'                    minOccurs='0' />
+        <xsd:element name='SelectionNotification'                     type='SelectionNotificationType'                    minOccurs='0' />
+        <xsd:element name='Selection'                                 type='SelectionType'                                minOccurs='0' />
+
+        <xsd:element name='ProtocolOptionsRequest'                    type='ProtocolOptionsRequestType'                   minOccurs='0' />
+        <xsd:element name='ProtocolOptionsResponse'                   type='ProtocolOptionsResponseType'                  minOccurs='0' />
+
+<!--
+        <xsd:element name='RunProtocolRequest'                        type='RunProtocolRequestType'                       minOccurs='0' />
+        <xsd:element name='RunProtocolResponse'                       type='RunProtocolResponseType'                      minOccurs='0' />
+-->
+
+        <xsd:element name='EstimateDurationRequest'                   type='EstimateDurationRequestType'                  minOccurs='0' />
+        <xsd:element name='EstimateDurationResponse'                  type='EstimateDurationResponseType'                 minOccurs='0' />
+
+        <xsd:element name='HardwareRequest'                           type='HardwareRequestType'                          minOccurs='0' />
+        <xsd:element name='HardwareResponse'                          type='HardwareResponseType'                         minOccurs='0' />
+
+        <xsd:element name='CheckShimRequest'                          type='CheckShimRequestType'                         minOccurs='0' />
+        <xsd:element name='CheckShimResponse'                         type='CheckShimResponseType'                        minOccurs='0' />
+        <xsd:element name='QuickShimRequest'                          type='QuickShimRequestType'                         minOccurs='0' />
+        <xsd:element name='QuickShimResponse'                         type='QuickShimResponseType'                        minOccurs='0' />
+        <xsd:element name='PowerShimRequest'                          type='PowerShimRequestType'                         minOccurs='0' />
+        <xsd:element name='PowerShimResponse'                         type='PowerShimResponseType'                        minOccurs='0' />
+
+        <xsd:element name='StatusNotification'                        type='StatusNotificationType'                       minOccurs='0' />
+      </xsd:choice>
+    </xsd:complexType>
+  </xsd:element>
+
+  <!-- ==== Set ==== -->
+  <xsd:complexType name='SetType'>
+    <xsd:choice>
+      <xsd:element name='Solvent'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:string'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='Sample'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:string'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='DataFolder'>
+        <xsd:complexType>
+          <xsd:choice>
+            <xsd:element name='TimeStamp' >
+              <xsd:simpleType>
+                <xsd:restriction base='xsd:string'/>
+              </xsd:simpleType>
+            </xsd:element>
+            <xsd:element name='TimeStampTree' >
+              <xsd:simpleType>
+                <xsd:restriction base='xsd:string'/>
+              </xsd:simpleType>
+            </xsd:element>
+            <xsd:element name='UserFolder'>
+              <xsd:simpleType>
+                <xsd:restriction base='xsd:string'/>
+              </xsd:simpleType>
+            </xsd:element>
+          </xsd:choice>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name='UserData'>
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name='Data' minOccurs='0' maxOccurs='unbounded'>
+              <xsd:complexType>
+                <xsd:attribute name='key'   type='xsd:string' use='required'/>
+                <xsd:attribute name='value' type='xsd:string' use='required'/>
+              </xsd:complexType>
+            </xsd:element>
+            </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:choice>
+  </xsd:complexType>
+
+  <!-- ==== Get Request ==== -->
+  <xsd:complexType name='GetRequestType'>
+    <xsd:choice>
+      <xsd:element name='Solvent'     />
+      <xsd:element name='Sample'      />
+      <xsd:element name='DataFolder'  />
+      <xsd:element name='UserData'    />
+    </xsd:choice>
+  </xsd:complexType>
+
+  <!-- ==== Get Response ==== -->
+  <xsd:complexType name='GetResponseType'>
+    <xsd:choice>
+      <xsd:element name='Solvent'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:string'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='Sample'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:string'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <!--<xsd:element name='DataFolder'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:string'/>
+        </xsd:simpleType>
+      </xsd:element>-->
+      <xsd:element name='UserData'>
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name='Data' minOccurs='0' maxOccurs='unbounded'>
+              <xsd:complexType>
+                <xsd:attribute name='key'   type='xsd:string' use='required'/>
+                <xsd:attribute name='value' type='xsd:string' use='required'/>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:choice>
+  </xsd:complexType>
+
+  <!-- ==== Selection ==== -->
+  <xsd:complexType name='SelectionSubscriptionType'>
+      <xsd:attribute name='subscribe' type='xsd:boolean' use='required'/>
+  </xsd:complexType>
+  
+  <xsd:complexType name='SelectionNotificationType'>
+  <xsd:attribute name='protocol' type='xsd:string' use='required'/>
+  <xsd:attribute name='option'   type='xsd:string' use='optional'/>
+  <xsd:attribute name='value'    type='xsd:string' use='optional'/>
+  </xsd:complexType>
+  
+  <xsd:complexType name='SelectionType'>
+  <xsd:sequence>
+      <xsd:element name='Option' minOccurs='0' maxOccurs='unbounded'>
+        <xsd:complexType>
+            <xsd:attribute name='name'  type='xsd:string' use='required'/>
+            <xsd:attribute name='value' type='xsd:string' use='required'/>
+        </xsd:complexType>
+      </xsd:element>
+  </xsd:sequence>
+  <xsd:attribute name='protocol' type='xsd:string' use='required'/>
+  </xsd:complexType>
+
+  <!-- ==== Available protocols ==== -->
+  <xsd:complexType name='AvailableProtocolsRequestType' /> 
+  <xsd:complexType name='AvailableProtocolsResponseType'>
+    <xsd:sequence>
+        <xsd:element name='Protocol' type='xsd:string' minOccurs='0' maxOccurs='unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <!-- ==== Available options per protocol ==== -->
+  <xsd:complexType name='AvailableOptionsRequestType'>
+    <xsd:attribute name='protocol'  type='xsd:string' use='required'/>
+  </xsd:complexType>
+  <xsd:complexType name='AvailableOptionsResponseType'>
+    <xsd:sequence>
+      <xsd:element name='Option' minOccurs='0' maxOccurs='unbounded'>
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name='Value' type='xsd:string' minOccurs='1' maxOccurs='unbounded'/>
+          </xsd:sequence>
+          <xsd:attribute name='name'  type='xsd:string' use='required'/>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name='protocol'  type='xsd:string' use='required'/>
+  </xsd:complexType>
+
+  <!-- ==== Available protocol options ==== -->
+  <xsd:complexType name='AvailableProtocolOptionsRequestType' />
+  <xsd:complexType name='AvailableProtocolOptionsResponseType'>
+    <xsd:sequence>
+      <xsd:element name='Protocol' minOccurs='0' maxOccurs='unbounded'>
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name='Option' minOccurs='0' maxOccurs='unbounded'>
+              <xsd:complexType>
+                <xsd:sequence>
+                  <xsd:element name='Value' type='xsd:string' minOccurs='1' maxOccurs='unbounded'/>
+                </xsd:sequence>
+                <xsd:attribute name='name'  type='xsd:string' use='required'/>
+                <xsd:attribute name='value' type='xsd:string' use='required'/>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+          <xsd:attribute name='protocol'  type='xsd:string' use='required'/>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+  
+  
+  <!-- ==== Available protocol options ==== -->
+  <xsd:complexType name='ProtocolOptionsRequestType' >
+      <xsd:attribute name='protocol' type='xsd:string' use='required'/>
+  </xsd:complexType>
+  <xsd:complexType name='ProtocolOptionsResponseType'>
+    <xsd:sequence>
+      <xsd:element name='Option' minOccurs='0' maxOccurs='unbounded'>
+        <xsd:complexType>
+          <xsd:attribute name='name'   type='xsd:string' use='required'/>
+          <xsd:attribute name='value'  type='xsd:string' use='required'/>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name='protocol'  type='xsd:string' use='required'/>
+    <xsd:attribute name='error'     type='xsd:string' use='optional'/>
+  </xsd:complexType>
+  
+  <!-- ==== run protocol ==== -->
+<!--
+  <xsd:complexType name='RunProtocolRequestType' >
+    <xsd:sequence>
+      <xsd:element name='Option' minOccurs='0' maxOccurs='unbounded'>
+        <xsd:complexType>
+          <xsd:attribute name='name'  type='xsd:string' use='required'/>
+          <xsd:attribute name='value' type='xsd:string' use='required'/>
+        </xsd:complexType>                    
+      </xsd:element>
+      <xsd:element name='Processing' minOccurs='0' maxOccurs='1'>
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name='Press' minOccurs='0' maxOccurs='unbounded'>
+              <xsd:complexType>
+                <xsd:simpleContent>
+                  <xsd:extension base='xsd:string'>
+                    <xsd:attribute name='Name'  type='xsd:string' use='required'/>
+                  </xsd:extension>
+                </xsd:simpleContent>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>        
+    </xsd:sequence>
+    <xsd:attribute name='protocol' type='xsd:string' use='required'/>
+  </xsd:complexType>
+  <xsd:complexType name='RunProtocolResponseType'>
+    <xsd:sequence>
+      <xsd:element name='Option' minOccurs='0' maxOccurs='unbounded'>
+        <xsd:complexType>
+          <xsd:attribute name='name'  type='xsd:string' use='required'/>
+          <xsd:attribute name='value' type='xsd:string' use='required'/>
+        </xsd:complexType>                    
+      </xsd:element>
+      <xsd:element name='Processing' minOccurs='0' maxOccurs='1'>
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name='Press' minOccurs='0' maxOccurs='unbounded'>
+              <xsd:complexType>
+                <xsd:simpleContent>
+                  <xsd:extension base='xsd:string'>
+                    <xsd:attribute name='Name'  type='xsd:string' use='required'/>
+                  </xsd:extension>
+                </xsd:simpleContent>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>        
+    </xsd:sequence>
+    <xsd:attribute name='protocol'  type='xsd:string'  use='required'/>
+    <xsd:attribute name='succesful' type='xsd:boolean' use='required'/>
+    <xsd:attribute name='error'     type='xsd:string'  use='optional'/>
+  </xsd:complexType>
+-->
+  
+  <!-- ==== Estimate Duration ==== -->
+  <xsd:complexType name='EstimateDurationRequestType'>
+    <xsd:sequence>
+      <xsd:element name='Option' minOccurs='0' maxOccurs='unbounded'>
+        <xsd:complexType>
+          <xsd:attribute name='name'  type='xsd:string' use='required'/>
+          <xsd:attribute name='value' type='xsd:string' use='required'/>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name='protocol' type='xsd:string' use='required'/>
+  </xsd:complexType>
+
+  <xsd:complexType name='EstimateDurationResponseType'>
+    <xsd:sequence>
+      <xsd:element name='Option' minOccurs='0' maxOccurs='unbounded'>
+        <xsd:complexType>
+          <xsd:attribute name='name'  type='xsd:string' use='required'/>
+          <xsd:attribute name='value' type='xsd:string' use='required'/>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name='protocol'            type='xsd:string' use='required'/>
+    <xsd:attribute name='durationInSeconds'   type='xsd:double' use='required'/>
+    <xsd:attribute name='error'               type='xsd:string' use='optional'/>
+  </xsd:complexType>
+
+  <!-- ==== Status ==== -->
+  <xsd:complexType name='HardwareRequestType' />
+
+  <xsd:complexType name='HardwareResponseType'>
+    <xsd:sequence>
+      <xsd:element name='SpinsolveSoftware'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:string'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='RemoteControlVersion'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:string'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='ConnectedToHardware'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:boolean'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='SpinsolveHardware' minOccurs='0' maxOccurs='1'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:string'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='SpinsolveType' minOccurs='0' maxOccurs='1'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:string'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='HardwareCapabilities' minOccurs='0' maxOccurs='1'>
+      <xsd:complexType>
+        <xsd:sequence>
+          <xsd:element name='BitArray1'>
+            <xsd:simpleType>
+              <xsd:restriction base='xsd:unsignedInt'/>
+            </xsd:simpleType>
+          </xsd:element>
+          <xsd:element name='BitArray2'>
+            <xsd:simpleType>
+              <xsd:restriction base='xsd:unsignedInt'/>
+            </xsd:simpleType>
+          </xsd:element>
+          <xsd:element name='BitArray3'>
+            <xsd:simpleType>
+              <xsd:restriction base='xsd:unsignedInt'/>
+            </xsd:simpleType>
+          </xsd:element>
+          <xsd:element name='BitArray4'>
+            <xsd:simpleType>
+              <xsd:restriction base='xsd:unsignedInt'/>
+            </xsd:simpleType>
+          </xsd:element>
+        </xsd:sequence>
+      </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <!-- ==== Explicit Shim Requests ==== -->
+  <xsd:complexType name='CheckShimRequestType' />
+  <xsd:complexType name='QuickShimRequestType' />
+  <xsd:complexType name='PowerShimRequestType' />
+
+  <xsd:complexType name='CheckShimResponseType'>
+    <xsd:sequence>
+      <xsd:element name='OperatingTemperature'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:boolean'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='StableTemperatures'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:boolean'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='StableLock'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:boolean'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='LineWidth'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:float'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='BaseWidth'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:float'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='SystemIsReady'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:boolean'/>
+        </xsd:simpleType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name='error' type='xsd:string' use='optional'/>
+  </xsd:complexType>
+
+  <xsd:complexType name='QuickShimResponseType'>
+    <xsd:sequence>
+      <xsd:element name='OperatingTemperature'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:boolean'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='StableTemperatures'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:boolean'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='StableLock'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:boolean'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='LineWidth'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:float'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='BaseWidth'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:float'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='SystemIsReady'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:boolean'/>
+        </xsd:simpleType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name='error' type='xsd:string' use='optional'/>
+  </xsd:complexType>
+
+  <xsd:complexType name='PowerShimResponseType'>
+    <xsd:sequence>
+      <xsd:element name='OperatingTemperature'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:boolean'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='StableTemperatures'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:boolean'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='StableLock'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:boolean'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='LineWidth'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:float'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='BaseWidth'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:float'/>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name='SystemIsReady'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:boolean'/>
+        </xsd:simpleType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name='error' type='xsd:string' use='optional'/>
+  </xsd:complexType>
+
+  <!-- ==== Start ==== -->
+  <xsd:complexType name='StartType'>
+    <xsd:sequence>
+      <xsd:element name='Option' minOccurs='0' maxOccurs='unbounded'>
+        <xsd:complexType>
+          <xsd:attribute name='name'  type='xsd:string' use='required'/>
+          <xsd:attribute name='value' type='xsd:string' use='required'/>
+        </xsd:complexType>                    
+      </xsd:element>
+      <xsd:element name='Processing' minOccurs='0' maxOccurs='1'>
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name='Press' minOccurs='0' maxOccurs='unbounded'>
+              <xsd:complexType>
+                <xsd:simpleContent>
+                  <xsd:extension base='xsd:string'>
+                    <xsd:attribute name='Name'  type='xsd:string' use='required'/>
+                  </xsd:extension>
+                </xsd:simpleContent>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>        
+    </xsd:sequence>
+    <xsd:attribute name='protocol' type='xsd:string' use='required'/>
+  </xsd:complexType>
+
+  <!-- ==== Abort ==== -->
+  <xsd:complexType name='AbortType' />
+
+  <!-- ==== Script ==== -->
+  <xsd:complexType name='ExecuteType'>
+    <xsd:sequence>
+      <xsd:element name='Script' minOccurs='1' maxOccurs='1'>
+        <xsd:simpleType>
+          <xsd:restriction base='xsd:string' />
+        </xsd:simpleType>            
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <!-- ==== Status Notification ==== -->
+  <xsd:complexType name='StatusNotificationType'>
+    <xsd:choice>
+      <xsd:element name='State'                        type='StateNotificationType'             minOccurs='0' />
+      <xsd:element name='Error'                        type='ErrorNotificationType'             minOccurs='0' />
+      <xsd:element name='Progress'                     type='ProgressNotificationType'          minOccurs='0' />
+      <xsd:element name='Completed'                    type='CompletedNotificationType'         minOccurs='0' />
+    </xsd:choice>
+    <xsd:attribute name='timestamp' type='xsd:string' use='required'/>
+  </xsd:complexType>
+    
+  <!-- ==== State Notification ==== -->
+  <xsd:complexType name='StateNotificationType'>
+    <xsd:attribute name='protocol'          type='xsd:string'   use='required'/>
+    <xsd:attribute name='status' use='required'>
+      <xsd:simpleType>
+        <xsd:restriction base='xsd:string'>
+          <xsd:enumeration value='Ready'/>
+          <xsd:enumeration value='Running'/>
+          <xsd:enumeration value='Stopping'/>
+        </xsd:restriction>
+      </xsd:simpleType>
+    </xsd:attribute>
+    <xsd:attribute name='dataFolder'        type='xsd:string'   use='required'/>
+  </xsd:complexType>
+    
+  <!-- ==== Progress Notification ==== -->
+  <xsd:complexType name='ProgressNotificationType'>
+    <xsd:attribute name='protocol'          type='xsd:string'   use='required'/>
+    <xsd:attribute name='percentage'        type='xsd:int'      use='required'/>
+  </xsd:complexType>
+   
+  <!-- ==== Completed Notification ==== -->
+  <xsd:complexType name='CompletedNotificationType'>
+    <xsd:attribute name='protocol'          type='xsd:string'   use='required'/>
+    <xsd:attribute name='completed'         type='xsd:boolean'  use='required'/>
+    <xsd:attribute name='successful'        type='xsd:boolean'  use='required'/>
+  </xsd:complexType>   
+
+  <!-- ==== Error Notification ==== -->
+  <xsd:complexType name='ErrorNotificationType'>
+    <xsd:attribute name='protocol'          type='xsd:string'   use='required'/>
+    <xsd:attribute name='error'             type='xsd:string'   use='required'/>
+  </xsd:complexType> 
+ 
+</xsd:schema>
