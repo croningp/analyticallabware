@@ -21,7 +21,7 @@ from advion import (AcquisitionManager, AcquisitionState, ErrorCode,
 from os.path import dirname, join
 from time import sleep
 
-class AdvionCMS:
+class ExpressionCMS:
     def __init__(self, ion_source='positiveAPCI.ion', method='default.method', tune='currentcalibESIpositive102016.tune'):
         filedir = join(dirname(__file__), 'files')
         self.ion_source = open(join(filedir, ion_source))
