@@ -1,7 +1,11 @@
 from textwrap import dedent
 from typing import List, Union
 
-HEADER = '<?xml version="1.0" encoding="UTF-8"?>'
+HEADER = '''
+<?xml version="1.0" encoding="UTF-8"?>
+<Message>
+{}
+</Message>'''.strip()
 
 class Node:
     def __init__(self, *children, **attrs):
@@ -9,17 +13,21 @@ class Node:
         self.attrs = attrs
         self.children = children
     def __str__(self):
-        tag = self.__class__.__name__
-        attrs = ' '.join(f"k='{self.attrs[k]}'" for k in self.attrs)
+        tag = self.tag
+        attrs = ' '.join(f"{k}='{self.attrs[k]}'" for k in self.attrs)
         children = '\n'.join(str(c) for c in self.children)
         attrs = attrs and ' ' + attrs
         if children:
-            return f'<{tag}{attrs}>\n{children}\n</{self.tag}>'
-        return f'<{tag}{attrs}>/>'
+            return f'<{tag}{attrs}>\n{children}\n</{tag}>'
+        return f'<{tag}{attrs} />'
 
 class StringNode(Node):
     def __init__(self, arg: str):
         super().__init__(arg)
+
+class EmptyNode(Node):
+    def __init__(self):
+        super().__init__()
 
 class Option(Node):
     tag = 'Option'
@@ -35,6 +43,7 @@ class Start(Node):
         super().__init__(*args, protocol=protocol)
 
 class Script(Node):
+    tag = 'Script'
     def __init__(self, arg: str):
         super().__init__(arg)
 
@@ -42,18 +51,18 @@ class Execute(Node):
     def __init__(self, script: Script):
         super().__init__(script)
 
-class Abort(Node):
+class Abort(EmptyNode):
     pass
 
-class CheckShim(Node):
+class CheckShim(EmptyNode):
     tag = 'CheckShimRequestType'
     pass
 
-class QuickShim(Node):
+class QuickShim(EmptyNode):
     tag = 'QuickShimRequestType'
     pass
 
-class PowerShim(Node):
+class PowerShim(EmptyNode):
     tag = 'PowerShimRequestType'
     pass
 
@@ -117,15 +126,13 @@ class Set(Node):
     def __init__(self, arg: Union[Solvent, Sample, DataFolder, UserData]):
         super().__init__(arg)
 
-class Message():
+class Message:
     def __init__(self, node: Node, header=HEADER):
         self.node = node
         self.header = header
     def __str__(self):
-        return f'{self.header}\n{self.node}'
+        return self.header.format(self.node)
 
-if __name__ == '__main__':
-    print(Message(Set(Solvent('DMSO'))))
 
 # CALL_NMR = '''
 # <?xml version="1.0" encoding="UTF-8"?>
