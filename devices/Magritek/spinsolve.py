@@ -388,7 +388,7 @@ class MiniSpinsolve:
         
         self.logger.info(message)
         try:
-            self.spinsolve_client.sendall(message)
+            self._spinsolve_client.sendall(message)
         except Exception as E:
             self.logger.critical(f'some error occured:{E}')
 
