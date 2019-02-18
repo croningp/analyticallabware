@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 #from queue import Queue
 from io import BytesIO
 
+logging.basicConfig(level=logging.DEBUG)
 
 class MiniSpinsolve:
     '''
@@ -184,7 +185,10 @@ class MiniSpinsolve:
             software_tag = main_element.find('.//SpinsolveSoftware').text
             
             # looking for the instrument model
-            spinsolve_tag = main_element.find('.//SinsolveType').text or '"No instrument"'
+            try:
+                spinsolve_tag = main_element.find('.//SpinsolveType').text
+            except:
+                spinsolve_tag = '"No instrument"'
             
             # logging the acquired information
             self.logger.debug(f'The {spinsolve_tag} NMR instrument is successfully connected')
@@ -194,7 +198,8 @@ class MiniSpinsolve:
         
         # TODO parse every type of responses
         else:
-            ET.dump(data_root)
+            # ET.dump(data_root)
+            pass
     
     def _receive(self):
         '''
@@ -208,7 +213,7 @@ class MiniSpinsolve:
                 
                 # logging the raw message
                 # mainly for debugging reasons
-                self.logger.info(data.decode())
+                self.logger.info('message received:\n' + data.decode())
                 
                 # creating bytes object for future parsing
                 data_obj = BytesIO(data)
@@ -256,7 +261,7 @@ class MiniSpinsolve:
         except Exception as E:
             self.logger.critical(f'some error occured: {E}')
     
-    def proton(self, option):
+    def proton(self, option='QuickScan'):
         '''
         Method for running the simple 1D proton experiment
         
@@ -275,7 +280,7 @@ class MiniSpinsolve:
                     )
             
             # for debugging reasons:
-            self.logger.info(proton_msg.decode())
+            self.logger.info('message sent:\n' + proton_msg.decode())
             
             # sending the message
             try:
@@ -297,7 +302,7 @@ class MiniSpinsolve:
                 used for the calibration of the ppm scale during shimming
         '''
         
-        if option in self.SIMPLE_PROTON_PROTOCOL_OPTIONS:
+        if option in self.SAMPLE_SHIM_PROTOCOL_OPTIONS:
             # building shimming protocol message
             shimming_msg = self.__msg_serializer('Start', 
                                                  {'protocol': self.SAMPLE_SHIM_PROTOCOL},
@@ -306,7 +311,7 @@ class MiniSpinsolve:
                                                  {'name': 'Shim', 'value': f'{option}'}
                                                  )
             # for debugging reasons
-            self.logger.info(shimming_msg.decode())
+            self.logger.info('message sent:\n' + shimming_msg.decode())
             
             # sending the message
             try:
@@ -351,8 +356,8 @@ class MiniSpinsolve:
             msg_sample_tree.write(msg_sample, encoding='utf-8', xml_declaration=True)
             message_sample = msg_sample.getvalue()
             
-            self.logger.info(message_solvent)
-            self.logger.info(message_sample)
+            self.logger.info('message sent:\n' + message_solvent.decode())
+            self.logger.info('message sent:\n' + message_sample.decode())
             
             try:
                 self._spinsolve_client.sendall(message_solvent)
@@ -386,9 +391,9 @@ class MiniSpinsolve:
         msg_tree.write(msg, encoding='utf-8', xml_declaration=True)
         message = msg.getvalue()
         
-        self.logger.info(message)
+        self.logger.info('message sent:\n' + message.decode())
         try:
-            self.spinsolve_client.sendall(message)
+            self._spinsolve_client.sendall(message)
         except Exception as E:
             self.logger.critical(f'some error occured:{E}')
 
@@ -411,7 +416,7 @@ class MiniSpinsolve:
                     )
             
             # for debugging reasons:
-            self.logger.info(est_dur_msg.decode())
+            self.logger.info('message sent:\n' + est_dur_msg.decode())
             
             # sending the message
             try:
@@ -420,6 +425,15 @@ class MiniSpinsolve:
                 self.logger.critical(f'some error occured: {E}')
         else:
             self.logger.debug('selected option is not valid')
+            
+    def custom_msg(self, *args):
+        my_msg = self.__msg_serializer(*args)
+        self.logger.info('custom msg:\n' + my_msg.decode())
+        try:
+            self._spinsolve_client.sendall(my_msg)
+        except:
+            self.logger.debug('error')
+            pass
 
         
 #if __name__ == '__main__':
