@@ -72,11 +72,19 @@ class MiniSpinsolve:
         self._receiving_thread = threading.Thread(target=self._receive, name='Spinsolve data receiving thread', daemon=True)
         self._receiving_thread.start()
         
+        # connection event
+        # small remark here:
+        # even though the nrm software prevents multiple attempts to perform the measurement and sends the error
+        # message in that case, to avoind confusion during the response parsing the Event is introduced to block
+        # the Start protocol messages until the current is done. See the details in __msg_parser() method
+        self._connection_event = threading.Event()
+        
         # selected documented commands for easier maintanance
         self.SIMPLE_PROTON_PROTOCOL = '1D PROTON'
         self.SIMPLE_PROTON_PROTOCOL_OPTIONS = ('QuickScan', 'StandardScan', 'PowerScan')
         self.SAMPLE_SHIM_PROTOCOL = 'SHIM 1H SAMPLE'
         self.SAMPLE_SHIM_PROTOCOL_OPTIONS = ['CheckShim',
+                                             'Calibrate',
                                              'LockAndCalibrateOnly',
                                              'QuickShim1',
                                              'QuickShim2',
@@ -167,6 +175,7 @@ class MiniSpinsolve:
         Args:
             data_root (XML element): an XML root element parsed from the incoming message
             tag (str): main element tag for indicating the valuable information
+            get_return (bool): will return the parameter if True
         '''
         
         # checking for the self-check response
@@ -178,7 +187,6 @@ class MiniSpinsolve:
             connected_tag = main_element.find('.//ConnectedToHardware').text
             if connected_tag == 'false':
                 self.logger.critical('The NMR instrument is not connected, try to reconnect it and run _self_check method again')
-                ET.dump(data_root)
                 return
             
             # looking for the software version
@@ -195,10 +203,70 @@ class MiniSpinsolve:
             self.logger.debug(f'Running under Spinsolve software version {software_tag}')
             if software_tag[:4] != '1.13':
                 self.logger.debug('Current software version {} was not tested, use at your own risk'.format(software_tag))
+            return True
+        
+        # check for the check_shim response
+        elif 'CheckShimResponse' in tag:
+            # getting the main element from the root msg
+            main_element = data_root.find(f'.//{tag}')
+            
+            # lookign for errors
+            error_text = main_element.get('error')
+            
+            if error_text:
+                self.logger.critical(f'shimming error: {error_text}, try to run shimming procedure')
+            
+            # logging the shimming results
+            self.logger.info('shimming results:')
+            for child in main_element:
+                self.logger.info(f'{child.tag} - {child.text}')
+            
+            # obtaining shimming parameters
+            line_width = round(float(main_element.find('.//LineWidth').text), 2)
+            base_width = round(float(main_element.find('.//BaseWidth').text), 2)
+            system_ready = main_element.find('.//SystemIsReady').text
+            
+            # checking parameters validity
+            if line_width > 1:
+                self.logger.critical('line width is too high, please use shim() method to perform the shimming procedure')
+            if base_width > 40:
+                self.logger.critical('base width is too high, please use shim() method to perform the shimming procedure')
+            if system_ready != 'true':
+                raise Exception(' System is not ready, please use shim() method to perform the shimming procedure')
+            else:
+                return True
+        
+        elif 'Status' in tag:
+            # acquiring the lock to block the input in case the protocol is already performing
+            #self._connection_lock.acquire()
+            
+            # getting the main element
+            main_element = data_root.find(f'.//{tag}')
+            
+            # obtaining valuable info
+            state_tag = main_element.find('.//').tag
+            protocol_attrib = state_tag.get('protocol')
+            status_attrib = state_tag.get('status')
+            percentage_attrib = state_tag.get('percentage')
+            seconds_remaining_attrib = state_tag.get('secondsRemaining')
+            
+            # logging the data
+            if state_tag == 'State':
+                # resetting the event to False to block the incomming msg
+                self._connection_event.clear()
+                self.logger.info(f'{status_attrib} the {protocol_attrib} protocol')
+                if status_attrib == 'Ready':
+                    # when device is ready, setting the event to True for the next protocol to be executed
+                    self._connection_event.set()
+                    data_folder = state_tag.get('dataFolder')
+                    self.logger.info(f'the protocol {protocol_attrib} is complete, the nmr is saved in {data_folder}')
+                    return data_folder
+            
+            if state_tag == 'Progress':
+                self.logger.info(f'the protocol {protocol_attrib} is performed, {percentage_attrib}% completed, {seconds_remaining_attrib} seconds remain') 
         
         # TODO parse every type of responses
         else:
-            # ET.dump(data_root)
             pass
     
     def _receive(self):
@@ -227,8 +295,9 @@ class MiniSpinsolve:
                     # looking for all children elements and writing the tag of the first obtained
                     data_tag = data_root.find('.//').tag
                     
-                    #calling parser for valuable information logging
-                    self.__msg_parser(data_root, data_tag)
+                    # calling parser for valuable information logging
+                    reply_message = self.__msg_parser(data_root, data_tag)
+                    self.last_reply = reply_message
                     
                     # printing the message in the console
                     # TODO separate method for message parsing and logging the valuable information
@@ -280,26 +349,42 @@ class MiniSpinsolve:
                     )
             
             # for debugging reasons:
-            self.logger.info('message sent:\n' + proton_msg.decode())
+            self.logger.debug('message sent:\n' + proton_msg.decode())
             
             # sending the message
             try:
+                # waiting for the event to be set to prevent multiple outcomming messages
+                self._connection_event.wait()
                 self._spinsolve_client.sendall(proton_msg)
-                self.logger.debug(f'should start the {option} 1D proton nmr experiment')
+                self.logger.info(f'should start the {option} 1D proton nmr experiment')
             except Exception as E:
                 self.logger.critical(f'some error occured: {E}')
         else:
             self.logger.debug('selected option is not valid')
-
+    
+    def check_shim(self):
+        '''
+        Method for checking the current shimming state
+        '''
         
-    def shim(self, option, reference_peak):
+        # buidling the message
+        check_shim_msg = self.__msg_serializer('CheckShimRequest')
+        
+        try:
+            self._connection_event.wait()
+            self._spinsolve_client.sendall(check_shim_msg)
+        except Exception as E:
+            self.logger.critical(f'some error occured: {E}')
+        
+        
+    def shim(self, reference_peak, option='Calibrate'):
         '''
         Method for shimming the instrument to the provided reference peak
         
         Args:
-            option (str): shimming type, available from SAMPLE_SHIM_PROTOCOL_OPTIONS
             reference_peak (float): largest peak of the supplied sample
                 used for the calibration of the ppm scale during shimming
+            option (str): shimming type, available from SAMPLE_SHIM_PROTOCOL_OPTIONS
         '''
         
         if option in self.SAMPLE_SHIM_PROTOCOL_OPTIONS:
@@ -315,6 +400,7 @@ class MiniSpinsolve:
             
             # sending the message
             try:
+                self._connection_event.wait()
                 self._spinsolve_client.sendall(shimming_msg)
                 self.logger.debug(f'should start the {option} shimming procedure, calibrating for {reference_peak} peak')
             except Exception as E:
@@ -430,6 +516,7 @@ class MiniSpinsolve:
         my_msg = self.__msg_serializer(*args)
         self.logger.info('custom msg:\n' + my_msg.decode())
         try:
+            self._connection_event.wait()
             self._spinsolve_client.sendall(my_msg)
         except:
             self.logger.debug('error')
