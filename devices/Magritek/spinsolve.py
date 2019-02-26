@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 #from queue import Queue
 from io import BytesIO
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 class MiniSpinsolve:
     '''
@@ -64,7 +64,7 @@ class MiniSpinsolve:
                 self._spinsolve_client.connect((self.HOST, self.PORT))
                 break
             except Exception as E:
-                self.logger.debug(f'connection error: {E}')
+                self.logger.error(f'connection error: {E}')
                 time.sleep(60)
                 continue
         
@@ -78,25 +78,26 @@ class MiniSpinsolve:
         # message in that case, to avoind confusion during the response parsing the Event is introduced to block
         # the Start protocol messages until the current is done. See the details in __msg_parser() method
         self._connection_event = threading.Event()
+        self._connection_event.set()
         
         # selected documented commands for easier maintanance
         self.SIMPLE_PROTON_PROTOCOL = '1D PROTON'
         self.SIMPLE_PROTON_PROTOCOL_OPTIONS = ('QuickScan', 'StandardScan', 'PowerScan')
         self.SAMPLE_SHIM_PROTOCOL = 'SHIM 1H SAMPLE'
-        self.SAMPLE_SHIM_PROTOCOL_OPTIONS = ['CheckShim',
-                                             'Calibrate',
+        self.SAMPLE_SHIM_PROTOCOL_OPTIONS = ('CheckShim',
                                              'LockAndCalibrateOnly',
                                              'QuickShim1',
                                              'QuickShim2',
                                              'QuickShimAll',
-                                             'PowerShim']
+                                             'PowerShim')
+        self.CHECK_SHIM_REQUESTS = ('CheckShimRequest', 'QuickShimRequest', 'PowerShimRequest')
         # USER_FOLDER_TYPES specifies where the obtained spectrums will be saved:
         # "UserFolder" will save the data in the folder provided by nmr_path attribute
         # "TimeStamp" will save data in new folders as (yyyymmddhhmmss) in nmr_path folder
         # "TimeStampTree" will save the data in the set of timestamped folders as yyyy\mm\dd\hhmmss
-        self.USER_FOLDER_TYPES = ['UserFolder',
+        self.USER_FOLDER_TYPES = ('UserFolder',
                                   'TimeStamp',
-                                  'TimeStampTree']
+                                  'TimeStampTree')
         
         self._self_check()
         self.user_folder()
@@ -108,7 +109,7 @@ class MiniSpinsolve:
         
         # closing connection
         self._spinsolve_client.close()
-        self.logger.debug('connection closed')
+        self.logger.info('connection closed')
         
         # killing the receiving thread
         # should be dead anyway by dropping the connection
@@ -199,14 +200,14 @@ class MiniSpinsolve:
                 spinsolve_tag = '"No instrument"'
             
             # logging the acquired information
-            self.logger.debug(f'The {spinsolve_tag} NMR instrument is successfully connected')
-            self.logger.debug(f'Running under Spinsolve software version {software_tag}')
+            self.logger.info(f'The {spinsolve_tag} NMR instrument is successfully connected')
+            self.logger.info(f'Running under Spinsolve software version {software_tag}')
             if software_tag[:4] != '1.13':
-                self.logger.debug('Current software version {} was not tested, use at your own risk'.format(software_tag))
+                self.logger.warning('Current software version {} was not tested, use at your own risk'.format(software_tag))
             return True
         
         # check for the check_shim response
-        elif 'CheckShimResponse' in tag:
+        elif 'ShimResponse' in tag:
             # getting the main element from the root msg
             main_element = data_root.find(f'.//{tag}')
             
@@ -214,7 +215,7 @@ class MiniSpinsolve:
             error_text = main_element.get('error')
             
             if error_text:
-                self.logger.critical(f'shimming error: {error_text}, try to run shimming procedure')
+                self.logger.critical(f'shimming error: {error_text}')
             
             # logging the shimming results
             self.logger.info('shimming results:')
@@ -227,12 +228,12 @@ class MiniSpinsolve:
             system_ready = main_element.find('.//SystemIsReady').text
             
             # checking parameters validity
-            if line_width > 1:
+            if line_width > 1.1:
                 self.logger.critical('line width is too high, please use shim() method to perform the shimming procedure')
             if base_width > 40:
                 self.logger.critical('base width is too high, please use shim() method to perform the shimming procedure')
             if system_ready != 'true':
-                raise Exception(' System is not ready, please use shim() method to perform the shimming procedure')
+                self.logger.critical('System is not ready, please use shim() method to perform the shimming procedure')
             else:
                 return True
         
@@ -245,10 +246,11 @@ class MiniSpinsolve:
             
             # obtaining valuable info
             state_tag = main_element.find('.//').tag
-            protocol_attrib = state_tag.get('protocol')
-            status_attrib = state_tag.get('status')
-            percentage_attrib = state_tag.get('percentage')
-            seconds_remaining_attrib = state_tag.get('secondsRemaining')
+            state_elem = main_element.find(f'.//{state_tag}')
+            protocol_attrib = state_elem.get('protocol')
+            status_attrib = state_elem.get('status')
+            percentage_attrib = state_elem.get('percentage')
+            seconds_remaining_attrib = state_elem.get('secondsRemaining')
             
             # logging the data
             if state_tag == 'State':
@@ -258,7 +260,7 @@ class MiniSpinsolve:
                 if status_attrib == 'Ready':
                     # when device is ready, setting the event to True for the next protocol to be executed
                     self._connection_event.set()
-                    data_folder = state_tag.get('dataFolder')
+                    data_folder = state_elem.get('dataFolder')
                     self.logger.info(f'the protocol {protocol_attrib} is complete, the nmr is saved in {data_folder}')
                     return data_folder
             
@@ -281,7 +283,7 @@ class MiniSpinsolve:
                 
                 # logging the raw message
                 # mainly for debugging reasons
-                self.logger.info('message received:\n' + data.decode())
+                self.logger.debug('message received:\n' + data.decode())
                 
                 # creating bytes object for future parsing
                 data_obj = BytesIO(data)
@@ -299,22 +301,18 @@ class MiniSpinsolve:
                     reply_message = self.__msg_parser(data_root, data_tag)
                     self.last_reply = reply_message
                     
-                    # printing the message in the console
-                    # TODO separate method for message parsing and logging the valuable information
-                    # ET.dump(data_root)
-                    
                 except Exception as exc:
                     # workaround the parsing errors
                     # sometimes server sends invalid XML messages with several XML roots
                     # that causes the error in parsing process
                     # in this case the message will be displayed in raw format
-                    self.logger.debug(f'parsing error: {exc}')
+                    self.logger.error(f'parsing error: {exc}')
                     self.logger.debug('raw message:\n', data.decode())
                     continue
                 
             except Exception as exc:
                 # in case connection problems
-                self.logger.debug(exc)
+                self.logger.error(exc)
                 break
     
     def _self_check(self):
@@ -328,7 +326,7 @@ class MiniSpinsolve:
         try:
             self._spinsolve_client.sendall(check_msg)
         except Exception as E:
-            self.logger.critical(f'some error occured: {E}')
+            self.logger.error(f'some error occured: {E}')
     
     def proton(self, option='QuickScan'):
         '''
@@ -339,45 +337,55 @@ class MiniSpinsolve:
         '''
         
         # validating provided option
-        if option in self.SIMPLE_PROTON_PROTOCOL_OPTIONS:
-            # building 1D PROTON protocol message
-            proton_msg = self.__msg_serializer(
-                    'Start', 
-                    {'protocol': self.SIMPLE_PROTON_PROTOCOL},
-                    'Option',
-                    {'name': 'Scan', 'value': f'{option}'}
-                    )
-            
-            # for debugging reasons:
-            self.logger.debug('message sent:\n' + proton_msg.decode())
-            
-            # sending the message
-            try:
-                # waiting for the event to be set to prevent multiple outcomming messages
-                self._connection_event.wait()
-                self._spinsolve_client.sendall(proton_msg)
-                self.logger.info(f'should start the {option} 1D proton nmr experiment')
-            except Exception as E:
-                self.logger.critical(f'some error occured: {E}')
-        else:
-            self.logger.debug('selected option is not valid')
+        if option not in self.SIMPLE_PROTON_PROTOCOL_OPTIONS:
+            self.logger.error('please select one of the following options: {}'.format(self.SIMPLE_PROTON_PROTOCOL_OPTIONS))
+            return
+        
+        # building 1D PROTON protocol message
+        proton_msg = self.__msg_serializer(
+                'Start', 
+                {'protocol': self.SIMPLE_PROTON_PROTOCOL},
+                'Option',
+                {'name': 'Scan', 'value': f'{option}'}
+                )
+        
+        # for debugging reasons:
+        self.logger.debug('message constructed:\n' + proton_msg.decode())
+        
+        # sending the message
+        try:
+            # waiting for the event to be set to prevent multiple outcomming messages
+            self._connection_event.wait()
+            self._spinsolve_client.sendall(proton_msg)
+            self.logger.info(f'should start the {option} 1D proton nmr experiment')
+        except Exception as E:
+            self.logger.error(f'some error occured: {E}')
     
-    def check_shim(self):
+    def shim(self, request='CheckShimRequest'):
         '''
-        Method for checking the current shimming state
+        Method for shimming the instrument to the standard solution (1:9 H20:D2O mixture, correspond to 4.74 ppm).
+        Use calibrate method to calibrate frquency of the largest peak to ppm value of the solvent you use
+        
+        Args:
+            request (str): shimming type, available from CHECK_SHIM_REQUESTS
         '''
         
+        # validating provided attribute
+        if request not in self.CHECK_SHIM_REQUESTS:
+            self.logger.error('please select one of the following options: {}'.format(self.CHECK_SHIM_REQUESTS))
+            return
+        
         # buidling the message
-        check_shim_msg = self.__msg_serializer('CheckShimRequest')
+        check_shim_msg = self.__msg_serializer(request)
         
         try:
             self._connection_event.wait()
             self._spinsolve_client.sendall(check_shim_msg)
         except Exception as E:
-            self.logger.critical(f'some error occured: {E}')
+            self.logger.error(f'some error occured: {E}')
         
         
-    def shim(self, reference_peak, option='Calibrate'):
+    def calibrate(self, reference_peak, option='LockAndCalibrateOnly'):
         '''
         Method for shimming the instrument to the provided reference peak
         
@@ -386,27 +394,35 @@ class MiniSpinsolve:
                 used for the calibration of the ppm scale during shimming
             option (str): shimming type, available from SAMPLE_SHIM_PROTOCOL_OPTIONS
         '''
+        # validating the reference peak value
+        try:
+            reference_peak = round(reference_peak, 2)
+        except:
+            self.logger.error('reference peak must be float')
+            return
         
-        if option in self.SAMPLE_SHIM_PROTOCOL_OPTIONS:
-            # building shimming protocol message
-            shimming_msg = self.__msg_serializer('Start', 
-                                                 {'protocol': self.SAMPLE_SHIM_PROTOCOL},
-                                                 'Option',
-                                                 {'name': 'SampleReference', 'value': f'{reference_peak}'},
-                                                 {'name': 'Shim', 'value': f'{option}'}
-                                                 )
-            # for debugging reasons
-            self.logger.info('message sent:\n' + shimming_msg.decode())
+        # validating the option
+        if option not in self.SAMPLE_SHIM_PROTOCOL_OPTIONS:
+            self.logger.warning('please select one of the following options: {}'.format(self.SAMPLE_SHIM_PROTOCOL_OPTIONS))
+            return
             
-            # sending the message
-            try:
-                self._connection_event.wait()
-                self._spinsolve_client.sendall(shimming_msg)
-                self.logger.debug(f'should start the {option} shimming procedure, calibrating for {reference_peak} peak')
-            except Exception as E:
-                self.logger.critical(f'some error occured: {E}')
-        else:
-            self.logger.debug('selected option is not valid')
+        # building shimming protocol message
+        shimming_msg = self.__msg_serializer('Start', 
+                                             {'protocol': self.SAMPLE_SHIM_PROTOCOL},
+                                             'Option',
+                                             {'name': 'SampleReference', 'value': f'{reference_peak}'},
+                                             {'name': 'Shim', 'value': f'{option}'}
+                                             )
+        # for debugging reasons
+        self.logger.debug('message sent:\n' + shimming_msg.decode())
+        
+        # sending the message
+        try:
+            self._connection_event.wait()
+            self._spinsolve_client.sendall(shimming_msg)
+            self.logger.info(f'should start the {option} shimming procedure, calibrating for {reference_peak} peak')
+        except Exception as E:
+            self.logger.error(f'some error occured: {E}')
         
     def user_data(self, *, solvent, sample):
         '''
@@ -442,16 +458,16 @@ class MiniSpinsolve:
             msg_sample_tree.write(msg_sample, encoding='utf-8', xml_declaration=True)
             message_sample = msg_sample.getvalue()
             
-            self.logger.info('message sent:\n' + message_solvent.decode())
-            self.logger.info('message sent:\n' + message_sample.decode())
+            self.logger.debug('message sent:\n' + message_solvent.decode())
+            self.logger.debug('message sent:\n' + message_sample.decode())
             
             try:
                 self._spinsolve_client.sendall(message_solvent)
                 self._spinsolve_client.sendall(message_sample)
             except Exception as E:
-                self.logger.critical(f'some error occured:{E}')
+                self.logger.error(f'some error occured:{E}')
         except TypeError:
-            self.logger.critical('the method must be called with keyword arguments')
+            self.logger.error('the method must be called with keyword arguments')
 
     def user_folder(self, data_folder_type='TimeStamp'):
         '''
@@ -464,6 +480,10 @@ class MiniSpinsolve:
                 "TimeStamp" will save data in new folders as (yyyymmddhhmmss) in nmr_path folder (default)
                 "TimeStampTree" will save the data in the set of timestamped folders as yyyy\mm\dd\hhmmss
         '''
+        # validating the given parameter
+        if data_folder_type not in self.USER_FOLDER_TYPES:
+            self.logger.warning('please select one of the following options: {}'.format(self.USER_FOLDER_TYPES))
+            return
         
         # as for user_data method, the following code is not commented
         # refer above methods for details
@@ -477,11 +497,11 @@ class MiniSpinsolve:
         msg_tree.write(msg, encoding='utf-8', xml_declaration=True)
         message = msg.getvalue()
         
-        self.logger.info('message sent:\n' + message.decode())
+        self.logger.debug('message sent:\n' + message.decode())
         try:
             self._spinsolve_client.sendall(message)
         except Exception as E:
-            self.logger.critical(f'some error occured:{E}')
+            self.logger.error(f'some error occured:{E}')
 
     def estimate_duration(self, option):
         '''
@@ -502,15 +522,15 @@ class MiniSpinsolve:
                     )
             
             # for debugging reasons:
-            self.logger.info('message sent:\n' + est_dur_msg.decode())
+            self.logger.debug('message sent:\n' + est_dur_msg.decode())
             
             # sending the message
             try:
                 self._spinsolve_client.sendall(est_dur_msg)
             except Exception as E:
-                self.logger.critical(f'some error occured: {E}')
+                self.logger.error(f'some error occured: {E}')
         else:
-            self.logger.debug('selected option is not valid')
+            self.logger.error('selected option is not valid')
             
     def custom_msg(self, *args):
         my_msg = self.__msg_serializer(*args)
@@ -519,7 +539,7 @@ class MiniSpinsolve:
             self._connection_event.wait()
             self._spinsolve_client.sendall(my_msg)
         except:
-            self.logger.debug('error')
+            self.logger.error('error')
             pass
 
         
