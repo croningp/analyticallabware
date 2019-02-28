@@ -4,8 +4,12 @@
 import threading, socket, time, logging
 import xml.etree.ElementTree as ET
 
-#from queue import Queue
+from struct import unpack
+import queue
 from io import BytesIO
+from os.path import join
+
+import numpy as np
 
 logging.basicConfig(level=logging.INFO)
 
@@ -79,6 +83,8 @@ class MiniSpinsolve:
         # the Start protocol messages until the current is done. See the details in __msg_parser() method
         self._connection_event = threading.Event()
         self._connection_event.set()
+        
+        self._response_queue = queue.Queue()
         
         # selected documented commands for easier maintanance
         self.SIMPLE_PROTON_PROTOCOL = '1D PROTON'
@@ -204,7 +210,7 @@ class MiniSpinsolve:
             self.logger.info(f'Running under Spinsolve software version {software_tag}')
             if software_tag[:4] != '1.13':
                 self.logger.warning('Current software version {} was not tested, use at your own risk'.format(software_tag))
-            return True
+#            return True
         
         # check for the check_shim response
         elif 'ShimResponse' in tag:
@@ -234,8 +240,8 @@ class MiniSpinsolve:
                 self.logger.critical('base width is too high, please use shim() method to perform the shimming procedure')
             if system_ready != 'true':
                 self.logger.critical('System is not ready, please use shim() method to perform the shimming procedure')
-            else:
-                return True
+#            else:
+#                return True
         
         elif 'Status' in tag:
             # acquiring the lock to block the input in case the protocol is already performing
@@ -299,7 +305,9 @@ class MiniSpinsolve:
                     
                     # calling parser for valuable information logging
                     reply_message = self.__msg_parser(data_root, data_tag)
-                    self.last_reply = reply_message
+                    
+                    if reply_message:
+                        self._response_queue.put(reply_message)
                     
                 except Exception as exc:
                     # workaround the parsing errors
@@ -541,8 +549,41 @@ class MiniSpinsolve:
         except:
             self.logger.error('error')
             pass
-
+    
+    def get_spectra(self):
+        try:
+            spectrum_dir = self._response_queue.get_nowait()
+            spectrum_path = join(spectrum_dir, 'data.1d')
+                
+            # open binary file with spectrum
+            nmr_data = open(spectrum_path, mode='rb')
+            # read first eight bytes
+            spectrum = []
+            # unpack the data
+            while True:
+                data = nmr_data.read(4)
+                if not data:
+                    break
+                spectrum.append(unpack('<f', data))
+            # remove fisrt eight points and divide data into three parts
+            lenght = int(len(spectrum[8:]) / 3)
+            fid = spectrum[lenght + 8:]
+    
+            fid_real = []
+            fid_img = []
+            for i in range(int(len(fid) / 2)):
+                fid_real.append(fid[2 * i][0])
+                fid_img.append(fid[2 * i + 1][0])
+            fid_complex = []
+            for i in range(len(fid_real)):
+                fid_complex.append(np.complex(fid_real[i], fid_img[i] * -1))
+            
+            return fid_complex
         
+        except queue.Empty:
+            self.logger.warning('no spectrum measured')
+        except Exception as E:
+            self.logger.error(E)
 #if __name__ == '__main__':
 #    myss = myspinsolve()
 #    myss.shim('CheckShim', reference_peak=1.94)
