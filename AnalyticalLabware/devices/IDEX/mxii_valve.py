@@ -1,3 +1,6 @@
+import threading
+import time
+
 from SerialLabware.controllers import AbstractDistributionValve
 from SerialLabware.controllers import LabDeviceCommands
 from SerialLabware.exceptions import SLDeviceError
@@ -82,3 +85,18 @@ class IDEXMXIIValve(AbstractDistributionValve):
         else:
             raise ValueError("Position has to be one of 1 or 2.")
         self.receive_reply()
+
+    def sample(self, seconds: int, sync=False):
+        """Move valve to position 2 for `seconds`, then switch back to 1.
+
+        Args:
+            seconds (int): Number of seconds to stay in position 2.
+            sync (bool): Whether to block the thread during sampling.
+        """
+        if sync:
+            self.move_to_position(2)
+            time.sleep(seconds)
+            self.move_to_position(1)
+        else:
+            self.move_to_position(2)
+            threading.Timer(seconds, lambda: self.move_to_position(1)).start()
