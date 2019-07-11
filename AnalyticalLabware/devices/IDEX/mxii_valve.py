@@ -1,9 +1,18 @@
 from SerialLabware.controllers import AbstractDistributionValve
 from SerialLabware.controllers import LabDeviceCommands
+from SerialLabware.exceptions import SLDeviceError
 
 class IDEXMXIIValveCommands(LabDeviceCommands):
     MOVE_TO_1 = {"name": "P01"}
     MOVE_TO_2 = {"name": "P02"}
+    READ_STATUS = {"name": "S00", "parse": {"type": int}}
+    STATUS_CODES = {44: "Data CRC error",
+                    55: "Data integrity error",
+                    66: "Valve positioning error",
+                    77: "Valve configuration error or command error",
+                    88: "Non-volatile memory error",
+                    99: "Valve cannot be homed"}
+
 
 class IDEXMXIIValve(AbstractDistributionValve):
     """Two-position IDEX MX Series II HPLC valve."""
@@ -16,11 +25,37 @@ class IDEXMXIIValve(AbstractDistributionValve):
     def initialise_device(self):
         super().initialise_device()
 
-    def is_connected(self):
-        pass
+    def is_connected(self) -> bool:
+        try:
+            self.send_message(self.cmd.READ_STATUS)
+            self.receive_reply()
+        except:
+            return False
+        return True
 
-    def is_ready(self):
-        pass
+    @property
+    def status(self) -> int:
+        self.send_message(self.cmd.READ_STATUS)
+        reply = self.receive_reply()
+        # Look up error code; status is okay if no error.
+        self.logger.debug("IDEX valve :: OK - status = %s (%s).", reply,
+                          self.cmd.STATUS_CODES.get(reply, "OK"))
+        return reply
+
+    def is_ready(self) -> bool:
+        return self.status not in self.cmd.STATUS_CODES
+
+    @property
+    def current_position(self):
+        status = self.status
+        if status not in self.cmd.STATUS_CODES:
+            # status is position
+            return status
+        else:
+            # status is error code
+            error = self.cmd.STATUS_CODES[status]
+            raise SLDeviceError(f"IDEX valve :: Error {status} ({error}).",
+                                status, self.cmd.STATUS_CODES[status])
 
     def move_home(self):
         """Move valve to home position.
@@ -35,7 +70,10 @@ class IDEXMXIIValve(AbstractDistributionValve):
         Position 1 corresponds to the home position, i.e. injected sample goes
         to the loop and eluent to waste.
         Position 2 corresponds usually represents the beginning of acquisition
-        where sample in the loop goes to analysis."""
+        where sample in the loop goes to analysis.
+
+        Args:
+            position (int): Valve position to move to."""
         if position == 1:
             self.send_message(self.cmd.MOVE_TO_1)
         elif position == 2:
