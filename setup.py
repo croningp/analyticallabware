@@ -10,7 +10,5 @@ setup(name="AnalyticalLabware",
       install_requires=[
             "SerialLabware",
             "advion-wrapper",
-            "matplotlib",
-            "numpy",
-            "pytest"],
+            "numpy"],
       zip_safe=False)
