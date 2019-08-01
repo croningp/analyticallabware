@@ -222,7 +222,6 @@ class RequestCommands:
     HARDWARE_REQUEST = "HardwareRequest"
     AVAILABLE_PROTOCOL_OPTIONS_REQUEST = "AvailableProtocolOptionsRequest"
     GET_REQUEST = "GetRequest"
-    ESTIMATE_DURATION_REQUEST = "EstimateDurationRequest"
     CHECK_SHIM_REQUEST = "CheckShimRequest"
     QUICK_SHIM_REQUEST = "QuickShimRequest"
     POWER_SHIM_REQUEST = "PowerShimRequest"
@@ -233,9 +232,10 @@ class RequestCommands:
     SAMPLE_TAG = "Sample"
     SOLVENT_TAG = "Solvent"
     DATA_FOLDER_TAG = "DataFolder"
+    DATA_FOLDER_METHODS = ["UserFolder", "TimeStamp", "TimeStampTree"]
     USER_DATA_TAG = "UserData"
 
-    def generate_request(self, tag, options):
+    def generate_request(self, tag, options=None):
         """Generate the XML request message
 
         The syntax for the request commands is slightly different from 
@@ -243,7 +243,7 @@ class RequestCommands:
 
         Args:
             tag (str): The main message tag for the request command
-            options (dict): Request options to be supplied to the request message
+            options (dict, optional): Request options to be supplied to the request message
         
         Returns:
             bytes: encoded to 'utf-8' string containing the valid XML request message
@@ -258,10 +258,10 @@ class RequestCommands:
         # with attributes as "command_option_key"="command_option_value"
         msg_root_element = ET.SubElement(msg_root, f"{tag}")
         # Spesical case - UserData
-        if tag == 'UserData':
+        if tag == "UserData":
             for key, value in options.items():
                 subelem = ET.SubElement(msg_root_element, "Data", {"key": f"{key}", "value": f"{value}"})
-        else:
+        elif options is not None:
             for key, value in options.items():
                 subelem = ET.SubElement(msg_root_element, f"{key}")
                 subelem.text = value
@@ -271,3 +271,66 @@ class RequestCommands:
         msg_tree.write(msg, encoding='utf-8', xml_declaration=True)
 
         return msg.getvalue()
+
+    def request_shim(self, shim_request_option):
+        """Returns the message for shimming the instrument"""
+
+        if shim_request_option not in [self.CHECK_SHIM_REQUEST, self.POWER_SHIM_REQUEST, self.QUICK_SHIM_REQUEST]:
+            raise RequestError("Supplied shimming option is not valid")
+        
+        return self.generate_request(shim_request_option)
+
+    def request_hardware(self):
+        """Returns the message for the hardware request"""
+        
+        return self.generate_request(self.HARDWARE_REQUEST)
+    
+    def request_available_protocol_options(self):
+        """Returns the message to request full list of available protocols and their options"""
+
+        return self.generate_request(self.AVAILABLE_PROTOCOL_OPTIONS_REQUEST)
+
+    def set_experiment_data(self, *, solvent, sample):
+        """Returns the message for setting the experiment specific data
+
+        Must be called using keyword arguments!
+
+        Args:
+            solvent (str): Solvent name to be saved with the spectrum data
+            sample (str): Sample name to be saved with the spectrum data
+        """
+        
+        return self.generate_request(self.SET_TAG, {self.SOLVENT_TAG: f"{solvent}", self.SAMPLE_TAG: f"{sample}"})    
+
+    def set_data_folder(self, data_folder_path, data_folder_method="TimeStamp"):
+        """Returns the message to set the data saving method and path
+        
+        Args:
+            data_folder_path (str): valid path to save the spectral data
+            data_folder_method (str, optional): one of three methods according to the manual:
+                'UserFolder' - data is saved directly in the provided path
+                'TimeStamp' (default) - data is saved in newly created folder in format
+                    yyyymmddhhmmss in the provided path
+                'TimeStampTree' - data is saved in the newly created folders in format
+                    yyyy/mm/dd/hh/mm/ss in the provided path
+        """
+        # Just to avoid errors from the device
+        if data_folder_method not in self.DATA_FOLDER_METHODS:
+            raise RequestError("Please use valid data folder method")
+
+        return self.generate_request(self.DATA_FOLDER_TAG, {data_folder_method: data_folder_path})
+
+    def set_user_data(self, user_data):
+        """Returns the message for setting the user data
+
+        Args:
+            user_data (dict): Dictionary containg user specific data, will be saved
+                in the "acq.par" file together with spectral data
+        """
+
+        return self.generate_request(self.USER_DATA_TAG, user_data)
+
+    def abort(self):
+        """Returns the message to abort the current operation"""
+
+        return self.generate_request(self.ABORT_REQUEST)
