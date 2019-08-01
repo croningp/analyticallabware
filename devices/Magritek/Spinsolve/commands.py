@@ -216,4 +216,54 @@ class ProtocolCommands:
         return self.get_command('RM')
 
 class RequestCommands:
-    """contains misc commands for NMR operation"""
+    """Contains misc commands for NMR operation"""
+
+    ### List of supported requests for easier maintenance ###
+    HARDWARE_REQUEST = "HardwareRequest"
+    AVAILABLE_PROTOCOL_OPTIONS_REQUEST = "AvailableProtocolOptionsRequest"
+    GET_REQUEST = "GetRequest"
+    ESTIMATE_DURATION_REQUEST = "EstimateDurationRequest"
+    CHECK_SHIM_REQUEST = "CheckShimRequest"
+    QUICK_SHIM_REQUEST = "QuickShimRequest"
+    POWER_SHIM_REQUEST = "PowerShimRequest"
+    ABORT_REQUEST = "Abort"
+
+    # Tags for setting user specific information
+    SET_TAG = "Set"
+    SAMPLE_TAG = "Sample"
+    SOLVENT_TAG = "Solvent"
+    DATA_FOLDER_TAG = "DataFolder"
+    USER_DATA_TAG = "UserData"
+
+    def generate_request(self, tag, options):
+        """Generate the XML request message
+
+        The syntax for the request commands is slightly different from 
+        protocol commands, so this separate method is present
+
+        Args:
+            tag (str): The main message tag for the request command
+            options (dict): Request options to be supplied to the request message
+        
+        Returns:
+            bytes: encoded to 'utf-8' string containing the valid XML request message
+            to be sent to the NMR instrument
+        """
+
+        # Creating an empty bytes object to write the future XML message
+        msg = BytesIO()
+        # First element of the XML message
+        msg_root = ET.Element("Message")
+        # First subelement of the message root as <"command"/> 
+        # with attributes as "command_option_key"="command_option_value"
+        msg_root_element = ET.SubElement(msg_root, f"{tag}")
+        # If additional options required
+        for key, value in options.items():
+            subelem = ET.SubElement(msg_root_element, f"{key}")
+            subelem.text = value
+        # Growing a message XML tree with the <Message /> root
+        msg_tree = ET.ElementTree(msg_root)
+        # Writing the message tree to msg object
+        msg_tree.write(msg, encoding='utf-8', xml_declaration=True)
+
+        return msg.getvalue()
