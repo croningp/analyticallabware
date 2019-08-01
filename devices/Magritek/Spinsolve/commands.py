@@ -54,6 +54,16 @@ def load_commands_from_device(device=None):
 class ProtocolCommands:
     """Provides API for accessing NMR commands"""
 
+    PROTON_QUICKSCAN = ("1D PROTON", {"Scan": "QuickScan"})
+    PROTON_STANDARDSCAN = ("1D PROTON", {"Scan": "StandardScan"})
+    PROTON_POWERSCAN = ("1D PROTON", {"Scan": "PowerScan"})
+
+    CARBON_DEFAULT = ("1D CARBON", {"Number": "16", "RepetitionTime": "3"})
+    
+    FLUORINE_QUICKSCAN = ("1D FLUORINE", {"Scan": "QuickScan"})
+    FLUORINE_STANDARDSCAN = ("1D FLUORINE", {"Scan": "StandardScan"})
+    FLUORINE_POWERSCAN = ("1D FLUORINE", {"Scan": "PowerScan"})
+
     def __init__(self, protocols_path=None, device=None):
         """Initialiser for the protocol commands
         
@@ -166,5 +176,43 @@ class ProtocolCommands:
         except KeyError:
             raise ProtocolError('Supplied protocol <{}> is not a valid protocol'.format(protocol_name)) from None
         return (protocol_name, protocol_options)
+    
+    ### For easier access the following properties are added ###
+
+    @property
+    def proton(self):
+        """Gets protocol name and available options for simple 1D Proton experiment"""
+        return self.get_command('1D PROTON')
+    
+    @property
+    def proton_extended(self):
+        """Gets protocol name and available options for extended 1D Proton experiment"""
+        return self.get_command('1D EXTENDED+')
+
+    @property
+    def carbon(self):
+        """Gets protocol name and available options for simple 1D Carbon experiment"""
+        return self.get_command('1D CARBON')
+    
+    @property
+    def carbon_extended(self):
+        """Gets protocol name and available options for extended 1D Carbon experiment"""
+        return self.get_command('1D CARBON+')
+
+    @property
+    def fluorine(self):
+        """Gets protocol name and available options for simple 1D Fluorine experiment"""
+        return self.get_command('1D FLUORINE')
+
+    @property
+    def fluorine_extended(self):
+        """Gets protocol name and available options for extended 1D Fluorine experiment"""
+        return self.get_command('1D FLUORINE+')
+
+    @property
+    def reaction_monitoring_protocol(self):
+        """Gets protocol name and available options for reaction monitoring experiment"""
+        return self.get_command('RM')
+
 class RequestCommands:
     """contains misc commands for NMR operation"""
