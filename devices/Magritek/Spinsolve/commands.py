@@ -1,9 +1,31 @@
 """This module provides access and use of the Spinsolve NMR remote commands"""
 
+import os
+from io import BytesIO
+
+import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import ParseError
+
+from .exceptions import ProtocolError, ProtocolOptionsError
 
 def load_commands_from_file(protocol_options_file=None):
     """Loads NMR protocol commands and options from XML file.
 
+    If the file is not provided, will search for it in the default Margitek folder
+
+    Args:
+        protocol_options_file (str, optional): An external file containing XML commands
+            for Spinsolve NMR. Usually 'ProtocolOptions.xml'
+
+    Returns:
+        dict: A dictionary containg protocol name as a key and XML element as a value
+            For example:
+
+            {'1D PROTON': <Element 'Protocol'>, '1D CARBON': <Element 'Protocol'>}
+
+    Raises:
+        ProtocolError: In case the XML command file wasn't found or the supplied file is not 
+            a valid XML file
     """
     # If the xml wasn't provided check for it in the standard Magritek folder
     # where it is created by default, <current_user>/Documents/Magritek/Spinsolve
@@ -34,6 +56,17 @@ class ProtocolCommands:
 
     def __init__(self, protocols_path=None, device=None):
         """Initialiser for the protocol commands
+        
+        Loads the commands from the supplied file or directly from the NMR
+        instrument and stores them as an internal dictionary. Also provides
+        methods to access specific commands and generate valid XML strings
+        from supplied command tuple
+
+        Args:
+            protocol_path (str, optional): Optional path to the location of the 
+                ProtocolOptions.xml file
+            device (Any): Reserved for future use to load command list from the 
+                instrument
         """
 
         # Obtaining the file path
@@ -44,8 +77,33 @@ class ProtocolCommands:
             self._protocols = load_commands_from_device(device)
         else:
             self._protocols = load_commands_from_file(protocol_options_file)
+
     def generate_command(self, protocol_and_options):
         """Generates XML tree for the commnad
+        
+        Args:
+            protocol_and_options (tuple): Tuple with protocol name and dictionary with protocol
+                option names and values. Example: ('1D PROTON', {'Scan': 'QuickScan'})
+        
+        Returns:
+            bytes: encoded to 'utf-8' string containing the valid XML message to be sent to the 
+                NMR instrument
+        
+        Raises:
+            ProtocolError: If the supplied protocol is not a valid command
+            ProtocolOptionsError: If the supplied option or its value are not validated in a protocol
+                command
+
+        Example:
+            >>> generate_command(
+                    ('valid_protocol_name',
+                    {'valid_protocol_option_name': 'valid_protocol_option_value'}))
+            b'<?xml version=\'1.0\' encoding=\'utf-8\'?>
+                <Message>
+                    <Protocol protocol="valid_protocol_name">
+                        <Option name="valid_protocol_option_name" value="valid_protocol_option_value" />
+                    </Protocol>
+                </Message>'
         """
 
         # Checking supplied argument types
@@ -65,6 +123,7 @@ class ProtocolCommands:
             raise
         except (KeyError, TypeError):
             raise ProtocolOptionsError('Supplied option <{}> is not valid for the selected protocol <{}>'.format(key, protocol_and_options[0])) from None
+
         # Creating an empty bytes object to write the future XML message
         msg = BytesIO()
         # First element of the XML message
@@ -84,6 +143,16 @@ class ProtocolCommands:
         
     def get_command(self, protocol_name):
         """Obtains the command from XML with all available options
+        
+        Args:
+            protocol_name (str): Valid protocol name
+        
+        Returns:
+            tuple: Containg protocol name and protocol options with all possible
+                values packed as dictionary, as required by generate_command method
+        
+        Raises:
+            ProtocolError
         """
 
         protocol_options = {}
