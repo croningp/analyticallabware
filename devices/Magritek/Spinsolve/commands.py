@@ -257,10 +257,14 @@ class RequestCommands:
         # First subelement of the message root as <"command"/> 
         # with attributes as "command_option_key"="command_option_value"
         msg_root_element = ET.SubElement(msg_root, f"{tag}")
-        # If additional options required
-        for key, value in options.items():
-            subelem = ET.SubElement(msg_root_element, f"{key}")
-            subelem.text = value
+        # Spesical case - UserData
+        if tag == 'UserData':
+            for key, value in options.items():
+                subelem = ET.SubElement(msg_root_element, "Data", {"key": f"{key}", "value": f"{value}"})
+        else:
+            for key, value in options.items():
+                subelem = ET.SubElement(msg_root_element, f"{key}")
+                subelem.text = value
         # Growing a message XML tree with the <Message /> root
         msg_tree = ET.ElementTree(msg_root)
         # Writing the message tree to msg object
