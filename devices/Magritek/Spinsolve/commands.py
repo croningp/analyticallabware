@@ -47,6 +47,24 @@ class ProtocolCommands:
     def generate_command(self, protocol_and_options):
         """Generates XML tree for the commnad
         """
+
+        # Checking supplied argument types
+        if not isinstance(protocol_and_options, tuple) or len(protocol_and_options) != 2:
+            raise TypeError('Supplied argument must be a tuple with exactly two items: protocol name and protocol options as dict')
+        try:
+            full_command = self.get_command(protocol_and_options[0]) # Loading the full command dictionary for future validation
+        except KeyError:
+            raise ProtocolError('Supplied protocol <{}> is not a valid protocol'.format(protocol_and_options[0])) from None
+        try:
+            for key, value in protocol_and_options[1].items():
+                if value not in full_command[1].get(key):
+                    raise ProtocolOptionsError('Supplied value <{}> is not valid for the option <{}>'.format(value, key))
+        except AttributeError:
+            raise TypeError('Supplied options should be packed into dictionary') from None
+        except ProtocolOptionsError:
+            raise
+        except (KeyError, TypeError):
+            raise ProtocolOptionsError('Supplied option <{}> is not valid for the selected protocol <{}>'.format(key, protocol_and_options[0])) from None
         # Creating an empty bytes object to write the future XML message
         msg = BytesIO()
         # First element of the XML message
