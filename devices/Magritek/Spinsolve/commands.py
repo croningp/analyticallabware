@@ -6,7 +6,7 @@ from io import BytesIO
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 
-from .exceptions import ProtocolError, ProtocolOptionsError
+from .exceptions import ProtocolError, ProtocolOptionsError, RequestError
 
 def load_commands_from_file(protocol_options_file=None):
     """Loads NMR protocol commands and options from XML file.
@@ -121,7 +121,7 @@ class ProtocolCommands:
         if not isinstance(protocol_and_options, tuple) or len(protocol_and_options) != 2:
             raise TypeError('Supplied argument must be a tuple with exactly two items: protocol name and protocol options as dict')
         try:
-            full_command = self.get_command(protocol_and_options[0]) # Loading the full command dictionary for future validation
+            full_command = self.get_protocol(protocol_and_options[0]) # Loading the full command dictionary for future validation
         except KeyError:
             raise ProtocolError('Supplied protocol <{}> is not a valid protocol'.format(protocol_and_options[0])) from None
         try:
@@ -152,7 +152,7 @@ class ProtocolCommands:
 
         return msg.getvalue()
         
-    def get_command(self, protocol_name):
+    def get_protocol(self, protocol_name):
         """Obtains the command from XML with all available options
         
         Args:
@@ -183,37 +183,37 @@ class ProtocolCommands:
     @property
     def proton(self):
         """Gets protocol name and available options for simple 1D Proton experiment"""
-        return self.get_command('1D PROTON')
+        return self.get_protocol('1D PROTON')
     
     @property
     def proton_extended(self):
         """Gets protocol name and available options for extended 1D Proton experiment"""
-        return self.get_command('1D EXTENDED+')
+        return self.get_protocol('1D EXTENDED+')
 
     @property
     def carbon(self):
         """Gets protocol name and available options for simple 1D Carbon experiment"""
-        return self.get_command('1D CARBON')
+        return self.get_protocol('1D CARBON')
     
     @property
     def carbon_extended(self):
         """Gets protocol name and available options for extended 1D Carbon experiment"""
-        return self.get_command('1D CARBON+')
+        return self.get_protocol('1D CARBON+')
 
     @property
     def fluorine(self):
         """Gets protocol name and available options for simple 1D Fluorine experiment"""
-        return self.get_command('1D FLUORINE')
+        return self.get_protocol('1D FLUORINE')
 
     @property
     def fluorine_extended(self):
         """Gets protocol name and available options for extended 1D Fluorine experiment"""
-        return self.get_command('1D FLUORINE+')
+        return self.get_protocol('1D FLUORINE+')
 
     @property
     def reaction_monitoring_protocol(self):
         """Gets protocol name and available options for reaction monitoring experiment"""
-        return self.get_command('RM')
+        return self.get_protocol('RM')
 
 class RequestCommands:
     """Contains misc commands for NMR operation"""
