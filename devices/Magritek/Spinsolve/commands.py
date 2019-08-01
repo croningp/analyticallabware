@@ -86,5 +86,16 @@ class ProtocolCommands:
         """Obtains the command from XML with all available options
         """
 
+        protocol_options = {}
+        try:
+            for option_element in self._protocols[protocol_name].findall('.//Option'):
+                option = option_element.get('name')
+                option_values = []
+                for value_element in option_element:
+                    option_values.append(value_element.text)
+                protocol_options[option] = option_values
+        except KeyError:
+            raise ProtocolError('Supplied protocol <{}> is not a valid protocol'.format(protocol_name)) from None
+        return (protocol_name, protocol_options)
 class RequestCommands:
     """contains misc commands for NMR operation"""
