@@ -54,6 +54,7 @@ def load_commands_from_device(device=None):
 class ProtocolCommands:
     """Provides API for accessing NMR commands"""
 
+    # Short list of most commonly used NMR protocols for easier maintenance
     PROTON_QUICKSCAN = ("1D PROTON", {"Scan": "QuickScan"})
     PROTON_STANDARDSCAN = ("1D PROTON", {"Scan": "StandardScan"})
     PROTON_POWERSCAN = ("1D PROTON", {"Scan": "PowerScan"})
@@ -75,7 +76,7 @@ class ProtocolCommands:
         Args:
             protocol_path (str, optional): Optional path to the location of the 
                 ProtocolOptions.xml file
-            device (Any): Reserved for future use to load command list from the 
+            device (Any, optional): Reserved for future use to load command list from the 
                 instrument
         """
 
@@ -89,7 +90,7 @@ class ProtocolCommands:
             self._protocols = load_commands_from_file(protocol_options_file)
 
     def generate_command(self, protocol_and_options):
-        """Generates XML tree for the commnad
+        """Generates XML message for the command to execute the requested protocol with requested options
         
         Args:
             protocol_and_options (tuple): Tuple with protocol name and dictionary with protocol
@@ -97,7 +98,7 @@ class ProtocolCommands:
         
         Returns:
             bytes: encoded to 'utf-8' string containing the valid XML message to be sent to the 
-                NMR instrument
+                NMR instrument to start the requested protocol
         
         Raises:
             ProtocolError: If the supplied protocol is not a valid command
@@ -110,7 +111,7 @@ class ProtocolCommands:
                     {'valid_protocol_option_name': 'valid_protocol_option_value'}))
             b'<?xml version=\'1.0\' encoding=\'utf-8\'?>
                 <Message>
-                    <Protocol protocol="valid_protocol_name">
+                    <Start protocol="valid_protocol_name">
                         <Option name="valid_protocol_option_name" value="valid_protocol_option_value" />
                     </Protocol>
                 </Message>'
@@ -140,7 +141,7 @@ class ProtocolCommands:
         msg_root = ET.Element("Message")
         # First subelement of the message root as <"command"/> 
         # with attributes as "command_option_key"="command_option_value"
-        msg_root_command = ET.SubElement(msg_root, "Protocol", {"protocol": f"{protocol_and_options[0]}"})
+        msg_root_command = ET.SubElement(msg_root, "Start", {"protocol": f"{protocol_and_options[0]}"})
         # If additional options required
         for key, value in protocol_and_options[1].items():
             _ = ET.SubElement(msg_root_command, "Option", {"name": f"{key}", "value": f"{value}"})
