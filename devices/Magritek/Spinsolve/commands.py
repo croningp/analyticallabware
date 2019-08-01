@@ -32,9 +32,37 @@ def load_commands_from_device(device=None):
 class ProtocolCommands:
     """Provides API for accessing NMR commands"""
 
+    def __init__(self, protocols_path=None, device=None):
+        """Initialiser for the protocol commands
+        """
+
+        # Obtaining the file path
+        protocol_options_file = os.path.join(protocols_path, 'ProtocolOptions.xml')
+
+        #TODO If device is supplied load the commands from it
+        if device is not None:
+            self._protocols = load_commands_from_device(device)
+        else:
+            self._protocols = load_commands_from_file(protocol_options_file)
     def generate_command(self, protocol_and_options):
         """Generates XML tree for the commnad
         """
+        # Creating an empty bytes object to write the future XML message
+        msg = BytesIO()
+        # First element of the XML message
+        msg_root = ET.Element("Message")
+        # First subelement of the message root as <"command"/> 
+        # with attributes as "command_option_key"="command_option_value"
+        msg_root_command = ET.SubElement(msg_root, "Protocol", {"protocol": f"{protocol_and_options[0]}"})
+        # If additional options required
+        for key, value in protocol_and_options[1].items():
+            _ = ET.SubElement(msg_root_command, "Option", {"name": f"{key}", "value": f"{value}"})
+        # Growing a message XML tree with the <Message /> root
+        msg_tree = ET.ElementTree(msg_root)
+        # Writing the message tree to msg object
+        msg_tree.write(msg, encoding='utf-8', xml_declaration=True)
+
+        return msg.getvalue()
         
     def get_command(self, protocol_name):
         """Obtains the command from XML with all available options
