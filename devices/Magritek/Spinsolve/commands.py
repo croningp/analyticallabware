@@ -181,32 +181,32 @@ class ProtocolCommands:
     ### For easier access the following properties are added ###
 
     @property
-    def proton(self):
+    def proton_protocol(self):
         """Gets protocol name and available options for simple 1D Proton experiment"""
         return self.get_protocol('1D PROTON')
     
     @property
-    def proton_extended(self):
+    def proton_extended_protocol(self):
         """Gets protocol name and available options for extended 1D Proton experiment"""
         return self.get_protocol('1D EXTENDED+')
 
     @property
-    def carbon(self):
+    def carbon_protocol(self):
         """Gets protocol name and available options for simple 1D Carbon experiment"""
         return self.get_protocol('1D CARBON')
     
     @property
-    def carbon_extended(self):
+    def carbon_extended_protocol(self):
         """Gets protocol name and available options for extended 1D Carbon experiment"""
         return self.get_protocol('1D CARBON+')
 
     @property
-    def fluorine(self):
+    def fluorine_protocol(self):
         """Gets protocol name and available options for simple 1D Fluorine experiment"""
         return self.get_protocol('1D FLUORINE')
 
     @property
-    def fluorine_extended(self):
+    def fluorine_extended_protocol(self):
         """Gets protocol name and available options for extended 1D Fluorine experiment"""
         return self.get_protocol('1D FLUORINE+')
 
