@@ -51,6 +51,7 @@ class ReplyParser:
         if msg_element.tag == self.HARDWARE_RESPONSE_TAG:
             self.hardware_processing(msg_element)
         elif msg_element.tag == self.AVAILABLE_PROTOCOL_OPTIONS_RESPONSE_TAG:
+            # TODO
             raise NotImplementedError
         elif msg_element.tag in [self.CHECK_SHIM_RESPONSE_TAG, self.QUICK_SHIM_RESPONSE_TAG, self.POWER_SHIM_RESPONSE_TAG]:
             self.shimming_processing(msg_element)
@@ -64,14 +65,14 @@ class ReplyParser:
         """Process the message if the Hardware tag is present
         
         Args:
-            element (:obj: xml.etree.ElementTree.Element): an element containing all 
+            element (:obj: xml.etree.ElementTree.Element): An element containing all 
                 usefull information regarding Hardware response from the instrument
 
         Returns:
-            dict: dictionary with usefull hardware information
+            dict: Dictionary with usefull hardware information
 
         Raises:
-            HardwareError: in case the instrument is not connected
+            HardwareError: In case the instrument is not connected
         """
 
         # Checking if the instrument is physically connected
@@ -79,9 +80,9 @@ class ReplyParser:
         if connected_tag == "false":
             raise HardwareError("The instrument is not connected!")
         
-        software_tag = main_element.find(".//SpinsolveSoftware").text
+        software_tag = element.find(".//SpinsolveSoftware").text
 
-        spinsolve_tag = main_element.find(".//SpinsolveType").text
+        spinsolve_tag = element.find(".//SpinsolveType").text
         
         # TODO logging.info here
         if software_tag[:4] != "1.13":
@@ -92,12 +93,94 @@ class ReplyParser:
 
         return usefull_information_dict
     
-    def shimming_processing(self, element):
-        """Process the message if the Shim tag is present"""
+    def shimming_processing(self, element, line_width_threshold=1, base_width_threshold=40):
+        """Process the message if the Shim tag is present
         
-    
+        Args:
+            element (:obj: xml.etree.ElementTree.Element): An element containing all 
+                usefull information regarding shimming response from the instrument
+            line_width_threshold (int, optional): Line width threshold to judge the shimming quality
+            base_width_threshold (int, optional): Base width threshold to judge the shimming quality
+        
+        Returns:
+            True if shimming was successfull
+
+        Raises:
+            ShimmingError: If the shimming process falied
+        """
+
+        error_text = element.get("error")
+        if error_text:
+            # TODO logging.debug here to output full message
+            raise ShimmingError(f"Shimming error: {error_text}")
+        
+        # TODO logging.info the shimming results
+        # for child in element:
+        #    self.logger.info(f'{child.tag} - {child.text}')
+        
+        # Obtaining shimming parameters
+        line_width = round(float(element.find(".//LineWidth").text), 2)
+        base_width = round(float(element.find(".//BaseWidth").text), 2)
+        system_ready = element.find(".//SystemIsReady").text
+        
+        # Checking shimming criteria
+        if line_width > line_width_threshold:
+            # TODO logging.critical here
+            pass
+        if base_width > base_width_threshold:
+            # TODO logging.critical here
+            pass
+        if system_ready != "true":
+            # TODO logging.critical here
+            pass
+        else:
+            return True
+
     def status_processing(self, element):
-        """Process the message if the Status tag is present"""
+        """Process the message if the Status tag is present
+        
+        Logs the incoming messages and manages device_ready_flag 
+
+        Args:
+            element (:obj: xml.etree.ElementTree.Element): An element containing all 
+                usefull information regarding status response from the instrument
+        
+        Returns:
+            str: String containing the path to the saved NMR data
+        
+        Raises:
+            NMRError: in case of the protocol errors
+        """
+
+        # Valuable data from the message
+        state_tag = element[0].tag
+        state_elem = element[0]
+        protocol_attrib = state_elem.get("protocol")
+
+        # Checking for errors first
+        error_attrib = state_elem.get("error")
+        if error_attrib:
+            raise NMRError(f"Error running the protocol <{protocol_attrib}>: {error_attrib}")
+
+        status_attrib = state_elem.get("status")
+        percentage_attrib = state_elem.get("percentage")
+        seconds_remaining_attrib = state_elem.get("secondsRemaining")
+        
+        # Logging the data
+        if state_tag == "State":
+            # Resetting the event to False to block the incomming msg
+            self.device_ready_flag.clear()
+            # TODO logging.info(f'{status_attrib} the {protocol_attrib} protocol')
+            if status_attrib == "Ready":
+                # When device is ready, setting the event to True for the next protocol to be executed
+                self.device_ready_flag.set()
+                data_folder = state_elem.get("dataFolder")
+                # TODO logging.info(f'the protocol {protocol_attrib} is complete, the nmr is saved in {data_folder}')
+                return data_folder
+        
+        if state_tag == "Progress":
+            # TODO logging.info(f'the protocol {protocol_attrib} is performed, {percentage_attrib}% completed, {seconds_remaining_attrib} seconds remain') 
+            pass
 
 class SpinsolveConnection:
     """Provides API for the socket connection to the instrument"""
