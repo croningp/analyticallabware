@@ -1,10 +1,15 @@
 """Module provide API for the remote control of the Magritek SpinSolve NMR"""
+import logging
+import queue
+import socket
+import threading
+import time
 
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 
 from socket import gaierror
-
+from queue import Empty
 from .exceptions import NMRError, ShimmingError, HardwareError
 
 class ReplyParser:
@@ -183,13 +188,69 @@ class ReplyParser:
             pass
 
 class SpinsolveConnection:
-    """Provides API for the socket connection to the instrument"""
+    """Provides API for the socket connection to the Spinsolve NMR instrument"""
+
+    def __init__(self, HOST=None, PORT=13000):
+        """
+        Args:
+            HOST (str, optional): TCP/IP address of the local host
+            PORT (int, optional): TCP/IP listening port for Spinsolve software, 13000 by defualt
+                must be changed in the software if necessary
+        """
+
+        # Getting the localhost IP address if not provided by instantiation
+        # refer to socket module manual for details
+
+        try:
+            CURR_HOST = socket.gethostbyname(socket.getfqdn())
+        except gaierror:
+            CURR_HOST = socket.gethostbyname(socket.gethostname())
+
+        # Connection parameters
+        if HOST is not None:
+            self.HOST = CURR_HOST
+        else: 
+            self.HOST = HOST
+        self.PORT = PORT
+        self.BUFSIZE = 8192
+        self.BUFSIZE_LARGE = 32768 # Needed only for loading whole list of available protocols and options
+
+        self._connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._listener = None
+        self._device_ready_flag = threading.Event()
+        self._connection_lock = threading.Lock()
+        self.response_queue = queue.Queue()
+        self.data_queue = queue.Queue()
 
     def open_connection(self):
         """Open a socket connection to the Spinsolve software"""
 
+        self._connection.connect((self.HOST, self.PORT))
+        self._listener = threading.Thread(target=self.connection_listener, name="{}_listener".format(__name__), daemon=False)
+        self._listener.start()
+        # TODO logging.info here
+
     def connection_listener(self):
         """Checks for the new data and output it into receive buffer"""
+
+        # TODO logging.info here
+        while True:
+            with self._connection_lock:
+                chunk = self._connection.recv(self.BUFSIZE)
+                if chunk:
+                    try:
+                        last_reply = self.response_queue.get_nowait()
+                        # TODO logging.warning here
+                    except Empty:
+                        pass
+                    try:
+                        reply = b""
+                        while chunk:
+                            reply += b""
+                            # TODO logging.debug here
+                            chunk = self._connection.recv(self.BUFSIZE)
+
+                    
 
     def transmit(self, message):
         """Sends the message to the socket"""
@@ -250,3 +311,6 @@ class SpinsolveNMR:
 
     def fluorine_extended(self, options):
         """Initialise extended 1D Fluorine experiment"""
+
+    def wait_until_ready(self):
+        """Blocks until the instrument is ready"""
