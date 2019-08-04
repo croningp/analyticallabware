@@ -54,14 +54,14 @@ class ReplyParser:
 
         # Invocing specific methods for specific responds
         if msg_element.tag == self.HARDWARE_RESPONSE_TAG:
-            self.hardware_processing(msg_element)
+            return self.hardware_processing(msg_element)
         elif msg_element.tag == self.AVAILABLE_PROTOCOL_OPTIONS_RESPONSE_TAG:
             # TODO
             raise NotImplementedError
         elif msg_element.tag in [self.CHECK_SHIM_RESPONSE_TAG, self.QUICK_SHIM_RESPONSE_TAG, self.POWER_SHIM_RESPONSE_TAG]:
-            self.shimming_processing(msg_element)
+            return self.shimming_processing(msg_element)
         elif msg_element.tag == self.STATUS_TAG or msg_element.tag == self.COMPLETED_NOTIFICATION_TAG:
-            self.status_processing(msg_element)
+            return self.status_processing(msg_element)
         else:
             # TODO logging.info here
             pass
@@ -190,9 +190,11 @@ class ReplyParser:
 class SpinsolveConnection:
     """Provides API for the socket connection to the Spinsolve NMR instrument"""
 
-    def __init__(self, HOST=None, PORT=13000):
+    def __init__(self, device_ready_flag, HOST=None, PORT=13000):
         """
         Args:
+            device_ready_flag (:obj: threading.Event): an internal flag to indicate if the
+                instrument is ready for next operation
             HOST (str, optional): TCP/IP address of the local host
             PORT (int, optional): TCP/IP listening port for Spinsolve software, 13000 by defualt
                 must be changed in the software if necessary
@@ -216,11 +218,12 @@ class SpinsolveConnection:
         self.BUFSIZE_LARGE = 32768 # Needed only for loading whole list of available protocols and options
 
         self._connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._connection.settimeout(None)
         self._listener = None
-        self._device_ready_flag = threading.Event()
+        self._device_ready_flag = device_ready_flag
         self._connection_lock = threading.Lock()
         self.response_queue = queue.Queue()
-        self.data_queue = queue.Queue()
+        self.last_reply = None
 
     def open_connection(self):
         """Open a socket connection to the Spinsolve software"""
@@ -236,33 +239,71 @@ class SpinsolveConnection:
         # TODO logging.info here
         while True:
             with self._connection_lock:
-                chunk = self._connection.recv(self.BUFSIZE)
-                if chunk:
-                    try:
-                        last_reply = self.response_queue.get_nowait()
-                        # TODO logging.warning here
-                    except Empty:
-                        pass
-                    try:
-                        reply = b""
-                        while chunk:
-                            reply += b""
-                            # TODO logging.debug here
-                            chunk = self._connection.recv(self.BUFSIZE)
+                try:
+                    chunk = self._connection.recv(self.BUFSIZE)
+                    if chunk:
+                        try:
+                            self.last_reply = self.response_queue.get_nowait()
+                            # TODO logging.warning here
+                        except Empty:
+                            pass
+                        try:
+                            reply = b""
+                            while chunk:
+                                reply += chunk
+                                # TODO logging.debug here
+                                chunk = self._connection.recv(self.BUFSIZE)
+                        except socket.timeout:
+                            pass
+                        self.response_queue.put(reply)
+                except socket.timeout:
+                    pass
+                except OSError:
+                    return
+            time.sleep(0.2)
 
-                    
+    def transmit(self, msg):
+        """Sends the message to the socket
+        
+        Args:
+            msg (bytes): encoded message to be sent to the instrument
+        """
 
-    def transmit(self, message):
-        """Sends the message to the socket"""
+        # TODO logger.debug here
+        self._device_ready_flag.wait()
+        # TODO logger.debug here
+        with self._connection_lock:
+            self._connection.send(msg)
+        # TODO logger.debug here
 
     def receive(self):
         """Grabs the message from receive buffer and invoke parser to process it"""
 
+        with self._connection_lock:
+            # TODO logger.debug here
+            try:
+                reply = self.response_queue.get_nowait()
+                # TODO logger.debug here
+            except Empty:
+                # TODO logger.critical ("Response Queue was empty, something wrong")
+                pass
+            
+            return reply
+
     def close_connection(self):
         """Closes connection"""
 
+        # TODO logging.info here
+        if self._connection is not None:
+            self._connection.close()
+            self._connection.shutdown()
+            self._listener.join(timeout=3)
+        else:
+            pass
+
     def is_connection_open(self):
         """Checks if the connection to the instrument is still alive"""
+        raise NotImplementedError
 
 class SpinsolveNMR:
     """ Python class to handle Magritek Spinsolve NMR instrument """
