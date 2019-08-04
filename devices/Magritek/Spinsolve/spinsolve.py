@@ -11,6 +11,7 @@ from xml.etree.ElementTree import ParseError
 from socket import gaierror
 from queue import Empty
 from .exceptions import NMRError, ShimmingError, HardwareError
+from .commands import ProtocolCommands, RequestCommands
 
 class ReplyParser:
     """Parses usefull information from the xml reply"""
@@ -308,14 +309,30 @@ class SpinsolveConnection:
 class SpinsolveNMR:
     """ Python class to handle Magritek Spinsolve NMR instrument """
 
-    def __init__(self):
-        pass
+    def __init__(self, nmr_dir=None, address=None, port=13000):
+        """
+        Args:
+            nmr_dir (str, optional): directory to save NMR data, will be created at 
+                ./NMR_data if not provided
+            address (str, optional): IP address of the local host
+            host (int, optional): host for the TCP/IP connection to the Spinsolve software
+        """
+        self._device_ready_flag = threading.Event()
+        self._parser = ReplyParser(self._device_ready_flag)
+        self._connection = SpinsolveConnection(self._device_ready_flag, HOST=address, PORT=port)
+        self._cmd = ProtocolCommands()
+        self._req = RequestCommands()
 
     def connect(self):
         """Connects to the instrument"""
+        self._connection.open_connection()
 
     def initialise(self):
         """Initialises the instrument"""
+        cmd = self._req.request_hardware()
+        self._connection.transmit(cmd)
+        reply = self._connection.receive()
+        return self._parser.parse(reply)
 
     def is_instrument_ready(self):
         """Checks if the instrument is ready for the next command"""
