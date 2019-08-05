@@ -8,8 +8,6 @@ import time
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 
-from socket import gaierror
-from queue import Empty
 from .exceptions import NMRError, ShimmingError, HardwareError
 from .commands import ProtocolCommands, RequestCommands
 
@@ -201,11 +199,9 @@ class ReplyParser:
 class SpinsolveConnection:
     """Provides API for the socket connection to the Spinsolve NMR instrument"""
 
-    def __init__(self, device_ready_flag, HOST=None, PORT=13000):
+    def __init__(self, HOST=None, PORT=13000):
         """
         Args:
-            device_ready_flag (:obj: threading.Event): an internal flag to indicate if the
-                instrument is ready for next operation
             HOST (str, optional): TCP/IP address of the local host
             PORT (int, optional): TCP/IP listening port for Spinsolve software, 13000 by defualt
                 must be changed in the software if necessary
@@ -213,17 +209,16 @@ class SpinsolveConnection:
 
         # Getting the localhost IP address if not provided by instantiation
         # refer to socket module manual for details
-
         try:
             CURR_HOST = socket.gethostbyname(socket.getfqdn())
-        except gaierror:
+        except socket.gaierror:
             CURR_HOST = socket.gethostbyname(socket.gethostname())
 
         # Connection parameters
         if HOST is not None:
-            self.HOST = CURR_HOST
-        else: 
             self.HOST = HOST
+        else: 
+            self.HOST = CURR_HOST
         self.PORT = PORT
         self.BUFSIZE = 8192
 
