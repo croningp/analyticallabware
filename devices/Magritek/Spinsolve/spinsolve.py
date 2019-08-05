@@ -512,5 +512,14 @@ class SpinsolveNMR:
         cmd = self.cmd.generate_command((self.cmd.FLUORINE_EXTENDED, options))
         self.send_message(cmd)
         return self.receive_reply()
+
     def wait_until_ready(self):
         """Blocks until the instrument is ready"""
+
+        self._device_ready_flag.wait()
+
+    def calibrate(self, reference_peak, option="LockAndCalibrateOnly"):
+        """Performs shimming on sample protocol"""
+        
+        # TODO logging.warning - deprecation warning here
+        return self.shim_on_sample(reference_peak, option)
