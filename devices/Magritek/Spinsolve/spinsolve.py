@@ -250,27 +250,35 @@ class SpinsolveConnection:
         while True:
             with self._connection_lock:
                 try:
+                    # Receiving data
                     chunk = self._connection.recv(self.BUFSIZE)
                     if chunk:
                         try:
-                            self.last_reply = self.response_queue.get_nowait()
+                            # Checking if anything was already in the queue
+                            last_reply = self.response_queue.get_nowait()
                             # TODO logging.warning here
-                        except Empty:
+                        except queue.Empty:
                             pass
                         try:
+                            # In case the message is larger then self.BUFSIZE
                             reply = b""
                             while chunk:
                                 reply += chunk
                                 # TODO logging.debug here
                                 chunk = self._connection.recv(self.BUFSIZE)
+                        # If nothing else has been received
                         except socket.timeout:
                             pass
+                        # Put the received data in the receive buffer for further processing
                         self.response_queue.put(reply)
+                # When no more data is coming
                 except socket.timeout:
                     pass
                 except OSError:
+                    # TODO logging.critical here
                     return
-            time.sleep(0.2)
+            # Releasing lock
+            time.sleep(0.05)
 
     def transmit(self, msg):
         """Sends the message to the socket
