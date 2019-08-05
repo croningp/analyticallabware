@@ -467,24 +467,50 @@ class SpinsolveNMR:
 
     def get_duration(self, protocol):
         """Requests for an approximate duration of a specific protocol"""
+        raise NotImplementedError
 
-    def proton(self, options):
+    def proton(self, option="QuickScan"):
         """Initialise simple 1D Proton experiment"""
+
+        cmd = self.cmd.generate_command((self.cmd.PROTON, {"Scan": f"{option}"}))
+        self.send_message(cmd)
+        return self.receive_reply()
     
     def proton_extended(self, options):
         """Initialise extended 1D Proton experiment"""
 
-    def carbon(self, options):
+        cmd = self.cmd.generate_command((self.cmd.PROTON_EXTENDED, options))
+        self.send_message(cmd)
+        return self.receive_reply()
+
+    def carbon(self, options=None):
         """Initialise simple 1D Carbon experiment"""
+
+        if options is None:
+            options = {"Number": "128", "RepetitionTime": "2"}
+        cmd = self.cmd.generate_command((self.cmd.CARBON, options))
+        self.send_message(cmd)
+        return self.receive_reply()
 
     def carbon_extended(self, options):
         """Initialise extended 1D Carbon experiment"""
 
-    def fluorine(self, options):
+        cmd = self.cmd.generate_command((self.cmd.CARBON_EXTENDED, options))
+        self.send_message(cmd)
+        return self.receive_reply()
+
+    def fluorine(self, option="QuickScan"):
         """Initialise simple 1D Fluorine experiment"""
+
+        cmd = self.cmd.generate_command((self.cmd.FLUORINE, option))
+        self.send_message(cmd)
+        return self.receive_reply()
 
     def fluorine_extended(self, options):
         """Initialise extended 1D Fluorine experiment"""
 
+        cmd = self.cmd.generate_command((self.cmd.FLUORINE_EXTENDED, options))
+        self.send_message(cmd)
+        return self.receive_reply()
     def wait_until_ready(self):
         """Blocks until the instrument is ready"""

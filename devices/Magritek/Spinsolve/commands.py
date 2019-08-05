@@ -55,15 +55,17 @@ class ProtocolCommands:
     """Provides API for accessing NMR commands"""
 
     # Short list of most commonly used NMR protocols for easier maintenance
-    PROTON_QUICKSCAN = ("1D PROTON", {"Scan": "QuickScan"})
-    PROTON_STANDARDSCAN = ("1D PROTON", {"Scan": "StandardScan"})
-    PROTON_POWERSCAN = ("1D PROTON", {"Scan": "PowerScan"})
 
-    CARBON_DEFAULT = ("1D CARBON", {"Number": "16", "RepetitionTime": "3"})
-    
-    FLUORINE_QUICKSCAN = ("1D FLUORINE", {"Scan": "QuickScan"})
-    FLUORINE_STANDARDSCAN = ("1D FLUORINE", {"Scan": "StandardScan"})
-    FLUORINE_POWERSCAN = ("1D FLUORINE", {"Scan": "PowerScan"})
+    PROTON = "1D PROTON"
+    CARBON = "1D CARBON"
+    FLUORINE = "1D FLUORINE"
+
+    PROTON_EXTENDED = "1D PROTON+"
+    CARBON_EXTENDED = "1D CARBON+"
+    FLUORINE_EXTENDED = "1D FLUORINE+"
+
+    SHIM_ON_SAMPLE_PROTOCOL = "SHIM 1H SAMPLE"
+    SHIM_PROTOCOL = "SHIM"
 
     def __init__(self, protocols_path=None, device=None):
         """Initialiser for the protocol commands
