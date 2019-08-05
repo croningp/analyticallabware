@@ -32,8 +32,13 @@ class ReplyParser:
             device_ready_flag (:obj: "threading.Event"): The threading event indicating
                 that the instrument is ready for the next commands
         """
+
         self.device_ready_flag = device_ready_flag
         self.connected_tag = None # String to indicate if the instrument is connected, updated with HardwareRequest
+
+        # For shimming validation
+        self.shimming_line_width_threshold = 1
+        self.shimming_base_width_threshold = 40
     
     def parse(self, message):
         """Parses the message into valuable XML element
@@ -106,14 +111,12 @@ class ReplyParser:
 
         return usefull_information_dict
     
-    def shimming_processing(self, element, line_width_threshold=1, base_width_threshold=40):
+    def shimming_processing(self, element):
         """Process the message if the Shim tag is present
         
         Args:
             element (:obj: xml.etree.ElementTree.Element): An element containing all 
                 usefull information regarding shimming response from the instrument
-            line_width_threshold (int, optional): Line width threshold to judge the shimming quality
-            base_width_threshold (int, optional): Base width threshold to judge the shimming quality
         
         Returns:
             True if shimming was successfull
@@ -137,10 +140,10 @@ class ReplyParser:
         system_ready = element.find(".//SystemIsReady").text
         
         # Checking shimming criteria
-        if line_width > line_width_threshold:
+        if line_width > self.shimming_line_width_threshold:
             # TODO logging.critical here
             pass
-        if base_width > base_width_threshold:
+        if base_width > self.shimming_base_width_threshold:
             # TODO logging.critical here
             pass
         if system_ready != "true":
@@ -410,6 +413,25 @@ class SpinsolveNMR:
 
     def user_folder(self, path, method):
         """Indicate the path and the method for saving NMR data"""
+    def shim_on_sample(self, reference_peak, option="LockAndCalibrateOnly", *, line_width_threshold=1, base_width_threshold=40):
+        """Initialise shimming on sample protocol
+
+        Consider checking <Spinsolve>.cmd.get_protocol(<Spinsolve>.cmd.SHIM_ON_SAMPLE_PROTOCOL) for available options
+        
+        Args:
+            reference_peak (float): A reference peak to shim and calibrate on
+            option (str, optinla): A name of the instrument shimming method
+            line_width_threshold (int, optional): Spectrum line width at 50%, should be below 1 
+                for good quality spectrums
+            base_width_threshold (int, optional): Spectrum line width at 0.55%, should be below 40 
+                for good quality spectrums
+        """
+
+        self._parser.shimming_line_width_threshold = line_width_threshold
+        self._parser.shimming_base_width_threshold = base_width_threshold
+        cmd = self.cmd.shim_on_sample(reference_peak, option)
+        self.send_message(cmd)
+        return self.receive_reply()
 
     def user_data(self, data=None, *, solvent, sample):
         """Loads the user data to be saved with the NMR data"""
