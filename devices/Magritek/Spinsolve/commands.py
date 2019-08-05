@@ -304,14 +304,14 @@ class RequestCommands:
         
         return self.generate_request(self.SET_TAG, {self.SOLVENT_TAG: f"{solvent}", self.SAMPLE_TAG: f"{sample}"})    
 
-    def set_data_folder(self, data_folder_path, data_folder_method="TimeStamp"):
+    def set_data_folder(self, data_folder_path, data_folder_method):
         """Returns the message to set the data saving method and path
         
         Args:
             data_folder_path (str): valid path to save the spectral data
-            data_folder_method (str, optional): one of three methods according to the manual:
+            data_folder_method (str): one of three methods according to the manual:
                 'UserFolder' - data is saved directly in the provided path
-                'TimeStamp' (default) - data is saved in newly created folder in format
+                'TimeStamp' - data is saved in newly created folder in format
                     yyyymmddhhmmss in the provided path
                 'TimeStampTree' - data is saved in the newly created folders in format
                     yyyy/mm/dd/hh/mm/ss in the provided path

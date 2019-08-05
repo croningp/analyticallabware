@@ -406,8 +406,6 @@ class SpinsolveNMR:
         self.send_message(cmd)
         return self.receive_reply()
 
-    def user_folder(self, path, method):
-        """Indicate the path and the method for saving NMR data"""
     def shim_on_sample(self, reference_peak, option="LockAndCalibrateOnly", *, line_width_threshold=1, base_width_threshold=40):
         """Initialise shimming on sample protocol
 
@@ -428,8 +426,44 @@ class SpinsolveNMR:
         self.send_message(cmd)
         return self.receive_reply()
 
+    def user_folder(self, data_path, data_folder_method="TimeStamp"):
+        """Indicate the path and the method for saving NMR data
+
+        Args:
+            data_folder_path (str): Valid path to save the spectral data
+            data_folder_method (str, optinal): One of three methods according to the manual:
+                'UserFolder' - Data is saved directly in the provided path
+                'TimeStamp' (default) - Data is saved in newly created folder in format
+                    yyyymmddhhmmss in the provided path
+                'TimeStampTree' - Data is saved in the newly created folders in format
+                    yyyy/mm/dd/hh/mm/ss in the provided path
+
+        Returns:
+            bool: True if successfull
+        """
+
+        cmd = self.req_cmd.set_data_folder(data_path, data_folder_method)
+        self.send_message(cmd)
+        return True
+
     def user_data(self, data=None, *, solvent, sample):
-        """Loads the user data to be saved with the NMR data"""
+        """Loads the user data to be saved with the NMR data
+        
+        Args:
+            data (dict, optinal): Any user data that needs to be saved with the spectal
+                data in form of {'key': 'value'}.
+            solvent (str): Name of the solvent to be saved with the spectral data
+            sample (str): Sample name to be saved with the spectral data
+
+        Returns:
+            bool: True if successfull
+        """
+        if data is not None:
+            user_data_cmd = self.req_cmd.set_user_data(data)
+            self.send_message(user_data_cmd)
+        experiment_data_cmd = self.req_cmd.set_experiment_data(solvent=solvent, sample=sample)
+        self.send_message(experiment_data_cmd)
+        return True
 
     def get_duration(self, protocol):
         """Requests for an approximate duration of a specific protocol"""
