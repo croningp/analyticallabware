@@ -33,9 +33,12 @@ class ReplyParser:
                 that the instrument is ready for the next commands
         """
         self.device_ready_flag = device_ready_flag
+        self.connected_tag = None # String to indicate if the instrument is connected, updated with HardwareRequest
     
     def parse(self, message):
         """Parses the message into valuable XML element
+        
+        Depending on the element tag, invokes various parsing methods
         
         Args:
             message (bytes): The message received from the instrument
@@ -51,6 +54,7 @@ class ReplyParser:
             # TODO logging.debug here
             raise ParseError("Incorrect message received from the instrument, please check the log for the full message")
 
+        # Main message element
         msg_element = msg_root[0]
 
         # Invocing specific methods for specific responds
@@ -65,7 +69,7 @@ class ReplyParser:
             return self.status_processing(msg_element)
         else:
             # TODO logging.info here
-            pass
+            return message.decode()
     
     def hardware_processing(self, element):
         """Process the message if the Hardware tag is present
@@ -82,8 +86,8 @@ class ReplyParser:
         """
 
         # Checking if the instrument is physically connected
-        connected_tag = element.find(".//ConnectedToHardware").text
-        if connected_tag == "false":
+        self.connected_tag = element.find(".//ConnectedToHardware").text
+        if self.connected_tag == "false":
             raise HardwareError("The instrument is not connected!")
         
         software_tag = element.find(".//SpinsolveSoftware").text
@@ -91,11 +95,14 @@ class ReplyParser:
         spinsolve_tag = element.find(".//SpinsolveType").text
         
         # TODO logging.info here
-        if software_tag[:4] != "1.13":
+        if software_tag[:4] != "1.15":
             # TODO logging.warning here 'Current software version {} was not tested, use at your own risk'.format(software_tag))
             pass
         
-        usefull_information_dict = {"Connected": f"{connected_tag}", "SoftwareVersion": f"{software_tag}", "InstrumentType": f"{spinsolve_tag}"}
+        # If the instrument is connected, setting the ready flag
+        self.device_ready_flag.set()
+        
+        usefull_information_dict = {"Connected": f"{self.connected_tag}", "SoftwareVersion": f"{software_tag}", "InstrumentType": f"{spinsolve_tag}"}
 
         return usefull_information_dict
     
