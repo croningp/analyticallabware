@@ -351,6 +351,23 @@ class SpinsolveNMR:
         """Connects to the instrument"""
         self._connection.open_connection()
 
+    def send_message(self, msg):
+        """Sends the message to the instrument"""
+
+        # TODO logger.debug here
+        self._device_ready_flag.wait()
+        self._connection.transmit(msg)
+        # TODO logger.debug here
+
+    def receive_reply(self, parse=True):
+        """Receives the reply from the intrument and parses it if necessary"""
+
+        # TODO logging.debug here
+        reply = self._connection.receive()
+        if parse:
+            reply = self._parser.parse(reply)
+        return reply
+
     def initialise(self):
         """Initialises the instrument"""
         cmd = self._req.request_hardware()
