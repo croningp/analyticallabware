@@ -126,7 +126,9 @@ class ProtocolCommands:
             raise ProtocolError('Supplied protocol <{}> is not a valid protocol'.format(protocol_and_options[0])) from None
         try:
             for key, value in protocol_and_options[1].items():
-                if value not in full_command[1].get(key):
+                # If the value list is empty but the value is expected, e.g. SHIM 1H SAMPLE - SampleReference
+                # All value checks should be performed when the method called
+                if value not in full_command[1].get(key) and full_command[1].get(key):
                     raise ProtocolOptionsError('Supplied value <{}> is not valid for the option <{}>'.format(value, key))
         except AttributeError:
             raise TypeError('Supplied options should be packed into dictionary') from None
