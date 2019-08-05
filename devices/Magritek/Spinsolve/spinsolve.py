@@ -395,8 +395,18 @@ class SpinsolveNMR:
         else:
             return False
 
-    def shim_on_sample(self, reference_peak):
-        """Initialise shimming on sample protocol"""
+    def shim(self, option="CheckShimRequest"):
+        """Initialise shimming protocol
+        
+        Consider checking <Spinsolve>.cmd.get_protocol(<Spinsolve>.cmd.SHIM_PROTOCOL) for available options
+
+        Args:
+            option (str, optinal): A name of the instrument shimming method
+        """
+
+        cmd = self.req_cmd.request_shim(option)
+        self.send_message(cmd)
+        return self.receive_reply()
 
     def user_folder(self, path, method):
         """Indicate the path and the method for saving NMR data"""
