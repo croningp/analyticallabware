@@ -354,9 +354,14 @@ class SpinsolveNMR:
             self.connect()
             self.initialise()
 
+    def __del__(self):
+        self._connection.close_connection()
+
     def connect(self):
         """Connects to the instrument"""
+
         self._connection.open_connection()
+        # TODO logging.info here
 
     def send_message(self, msg):
         """Sends the message to the instrument"""
@@ -376,17 +381,19 @@ class SpinsolveNMR:
         return reply
 
     def initialise(self):
-        """Initialises the instrument"""
-        cmd = self._req.request_hardware()
+        """Initialises the instrument by sending HardwareRequest"""
+
+        cmd = self.req_cmd.request_hardware()
         self._connection.transmit(cmd)
-        reply = self._connection.receive()
-        return self._parser.parse(reply)
+        return self.receive_reply()
 
     def is_instrument_ready(self):
         """Checks if the instrument is ready for the next command"""
 
-    def shim(self):
-        """Initialise shimming protocol"""
+        if self._parser.connected_tag == "true" and self._device_ready_flag.is_set():
+            return True
+        else:
+            return False
 
     def shim_on_sample(self, reference_peak):
         """Initialise shimming on sample protocol"""
