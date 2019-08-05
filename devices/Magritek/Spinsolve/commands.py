@@ -184,6 +184,22 @@ class ProtocolCommands:
     
     ### For easier access the following properties are added ###
 
+    def shim_on_sample(self, reference_peak, option):
+        """Generates the command for shimming on sample
+        
+        Args:
+            reference_peak (float): Largest peak of the supplied sample used for shimming
+                and scale calibration
+            option (str): Shimming method
+        """
+        # Validation the supplied peak value
+        if isinstance(reference_peak, float):
+            reference_peak = str(round(reference_peak, 2))
+        else:
+            raise ProtocolOptionsError("Supplied reference peak must be float!")
+        
+        return self.generate_command((self.SHIM_ON_SAMPLE_PROTOCOL, {"SampleReference": f"{reference_peak}", "Shim": f"{option}"}))
+
     @property
     def proton_protocol(self):
         """Gets protocol name and available options for simple 1D Proton experiment"""
