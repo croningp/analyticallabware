@@ -295,8 +295,6 @@ class SpinsolveConnection:
         """
 
         # TODO logger.debug here
-        self._device_ready_flag.wait()
-        # TODO logger.debug here
         with self._connection_lock:
             self._connection.send(msg)
         # TODO logger.debug here
@@ -321,31 +319,40 @@ class SpinsolveConnection:
         # TODO logging.info here
         if self._connection is not None:
             self._connection.close()
-            self._connection.shutdown()
             self._listener.join(timeout=3)
         else:
+            # TODO logging.warning here
             pass
 
     def is_connection_open(self):
         """Checks if the connection to the instrument is still alive"""
+        # TODO
         raise NotImplementedError
 
 class SpinsolveNMR:
     """ Python class to handle Magritek Spinsolve NMR instrument """
 
-    def __init__(self, nmr_dir=None, address=None, port=13000):
+    def __init__(self, spinsolve_options_path, address=None, port=13000, auto_connect=True):
         """
         Args:
-            nmr_dir (str, optional): directory to save NMR data, will be created at 
-                ./NMR_data if not provided
             address (str, optional): IP address of the local host
             host (int, optional): host for the TCP/IP connection to the Spinsolve software
+            auto_connect (bool, optional): If you need to connect to the instrument immediately
+                after instantiation
         """
+
+        # Flag for check the instrument status
         self._device_ready_flag = threading.Event()
+
+        # Instantiating submodules
         self._parser = ReplyParser(self._device_ready_flag)
-        self._connection = SpinsolveConnection(self._device_ready_flag, HOST=address, PORT=port)
-        self._cmd = ProtocolCommands()
-        self._req = RequestCommands()
+        self._connection = SpinsolveConnection(HOST=address, PORT=port)
+        self.cmd = ProtocolCommands(spinsolve_options_path)
+        self.req_cmd = RequestCommands()
+
+        if auto_connect:
+            self.connect()
+            self.initialise()
 
     def connect(self):
         """Connects to the instrument"""
