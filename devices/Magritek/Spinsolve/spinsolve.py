@@ -216,19 +216,28 @@ class SpinsolveConnection:
             self.HOST = HOST
         self.PORT = PORT
         self.BUFSIZE = 8192
-        self.BUFSIZE_LARGE = 32768 # Needed only for loading whole list of available protocols and options
 
-        self._connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._connection.settimeout(None)
+        # Connection object, thread and lock
         self._listener = None
-        self._device_ready_flag = device_ready_flag
+        self._connection = None
         self._connection_lock = threading.Lock()
+
+        # Response queue for inter threading commincation
         self.response_queue = queue.Queue()
-        self.last_reply = None
 
     def open_connection(self):
         """Open a socket connection to the Spinsolve software"""
 
+        if self._connection is not None:
+            # TODO logging.warning open opened connection
+            return
+
+        # Creating socket
+        self._connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # TODO check the blocking socket timeout
+        self._connection.settimeout(0.1)
+
+        # Connecting and spawning listening thread
         self._connection.connect((self.HOST, self.PORT))
         self._listener = threading.Thread(target=self.connection_listener, name="{}_listener".format(__name__), daemon=False)
         self._listener.start()
