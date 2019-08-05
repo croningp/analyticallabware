@@ -302,18 +302,18 @@ class SpinsolveConnection:
         # TODO logger.debug here
 
     def receive(self):
-        """Grabs the message from receive buffer and invoke parser to process it"""
+        """Grabs the message from receive buffer"""
 
-        with self._connection_lock:
+        # TODO logger.debug here
+        try:
+            reply = self.response_queue.get(timeout=1)
+            self.response_queue.task_done()
             # TODO logger.debug here
-            try:
-                reply = self.response_queue.get_nowait()
-                # TODO logger.debug here
-            except Empty:
-                # TODO logger.critical ("Response Queue was empty, something wrong")
-                pass
+        except queue.Empty:
+            # TODO logger.critical ("Response Queue was empty, something wrong")
+            raise
             
-            return reply
+        return reply
 
     def close_connection(self):
         """Closes connection"""
