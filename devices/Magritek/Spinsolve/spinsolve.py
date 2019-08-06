@@ -34,6 +34,8 @@ class ReplyParser:
         self.device_ready_flag = device_ready_flag
         self.connected_tag = None # String to indicate if the instrument is connected, updated with HardwareRequest
 
+        self.logger = logging.getLogger("spinsolve.parser")
+
         # For shimming validation
         self.shimming_line_width_threshold = 1
         self.shimming_base_width_threshold = 40
@@ -47,14 +49,16 @@ class ReplyParser:
             message (bytes): The message received from the instrument
         """
 
+        self.logger.debug("Obtained the message: \n%s", message)
+
         # Checking the obtained message
         try:
             msg_root = ET.fromstring(message)
         except ParseError:
-            # TODO logging.debug here
+            self.logger.error("ParseError: invalid XML message received, check the full message \n <%s>", message.decode())
             raise ParseError("Invalid XML message received from the instrument, please check the log for the full message") from None
         if msg_root.tag != "Message" or len(msg_root) > 1:
-            # TODO logging.debug here
+            self.logger.error("ParseError: incorrect message received, check the full message \n <%s>", message.decode())
             raise ParseError("Incorrect message received from the instrument, please check the log for the full message")
 
         # Main message element
@@ -71,7 +75,7 @@ class ReplyParser:
         elif msg_element.tag == self.STATUS_TAG or msg_element.tag == self.COMPLETED_NOTIFICATION_TAG:
             return self.status_processing(msg_element)
         else:
-            # TODO logging.info here
+            self.logger.info("No specific parser requested, returning full decoded message")
             return message.decode()
     
     def hardware_processing(self, element):
@@ -89,6 +93,7 @@ class ReplyParser:
         """
 
         # Checking if the instrument is physically connected
+        self.logger.debug("Parsing message with <%s> tag", element.tag)
         self.connected_tag = element.find(".//ConnectedToHardware").text
         if self.connected_tag == "false":
             raise HardwareError("The instrument is not connected!")
@@ -97,10 +102,9 @@ class ReplyParser:
 
         spinsolve_tag = element.find(".//SpinsolveType").text
         
-        # TODO logging.info here
+        self.logger.info("The %s NMR instrument is successfully connected \nRunning under %s Spinsolve software version", spinsolve_tag, software_tag)
         if software_tag[:4] != "1.15":
-            # TODO logging.warning here 'Current software version {} was not tested, use at your own risk'.format(software_tag))
-            pass
+            self.logger.warning("The current software version <%s> was not tested, please update or use at your own risk", software_tag)
         
         # If the instrument is connected, setting the ready flag
         self.device_ready_flag.set()
@@ -122,15 +126,16 @@ class ReplyParser:
         Raises:
             ShimmingError: If the shimming process falied
         """
+        
+        self.logger.debug("Parsing message with <%s> tag", element.tag)
 
         error_text = element.get("error")
         if error_text:
-            # TODO logging.debug here to output full message
+            self.logger.error("ShimmingError: check the log for the full message")
             raise ShimmingError(f"Shimming error: {error_text}")
         
-        # TODO logging.info the shimming results
-        # for child in element:
-        #    self.logger.info(f'{child.tag} - {child.text}')
+        for child in element:
+            self.logger.info("%s - %s", child.tag, child.text)
         
         # Obtaining shimming parameters
         line_width = round(float(element.find(".//LineWidth").text), 2)
@@ -139,14 +144,12 @@ class ReplyParser:
         
         # Checking shimming criteria
         if line_width > self.shimming_line_width_threshold:
-            # TODO logging.critical here
-            pass
+            self.logger.critical("Shimming line width <%s> is above requested threshold <%s>, consider running another shimming method", line_width, self.shimming_line_width_threshold)
         if base_width > self.shimming_base_width_threshold:
-            # TODO logging.critical here
-            pass
+            self.logger.critical("Shimming line width <%s> is above requested threshold <%s>, consider running another shimming method", line_width, self.shimming_line_width_threshold)
         if system_ready != "true":
-            # TODO logging.critical here
-            pass
+            self.logger.critical("System is not ready after shimming, consider running another shimming method")
+            return False
         else:
             return True
 
@@ -166,6 +169,8 @@ class ReplyParser:
             NMRError: in case of the protocol errors
         """
 
+        self.logger.debug("Parsing message with <%s> tag", element.tag)
+
         # Valuable data from the message
         state_tag = element[0].tag
         state_elem = element[0]
@@ -174,6 +179,7 @@ class ReplyParser:
         # Checking for errors first
         error_attrib = state_elem.get("error")
         if error_attrib:
+            self.logger.error("NMRError: <%s>, check the log for the full message", error_attrib)
             raise NMRError(f"Error running the protocol <{protocol_attrib}>: {error_attrib}")
 
         status_attrib = state_elem.get("status")
@@ -184,17 +190,16 @@ class ReplyParser:
         if state_tag == "State":
             # Resetting the event to False to block the incomming msg
             self.device_ready_flag.clear()
-            # TODO logging.info(f'{status_attrib} the {protocol_attrib} protocol')
+            self.logger.info("%s the <%s> protocol", status_attrib, protocol_attrib)
             if status_attrib == "Ready":
                 # When device is ready, setting the event to True for the next protocol to be executed
                 self.device_ready_flag.set()
                 data_folder = state_elem.get("dataFolder")
-                # TODO logging.info(f'the protocol {protocol_attrib} is complete, the nmr is saved in {data_folder}')
+                self.logger.info("The protocol <%s> is complete, the NMR data is saved in <%s>", protocol_attrib, data_folder)
                 return data_folder
         
         if state_tag == "Progress":
-            # TODO logging.info(f'the protocol {protocol_attrib} is performed, {percentage_attrib}% completed, {seconds_remaining_attrib} seconds remain') 
-            pass
+            self.logger.info("The protocol <%s> is performing, %s%% completed, %s seconds remain", protocol_attrib, percentage_attrib, seconds_remaining_attrib)
 
 class SpinsolveConnection:
     """Provides API for the socket connection to the Spinsolve NMR instrument"""
