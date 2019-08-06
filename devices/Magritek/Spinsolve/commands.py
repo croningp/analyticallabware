@@ -48,9 +48,23 @@ def load_commands_from_file(protocol_options_file=None):
     protocols = {element.get("protocol"):element for element in commands_root.iter("Protocol")}
     return protocols
 
-def load_commands_from_device(device=None):
-    """Loads command list from the connected device"""
-    raise NotImplementedError
+def load_commands_from_device(device_message):
+    """Loads command list from the connected device
+    
+    Args:
+        device_message (bytes): A message from the instrument containing all possible
+            protocols and their options
+    
+    Returns:
+        dict: A dictionary containg protocol name as a key and XML element as a value
+            For example:
+
+            {'1D PROTON': <Element 'Protocol'>, '1D CARBON': <Element 'Protocol'>}
+    """
+
+    commands_root = ET.fromstring(device_message)
+    protocols = {element.get("protocol"):element for element in commands_root.iter("Protocol")}
+    return protocols
 
 class ProtocolCommands:
     """Provides API for accessing NMR commands"""
@@ -68,7 +82,7 @@ class ProtocolCommands:
     SHIM_ON_SAMPLE_PROTOCOL = "SHIM 1H SAMPLE"
     SHIM_PROTOCOL = "SHIM"
 
-    def __init__(self, protocols_path=None, device=None):
+    def __init__(self, protocols_path=None):
         """Initialiser for the protocol commands
         
         Loads the commands from the supplied file or directly from the NMR
@@ -88,11 +102,7 @@ class ProtocolCommands:
         # Obtaining the file path
         protocol_options_file = os.path.join(protocols_path, 'ProtocolOptions.xml')
 
-        #TODO If device is supplied load the commands from it
-        if device is not None:
-            self._protocols = load_commands_from_device(device)
-        else:
-            self._protocols = load_commands_from_file(protocol_options_file)
+        self._protocols = load_commands_from_file(protocol_options_file)
 
     def generate_command(self, protocol_and_options):
         """Generates XML message for the command to execute the requested protocol with requested options
@@ -187,6 +197,17 @@ class ProtocolCommands:
         except KeyError:
             raise ProtocolError('Supplied protocol <{}> is not a valid protocol'.format(protocol_name)) from None
         return (protocol_name, protocol_options)
+
+    def reload_commands(self, data):
+        """Reload the protocols from the supplied data
+
+        Args:
+            data (bytes): A valid XML file, usually acquired from the instrument
+        """
+
+        self.logger.debug("Requested protocols update")
+        self._protocols = load_commands_from_device(data)
+        self.logger.info("Protocols dictionary updated")
     
     ### For easier access the following properties are added ###
 

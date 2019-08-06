@@ -68,8 +68,7 @@ class ReplyParser:
         if msg_element.tag == self.HARDWARE_RESPONSE_TAG:
             return self.hardware_processing(msg_element)
         elif msg_element.tag == self.AVAILABLE_PROTOCOL_OPTIONS_RESPONSE_TAG:
-            # TODO
-            raise NotImplementedError
+            return message()
         elif msg_element.tag in [self.CHECK_SHIM_RESPONSE_TAG, self.QUICK_SHIM_RESPONSE_TAG, self.POWER_SHIM_RESPONSE_TAG]:
             return self.shimming_processing(msg_element)
         elif msg_element.tag == self.STATUS_TAG or msg_element.tag == self.COMPLETED_NOTIFICATION_TAG:
@@ -390,7 +389,7 @@ class SpinsolveNMR:
 
         self.logger.info("Request to close the connection received")
         self._connection.close_connection()
-        self.logger.info("The instrument is disconnected, use connect() to reconnect")
+        self.logger.info("The instrument is disconnected")
 
     def send_message(self, msg):
         """Sends the message to the instrument"""
@@ -427,6 +426,15 @@ class SpinsolveNMR:
             return True
         else:
             return False
+
+    def load_commands(self):
+        """Requests the available commands from the instrument"""
+
+        cmd = self.req_cmd.request_available_protocol_options()
+        self.send_message(cmd)
+        reply = self.receive_reply()
+        self.cmd.reload_commands(reply)
+        self.logger.info("Commands updated, see available protocols \n <%s>", list(self.cmd._protocols.keys())) # pylint: disable=protected-access
 
     def shim(self, option="CheckShimRequest"):
         """Initialise shimming protocol
