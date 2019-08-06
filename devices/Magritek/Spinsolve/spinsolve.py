@@ -366,7 +366,12 @@ class SpinsolveNMR:
         """Connects to the instrument"""
 
         self._connection.open_connection()
+
+    def disconnect(self):
+        """Closes the socket connection"""
+
         # TODO logging.info here
+        self._connection.close_connection()
 
     def send_message(self, msg):
         """Sends the message to the instrument"""
