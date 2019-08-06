@@ -222,10 +222,11 @@ class SpinsolveConnection:
         self.PORT = PORT
         self.BUFSIZE = 8192
 
-        # Connection object, thread and lock
+        # Connection object, thread, lock and disconnection request tag
         self._listener = None
         self._connection = None
         self._connection_lock = threading.Lock()
+        self._connection_close_requested = threading.Event()
 
         # Response queue for inter threading commincation
         self.response_queue = queue.Queue()
@@ -253,6 +254,10 @@ class SpinsolveConnection:
 
         # TODO logging.info here
         while True:
+            if self._connection_close_requested.is_set():
+                self._connection_close_requested.clear()
+                # TODO logging.info here
+                return
             with self._connection_lock:
                 try:
                     # Receiving data
@@ -279,12 +284,9 @@ class SpinsolveConnection:
                 # When no more data is coming
                 except socket.timeout:
                     pass
-                except OSError:
-                    # TODO logging.critical here
-                    return
             # Releasing lock
             time.sleep(0.05)
-
+        
     def transmit(self, msg):
         """Sends the message to the socket
         
@@ -315,9 +317,14 @@ class SpinsolveConnection:
         """Closes connection"""
 
         # TODO logging.info here
+        self._connection_close_requested.set()
+        if self._listener is not None and self._listener.is_alive():
+            self._listener.join(timeout=3)
         if self._connection is not None:
             self._connection.close()
-            self._listener.join(timeout=3)
+            self._connection = None
+            self._connection_close_requested.clear()
+            # TODO logging.info here
         else:
             # TODO logging.warning here
             pass
