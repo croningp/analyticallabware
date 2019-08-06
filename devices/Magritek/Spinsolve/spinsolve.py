@@ -237,6 +237,10 @@ class SpinsolveConnection:
 
         self.logger = logging.getLogger("spinsolve.connection")
 
+
+    def __del__(self):
+        self.close_connection()
+
     def open_connection(self):
         """Open a socket connection to the Spinsolve software"""
 
@@ -374,9 +378,6 @@ class SpinsolveNMR:
         if auto_connect:
             self.connect()
             self.initialise()
-
-    def __del__(self):
-        self.disconnect()
 
     def connect(self):
         """Connects to the instrument"""
