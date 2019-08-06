@@ -355,37 +355,51 @@ class SpinsolveNMR:
         self.cmd = ProtocolCommands(spinsolve_options_path)
         self.req_cmd = RequestCommands()
 
+        self.logger = logging.getLogger("spinsolve")
+        self.logger.setLevel(logging.DEBUG)
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.DEBUG)
+        console_formatter = logging.Formatter(
+            "%(asctime)s ; %(module)s ; %(name)s ; %(message)s")
+        ch.setFormatter(console_formatter)
+        self.logger.addHandler(ch)
+
         if auto_connect:
             self.connect()
             self.initialise()
 
     def __del__(self):
-        self._connection.close_connection()
+        self.disconnect()
 
     def connect(self):
         """Connects to the instrument"""
 
+        self.logger.debug("Connection requested")
         self._connection.open_connection()
 
     def disconnect(self):
         """Closes the socket connection"""
 
-        # TODO logging.info here
+        self.logger.info("Request to close the connection received")
         self._connection.close_connection()
+        self.logger.info("The instrument is disconnected, use connect() to reconnect")
 
     def send_message(self, msg):
         """Sends the message to the instrument"""
 
         # TODO logger.debug here
+        self.logger.debug("Waiting for the device to be ready")
         self._device_ready_flag.wait()
+        self.logger.debug("Sending the message \n%s", msg)
         self._connection.transmit(msg)
-        # TODO logger.debug here
+        self.logger.debug("Message sent")
 
     def receive_reply(self, parse=True):
         """Receives the reply from the intrument and parses it if necessary"""
 
-        # TODO logging.debug here
+        self.logger.debug("Reply requested from the connection")
         reply = self._connection.receive()
+        self.logger.debug("Reply received")
         if parse:
             reply = self._parser.parse(reply)
         return reply
@@ -533,5 +547,5 @@ class SpinsolveNMR:
     def calibrate(self, reference_peak, option="LockAndCalibrateOnly"):
         """Performs shimming on sample protocol"""
         
-        # TODO logging.warning - deprecation warning here
+        self.logger.warning("DEPRECATION WARNING: use shim_on_sample() method instead")
         return self.shim_on_sample(reference_peak, option)
