@@ -395,7 +395,8 @@ class SpinsolveNMR:
     def send_message(self, msg):
         """Sends the message to the instrument"""
 
-        # TODO logger.debug here
+        if self._parser.connected_tag != "true":
+            raise HardwareError("The instrument is not connected, check the Spinsolve software")
         self.logger.debug("Waiting for the device to be ready")
         self._device_ready_flag.wait()
         self.logger.debug("Sending the message \n%s", msg)
