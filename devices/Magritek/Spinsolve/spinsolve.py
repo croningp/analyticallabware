@@ -231,32 +231,35 @@ class SpinsolveConnection:
         # Response queue for inter threading commincation
         self.response_queue = queue.Queue()
 
+        self.logger = logging.getLogger("spinsolve.connection")
+
     def open_connection(self):
         """Open a socket connection to the Spinsolve software"""
 
         if self._connection is not None:
-            # TODO logging.warning open opened connection
+            self.logger.warning("You are trying to open connection that is already open")
             return
 
         # Creating socket
         self._connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # TODO check the blocking socket timeout
         self._connection.settimeout(0.1)
 
         # Connecting and spawning listening thread
         self._connection.connect((self.HOST, self.PORT))
+        self.logger.debug("Connection at %s:%s is opened", self.HOST, self.PORT)
         self._listener = threading.Thread(target=self.connection_listener, name="{}_listener".format(__name__), daemon=False)
         self._listener.start()
-        # TODO logging.info here
+        self.logger.info("Connection created")
 
     def connection_listener(self):
         """Checks for the new data and output it into receive buffer"""
 
-        # TODO logging.info here
+        self.logger.info("Connection listener thread is starting")
+
         while True:
             if self._connection_close_requested.is_set():
                 self._connection_close_requested.clear()
-                # TODO logging.info here
+                self.logger.info("Connection listener finished")
                 return
             with self._connection_lock:
                 try:
@@ -266,7 +269,7 @@ class SpinsolveConnection:
                         try:
                             # Checking if anything was already in the queue
                             last_reply = self.response_queue.get_nowait()
-                            # TODO logging.warning here
+                            self.logger.warning("Unprocessed message in queue: \n%s", last_reply.decode())
                         except queue.Empty:
                             pass
                         try:
@@ -274,13 +277,14 @@ class SpinsolveConnection:
                             reply = b""
                             while chunk:
                                 reply += chunk
-                                # TODO logging.debug here
                                 chunk = self._connection.recv(self.BUFSIZE)
+                                self.logger.debug("Keep receiving the big message")
                         # If nothing else has been received
                         except socket.timeout:
                             pass
                         # Put the received data in the receive buffer for further processing
                         self.response_queue.put(reply)
+                        self.logger.debug("Message added to the response queue")
                 # When no more data is coming
                 except socket.timeout:
                     pass
@@ -294,21 +298,21 @@ class SpinsolveConnection:
             msg (bytes): encoded message to be sent to the instrument
         """
 
-        # TODO logger.debug here
         with self._connection_lock:
+            self.logger.debug("Sending the message")
             self._connection.send(msg)
-        # TODO logger.debug here
+            self.logger.debug("Message sent")
 
     def receive(self):
         """Grabs the message from receive buffer"""
 
-        # TODO logger.debug here
+        self.logger.debug("Receiving the message from the responce queue")
         try:
             reply = self.response_queue.get(timeout=1)
             self.response_queue.task_done()
-            # TODO logger.debug here
+            self.logger.debug("Message obtained from the queue")
         except queue.Empty:
-            # TODO logger.critical ("Response Queue was empty, something wrong")
+            self.logger.error("Queue was empty")
             raise
             
         return reply
@@ -316,18 +320,17 @@ class SpinsolveConnection:
     def close_connection(self):
         """Closes connection"""
 
-        # TODO logging.info here
+        self.logger.debug("Socket connection closure requested")
         self._connection_close_requested.set()
         if self._listener is not None and self._listener.is_alive():
             self._listener.join(timeout=3)
         if self._connection is not None:
             self._connection.close()
-            self._connection = None
+            self._connection = None # To avaiable subsequent calls to open_connection after connection was once closed
             self._connection_close_requested.clear()
-            # TODO logging.info here
+            self.logger.info("Socket connection closed")
         else:
-            # TODO logging.warning here
-            pass
+            self.logger.warning("You are trying to close nonexistent connection")
 
     def is_connection_open(self):
         """Checks if the connection to the instrument is still alive"""
