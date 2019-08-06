@@ -1,6 +1,7 @@
 """This module provides access and use of the Spinsolve NMR remote commands"""
 
 import os
+import logging
 from io import BytesIO
 
 import xml.etree.ElementTree as ET
@@ -82,6 +83,8 @@ class ProtocolCommands:
                 instrument
         """
 
+        self.logger = logging.getLogger("spinsolve.commandsapi")
+
         # Obtaining the file path
         protocol_options_file = os.path.join(protocols_path, 'ProtocolOptions.xml')
 
@@ -120,6 +123,7 @@ class ProtocolCommands:
         """
 
         # Checking supplied argument types
+        self.logger.debug("Checking the supplied attributes for the protocol <%s> - <%s>", protocol_and_options[0], protocol_and_options[1])
         if not isinstance(protocol_and_options, tuple) or len(protocol_and_options) != 2:
             raise TypeError('Supplied argument must be a tuple with exactly two items: protocol name and protocol options as dict')
         try:
@@ -153,6 +157,8 @@ class ProtocolCommands:
         msg_tree = ET.ElementTree(msg_root)
         # Writing the message tree to msg object
         msg_tree.write(msg, encoding='utf-8', xml_declaration=True)
+
+        self.logger.debug("Message built: <%s>", msg.getvalue())
 
         return msg.getvalue()
         
@@ -255,6 +261,10 @@ class RequestCommands:
     DATA_FOLDER_METHODS = ["UserFolder", "TimeStamp", "TimeStampTree"]
     USER_DATA_TAG = "UserData"
 
+    def __init__(self):
+        
+        self.logger = logging.getLogger("spinsolve.requestsapi")
+
     def generate_request(self, tag, options=None):
         """Generate the XML request message
 
@@ -269,6 +279,8 @@ class RequestCommands:
             bytes: encoded to 'utf-8' string containing the valid XML request message
             to be sent to the NMR instrument
         """
+
+        self.logger.debug("Generating request from the supplied attributes: tag - <%s>; options - <%s>", tag, options)
 
         # Creating an empty bytes object to write the future XML message
         msg = BytesIO()
@@ -289,6 +301,8 @@ class RequestCommands:
         msg_tree = ET.ElementTree(msg_root)
         # Writing the message tree to msg object
         msg_tree.write(msg, encoding='utf-8', xml_declaration=True)
+
+        self.logger.debug("Request generated: <%s>", msg.getvalue())
 
         return msg.getvalue()
 
