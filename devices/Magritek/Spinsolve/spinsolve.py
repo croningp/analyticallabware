@@ -567,3 +567,9 @@ class SpinsolveNMR:
         
         self.logger.warning("DEPRECATION WARNING: use shim_on_sample() method instead")
         return self.shim_on_sample(reference_peak, option)
+
+    @property
+    def protocols_list(self):
+        """Returns a list of all available protocols"""
+
+        return list(self.cmd)

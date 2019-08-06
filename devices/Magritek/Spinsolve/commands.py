@@ -104,6 +104,12 @@ class ProtocolCommands:
 
         self._protocols = load_commands_from_file(protocol_options_file)
 
+    def __iter__(self):
+        """Yields every protocol name"""
+
+        for protocol in self._protocols.keys():
+            yield protocol
+
     def generate_command(self, protocol_and_options):
         """Generates XML message for the command to execute the requested protocol with requested options
         
