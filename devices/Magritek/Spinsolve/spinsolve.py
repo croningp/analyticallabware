@@ -353,9 +353,10 @@ class SpinsolveConnection:
 class SpinsolveNMR:
     """ Python class to handle Magritek Spinsolve NMR instrument """
 
-    def __init__(self, spinsolve_options_path, address=None, port=13000, auto_connect=True):
+    def __init__(self, spinsolve_options_path=None, address=None, port=13000, auto_connect=True):
         """
         Args:
+            spinsolve_options_path (str, optional): Valid path to the ProtocolOptions.xml
             address (str, optional): IP address of the local host
             host (int, optional): host for the TCP/IP connection to the Spinsolve software
             auto_connect (bool, optional): If you need to connect to the instrument immediately
