@@ -9,7 +9,7 @@ from xml.etree.ElementTree import ParseError
 
 from .exceptions import ProtocolError, ProtocolOptionsError, RequestError
 
-def load_commands_from_file(protocol_options_file=None):
+def load_commands_from_file(protocols_path=None):
     """Loads NMR protocol commands and options from XML file.
 
     If the file is not provided, will search for it in the default Margitek folder
@@ -30,18 +30,18 @@ def load_commands_from_file(protocol_options_file=None):
     """
     # If the xml wasn't provided check for it in the standard Magritek folder
     # where it is created by default, <current_user>/Documents/Magritek/Spinsolve
-    if protocol_options_file is None:
+    if protocols_path is None:
         current_user = os.getlogin()
-        spinsolve_folder = os.path.join("C:", "Users", current_user, "Documents", "Magritek", "Spinsolve")
+        spinsolve_folder = os.path.join("C:\\", "Users", current_user, "Documents", "Magritek", "Spinsolve")
         spinsolve_commands_file = os.path.join(spinsolve_folder, "ProtocolOptions.xml")
         try:
             commands_tree = ET.parse(spinsolve_commands_file)
         except FileNotFoundError:
             raise ProtocolError("The ProtocolOptions file wasn't found in the original folder \n Please check or supply the file manually") from None
     else:
-        spinsolve_commands_file = protocol_options_file
+        protocol_options_file = os.path.join(protocols_path, 'ProtocolOptions.xml')
         try:
-            commands_tree = ET.parse(spinsolve_commands_file)
+            commands_tree = ET.parse(protocol_options_file)
         except ParseError:
             raise ProtocolError("Supply file is not a valid XML document") from None
     commands_root = commands_tree.getroot()
@@ -103,10 +103,7 @@ class ProtocolCommands:
 
         self.logger = logging.getLogger("spinsolve.commandsapi")
 
-        # Obtaining the file path
-        protocol_options_file = os.path.join(protocols_path, 'ProtocolOptions.xml')
-
-        self._protocols = load_commands_from_file(protocol_options_file)
+        self._protocols = load_commands_from_file(protocols_path)
 
     def __iter__(self):
         """Yields every protocol name"""
