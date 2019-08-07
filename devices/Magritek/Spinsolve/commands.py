@@ -110,7 +110,7 @@ class ProtocolCommands:
         for protocol in self._protocols.keys():
             yield protocol
 
-    def generate_command(self, protocol_and_options):
+    def generate_command(self, protocol_and_options, custom_tag="Start"):
         """Generates XML message for the command to execute the requested protocol with requested options
         
         Args:
@@ -165,7 +165,7 @@ class ProtocolCommands:
         msg_root = ET.Element("Message")
         # First subelement of the message root as <"command"/> 
         # with attributes as "command_option_key"="command_option_value"
-        msg_root_command = ET.SubElement(msg_root, "Start", {"protocol": f"{protocol_and_options[0]}"})
+        msg_root_command = ET.SubElement(msg_root, custom_tag, {"protocol": f"{protocol_and_options[0]}"})
         # If additional options required
         for key, value in protocol_and_options[1].items():
             _ = ET.SubElement(msg_root_command, "Option", {"name": f"{key}", "value": f"{value}"})
@@ -317,7 +317,7 @@ class RequestCommands:
         # with attributes as "command_option_key"="command_option_value"
         msg_root_element = ET.SubElement(msg_root, f"{tag}")
         # Spesical case - UserData
-        if tag == "UserData":
+        if tag == self.USER_DATA_TAG:
             for key, value in options.items():
                 subelem = ET.SubElement(msg_root_element, "Data", {"key": f"{key}", "value": f"{value}"})
         elif options is not None:
