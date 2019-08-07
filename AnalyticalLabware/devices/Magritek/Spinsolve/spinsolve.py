@@ -25,14 +25,17 @@ class ReplyParser:
     POWER_SHIM_RESPONSE_TAG = "PowerShimResponse"
     COMPLETED_NOTIFICATION_TAG = "CompletedNotificationType"
     
-    def __init__(self, device_ready_flag):
+    def __init__(self, device_ready_flag, data_folder_queue):
         """
         Args:
             device_ready_flag (:obj: "threading.Event"): The threading event indicating
                 that the instrument is ready for the next commands
+            data_folder_queue (:obj: "queue.Queue"): A queue object to store the data folder information
+                for subsequent access with Spectrum class
         """
 
         self.device_ready_flag = device_ready_flag
+        self.data_folder_queue = data_folder_queue
         self.connected_tag = None # String to indicate if the instrument is connected, updated with HardwareRequest
 
         self.logger = logging.getLogger("spinsolve.parser")
@@ -208,6 +211,7 @@ class ReplyParser:
                     self.device_ready_flag.set()
                 data_folder = state_elem.get("dataFolder")
                 self.logger.info("The protocol <%s> is complete, the NMR data is saved in <%s>", protocol_attrib, data_folder)
+                self.data_folder_queue.put(data_folder)
                 return data_folder
         
         if state_tag == "Progress":
@@ -384,14 +388,18 @@ class SpinsolveNMR:
                 after instantiation
         """
 
+        # Queue for storing path of the measured spectrum
+        self.data_folder_queue = queue.Queue()
+
         # Flag for check the instrument status
         self._device_ready_flag = threading.Event()
 
         # Instantiating submodules
-        self._parser = ReplyParser(self._device_ready_flag)
+        self._parser = ReplyParser(self._device_ready_flag, self.data_folder_queue)
         self._connection = SpinsolveConnection(HOST=address, PORT=port)
         self.cmd = ProtocolCommands(spinsolve_options_path)
         self.req_cmd = RequestCommands()
+        self.spectrum = Spectrum(self.data_folder_queue)
 
         self.logger = logging.getLogger("spinsolve")
         self.logger.setLevel(logging.DEBUG)
@@ -402,8 +410,6 @@ class SpinsolveNMR:
         ch.setFormatter(console_formatter)
         self.logger.addHandler(ch)
 
-        self.data_folder_queue = queue.Queue()
-        self.spectrum = Spectrum(self.data_folder_queue)
         if auto_connect:
             self.connect()
             self.initialise()
