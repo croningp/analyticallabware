@@ -8,7 +8,7 @@ import time
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 
-from .exceptions import NMRError, ShimmingError, HardwareError
+from .exceptions import NMRError, ShimmingError, HardwareError, RequestError
 from .commands import ProtocolCommands, RequestCommands
 
 class ReplyParser:
@@ -73,6 +73,8 @@ class ReplyParser:
             return self.shimming_processing(msg_element)
         elif msg_element.tag == self.STATUS_TAG or msg_element.tag == self.COMPLETED_NOTIFICATION_TAG:
             return self.status_processing(msg_element)
+        elif msg_element.tag == self.ESTIMATE_DURATION_RESPONSE_TAG:
+            return self.estimate_duration_processing(msg_element)
         else:
             self.logger.info("No specific parser requested, returning full decoded message")
             return message.decode()
@@ -199,6 +201,31 @@ class ReplyParser:
         
         if state_tag == "Progress":
             self.logger.info("The protocol <%s> is performing, %s%% completed, %s seconds remain", protocol_attrib, percentage_attrib, seconds_remaining_attrib)
+
+    def estimate_duration_processing(self, element):
+        """Process the message if protocol duration was requested
+        
+        Args:
+            element (:obj: xml.etree.ElementTree.Element): An element containing all 
+                usefull information regarding duration estimation from the instrument
+        
+        Returns:
+            int: Estimated duration for the requested protocol in seconds
+        
+        Raises:
+            RequestError: In case the instrument returns an error attribute
+        """
+
+        self.logger.debug("Parsing message with <%s> tag", element.tag)
+
+        error_text = element.get("error")
+        if error_text:
+            self.logger.error("RequestError: check the log for the full message")
+            raise RequestError(f"Duration request error: {error_text}")
+
+        duration_in_seconds = element.get("durationInSeconds")
+
+        return int(duration_in_seconds)
 
 class SpinsolveConnection:
     """Provides API for the socket connection to the Spinsolve NMR instrument"""
