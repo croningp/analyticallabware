@@ -259,7 +259,7 @@ class SpinsolveConnection:
         self._connection_close_requested = threading.Event()
 
         # Response queue for inter threading commincation
-        self.response_queue = queue.Queue()
+        self.response_queue = queue.Queue(maxsize=1)
 
         self.logger = logging.getLogger("spinsolve.connection")
 
