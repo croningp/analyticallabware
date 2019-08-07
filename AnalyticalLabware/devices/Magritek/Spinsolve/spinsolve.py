@@ -10,6 +10,7 @@ from xml.etree.ElementTree import ParseError
 
 from .exceptions import NMRError, ShimmingError, HardwareError, RequestError
 from .commands import ProtocolCommands, RequestCommands
+from .spectrum import Spectrum
 
 class ReplyParser:
     """Parses usefull information from the xml reply"""
@@ -401,6 +402,8 @@ class SpinsolveNMR:
         ch.setFormatter(console_formatter)
         self.logger.addHandler(ch)
 
+        self.data_folder_queue = queue.Queue()
+        self.spectrum = Spectrum(self.data_folder_queue)
         if auto_connect:
             self.connect()
             self.initialise()
