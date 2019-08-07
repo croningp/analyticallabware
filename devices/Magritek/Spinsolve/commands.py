@@ -82,6 +82,10 @@ class ProtocolCommands:
     SHIM_ON_SAMPLE_PROTOCOL = "SHIM 1H SAMPLE"
     SHIM_PROTOCOL = "SHIM"
 
+    # Although this is a request and should be in RequestCommands
+    # The XML message syntax is similar to "Start protocol"
+    ESTIMATE_DURATION_REQUEST = "EstimateDurationRequest"
+
     def __init__(self, protocols_path=None):
         """Initialiser for the protocol commands
         

@@ -509,9 +509,17 @@ class SpinsolveNMR:
         self.send_message(experiment_data_cmd)
         return True
 
-    def get_duration(self, protocol):
-        """Requests for an approximate duration of a specific protocol"""
-        raise NotImplementedError
+    def get_duration(self, protocol, options):
+        """Requests for an approximate duration of a specific protocol
+        
+        Args:
+            protocol (str): A name of the specific protocol
+            options (dict): Options for the selected protocol
+        """
+        
+        cmd = self.cmd.generate_command((protocol, options), self.cmd.ESTIMATE_DURATION_REQUEST)
+        self.send_message(cmd)
+        return self.receive_reply()
 
     def proton(self, option="QuickScan"):
         """Initialise simple 1D Proton experiment"""
