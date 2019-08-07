@@ -263,9 +263,6 @@ class SpinsolveConnection:
 
         self.logger = logging.getLogger("spinsolve.connection")
 
-
-    def __del__(self):
-        self.close_connection()
     def open_connection(self):
         """Open a socket connection to the Spinsolve software"""
 
@@ -290,10 +287,6 @@ class SpinsolveConnection:
         self.logger.info("Connection listener thread is starting")
 
         while True:
-            if self._connection_close_requested.is_set():
-                self._connection_close_requested.clear()
-                self.logger.info("Connection listener finished")
-                return
             try:
                 # Receiving data
                 chunk = self._connection.recv(self.BUFSIZE)
@@ -342,8 +335,6 @@ class SpinsolveConnection:
 
         self.logger.debug("Socket connection closure requested")
         self._connection_close_requested.set()
-        if self._listener is not None and self._listener.is_alive():
-            self._listener.join(timeout=3)
         if self._connection is not None:
             self._connection.close()
             self._connection = None # To avaiable subsequent calls to open_connection after connection was once closed
@@ -351,6 +342,8 @@ class SpinsolveConnection:
             self.logger.info("Socket connection closed")
         else:
             self.logger.warning("You are trying to close nonexistent connection")
+        if self._listener is not None and self._listener.is_alive():
+            self._listener.join(timeout=3)
 
     def is_connection_open(self):
         """Checks if the connection to the instrument is still alive"""
