@@ -411,13 +411,16 @@ class SpinsolveNMR:
 
     def receive_reply(self, parse=True):
         """Receives the reply from the intrument and parses it if necessary"""
-
-        self.logger.debug("Reply requested from the connection")
-        reply = self._connection.receive()
-        self.logger.debug("Reply received")
-        if parse:
-            reply = self._parser.parse(reply)
-        return reply
+        while True:
+            if self._connection.response_queue.empty():
+                continue
+            self.logger.debug("Reply requested from the connection")
+            reply = self._connection.receive()
+            self.logger.debug("Reply received")
+            if parse:
+                reply = self._parser.parse(reply)
+            if self._device_ready_flag.is_set():
+                return reply
 
     def initialise(self):
         """Initialises the instrument by sending HardwareRequest"""
