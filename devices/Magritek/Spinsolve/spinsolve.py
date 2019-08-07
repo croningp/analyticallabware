@@ -294,10 +294,22 @@ class SpinsolveConnection:
                 self._connection_close_requested.clear()
                 self.logger.info("Connection listener finished")
                 return
-                try:
-                    # Receiving data
+            try:
+                # Receiving data
+                chunk = self._connection.recv(self.BUFSIZE)
+                while chunk:
+                    # Put the received data in the receive buffer for further processing
+                    self.response_queue.put(chunk)
+                    self.logger.debug("Message added to the response queue")
                     chunk = self._connection.recv(self.BUFSIZE)
-                    self.logger.debug("Keep receiving the big message")
+                    if self.response_queue.full():
+                        # Checking if anything was already in the queue
+                        last_reply = self.response_queue.get_nowait()
+                        self.response_queue.task_done()
+                        self.logger.warning("Unprocessed message in queue: \n%s", last_reply.decode())
+            except ConnectionAbortedError:
+                self.logger.warning("Connection aborted")
+                break
         self.logger.info("Exiting listening thread")
         
     def transmit(self, msg):
