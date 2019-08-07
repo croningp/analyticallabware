@@ -68,7 +68,7 @@ class ReplyParser:
         if msg_element.tag == self.HARDWARE_RESPONSE_TAG:
             return self.hardware_processing(msg_element)
         elif msg_element.tag == self.AVAILABLE_PROTOCOL_OPTIONS_RESPONSE_TAG:
-            return message()
+            return message
         elif msg_element.tag in [self.CHECK_SHIM_RESPONSE_TAG, self.QUICK_SHIM_RESPONSE_TAG, self.POWER_SHIM_RESPONSE_TAG]:
             return self.shimming_processing(msg_element)
         elif msg_element.tag == self.STATUS_TAG or msg_element.tag == self.COMPLETED_NOTIFICATION_TAG:
