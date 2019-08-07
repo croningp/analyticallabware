@@ -256,7 +256,6 @@ class SpinsolveConnection:
         # Connection object, thread, lock and disconnection request tag
         self._listener = None
         self._connection = None
-        self._connection_lock = threading.Lock()
         self._connection_close_requested = threading.Event()
 
         # Response queue for inter threading commincation
@@ -267,7 +266,6 @@ class SpinsolveConnection:
 
     def __del__(self):
         self.close_connection()
-
     def open_connection(self):
         """Open a socket connection to the Spinsolve software"""
 
@@ -277,7 +275,7 @@ class SpinsolveConnection:
 
         # Creating socket
         self._connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._connection.settimeout(0.1)
+        self._connection.settimeout(None)
 
         # Connecting and spawning listening thread
         self._connection.connect((self.HOST, self.PORT))
@@ -296,35 +294,11 @@ class SpinsolveConnection:
                 self._connection_close_requested.clear()
                 self.logger.info("Connection listener finished")
                 return
-            with self._connection_lock:
                 try:
                     # Receiving data
                     chunk = self._connection.recv(self.BUFSIZE)
-                    if chunk:
-                        try:
-                            # Checking if anything was already in the queue
-                            last_reply = self.response_queue.get_nowait()
-                            self.logger.warning("Unprocessed message in queue: \n%s", last_reply.decode())
-                        except queue.Empty:
-                            pass
-                        try:
-                            # In case the message is larger then self.BUFSIZE
-                            reply = b""
-                            while chunk:
-                                reply += chunk
-                                chunk = self._connection.recv(self.BUFSIZE)
-                                self.logger.debug("Keep receiving the big message")
-                        # If nothing else has been received
-                        except socket.timeout:
-                            pass
-                        # Put the received data in the receive buffer for further processing
-                        self.response_queue.put(reply)
-                        self.logger.debug("Message added to the response queue")
-                # When no more data is coming
-                except socket.timeout:
-                    pass
-            # Releasing lock
-            time.sleep(0.05)
+                    self.logger.debug("Keep receiving the big message")
+        self.logger.info("Exiting listening thread")
         
     def transmit(self, msg):
         """Sends the message to the socket
@@ -333,10 +307,9 @@ class SpinsolveConnection:
             msg (bytes): encoded message to be sent to the instrument
         """
 
-        with self._connection_lock:
-            self.logger.debug("Sending the message")
-            self._connection.send(msg)
-            self.logger.debug("Message sent")
+        self.logger.debug("Sending the message")
+        self._connection.send(msg)
+        self.logger.debug("Message sent")
 
     def receive(self):
         """Grabs the message from receive buffer"""
