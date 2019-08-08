@@ -290,18 +290,20 @@ class SpinsolveConnection:
             try:
                 # Receiving data
                 chunk = self._connection.recv(self.BUFSIZE)
-                while chunk:
-                    # Put the received data in the receive buffer for further processing
-                    self.response_queue.put(chunk)
-                    self.logger.debug("Message added to the response queue")
-                    chunk = self._connection.recv(self.BUFSIZE)
-                    if self.response_queue.full():
-                        # Checking if anything was already in the queue
-                        last_reply = self.response_queue.get_nowait()
-                        self.response_queue.task_done()
-                        self.logger.warning("Unprocessed message in queue: \n%s", last_reply.decode())
+                self.logger.debug("New chunk %s", chunk.decode())
+                self.response_queue.put(chunk)
+                self.logger.debug("Message added to the response queue")
+                self.logger.debug("Waiting for message processing")
+                self.response_queue.join()
+                self.logger.debug("Message processed")
             except ConnectionAbortedError:
                 self.logger.warning("Connection aborted")
+                break
+            except ConnectionResetError:
+                self.logger.warning("Spinsolve app is closed")
+                break
+            except OSError:
+                self.logger.warning("Connection error")
                 break
         self.logger.info("Exiting listening thread")
         
@@ -336,6 +338,7 @@ class SpinsolveConnection:
         self.logger.debug("Socket connection closure requested")
         self._connection_close_requested.set()
         if self._connection is not None:
+            self._connection.shutdown(socket.SHUT_RDWR)
             self._connection.close()
             self._connection = None # To avaiable subsequent calls to open_connection after connection was once closed
             self._connection_close_requested.clear()
@@ -411,9 +414,8 @@ class SpinsolveNMR:
 
     def receive_reply(self, parse=True):
         """Receives the reply from the intrument and parses it if necessary"""
+        
         while True:
-            if self._connection.response_queue.empty():
-                continue
             self.logger.debug("Reply requested from the connection")
             reply = self._connection.receive()
             self.logger.debug("Reply received")
