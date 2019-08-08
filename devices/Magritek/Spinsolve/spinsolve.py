@@ -329,7 +329,7 @@ class SpinsolveConnection:
 
         self.logger.debug("Receiving the message from the responce queue")
         try:
-            reply = self.response_queue.get(timeout=1)
+            reply = self.response_queue.get()
             self.response_queue.task_done()
             self.logger.debug("Message obtained from the queue")
         except queue.Empty:
