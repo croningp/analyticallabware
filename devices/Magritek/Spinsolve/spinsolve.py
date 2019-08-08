@@ -130,6 +130,8 @@ class ReplyParser:
         
         self.logger.debug("Parsing message with <%s> tag", element.tag)
 
+        self.device_ready_flag.set()
+        
         error_text = element.get("error")
         if error_text:
             self.logger.error("ShimmingError: check the log for the full message")
@@ -190,11 +192,15 @@ class ReplyParser:
         # Logging the data
         if state_tag == "State":
             # Resetting the event to False to block the incomming msg
+            if status_attrib == "Running":
+                self.logger.debug("Device in operation, blocking the incomming messages")
             self.device_ready_flag.clear()
             self.logger.info("%s the <%s> protocol", status_attrib, protocol_attrib)
             if status_attrib == "Ready":
                 # When device is ready, setting the event to True for the next protocol to be executed
-                self.device_ready_flag.set()
+                # Delay the flag setting for the SHIM protocol
+                if protocol_attrib != "SHIM":
+                    self.device_ready_flag.set()
                 data_folder = state_elem.get("dataFolder")
                 self.logger.info("The protocol <%s> is complete, the NMR data is saved in <%s>", protocol_attrib, data_folder)
                 return data_folder
