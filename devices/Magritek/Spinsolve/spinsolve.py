@@ -303,9 +303,6 @@ class SpinsolveConnection:
                 self.logger.debug("New chunk %s", chunk.decode())
                 self.response_queue.put(chunk)
                 self.logger.debug("Message added to the response queue")
-                self.logger.debug("Waiting for message processing")
-                self.response_queue.join()
-                self.logger.debug("Message processed")
             except ConnectionAbortedError:
                 self.logger.warning("Connection aborted")
                 break
@@ -332,13 +329,9 @@ class SpinsolveConnection:
         """Grabs the message from receive buffer"""
 
         self.logger.debug("Receiving the message from the responce queue")
-        try:
-            reply = self.response_queue.get()
-            self.response_queue.task_done()
-            self.logger.debug("Message obtained from the queue")
-        except queue.Empty:
-            self.logger.error("Queue was empty")
-            raise
+        reply = self.response_queue.get()
+        self.response_queue.task_done()
+        self.logger.debug("Message obtained from the queue")
             
         return reply
 
