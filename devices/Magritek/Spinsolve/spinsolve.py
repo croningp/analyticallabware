@@ -257,7 +257,11 @@ class SpinsolveConnection:
         else: 
             self.HOST = CURR_HOST
         self.PORT = PORT
-        self.BUFSIZE = 8192
+
+        # The buffer size is so big for the only large message sent by the instrument - whole list of 
+        # Protocol options. One day will be reduced with addition of non-blocking parser/connection
+        # TODO
+        self.BUFSIZE = 65536
 
         # Connection object, thread, lock and disconnection request tag
         self._listener = None
