@@ -181,7 +181,11 @@ class ReplyParser:
 
         # Checking for errors first
         error_attrib = state_elem.get("error")
-        if error_attrib:
+
+        # Workaround for shimming protocol is required, since the instrument
+        # Continues with protocol execution even if an error was returned
+        # In such case the ShimmingError is raised when <shimmingmethod>ShimResponse message is received
+        if error_attrib and "SHIM" not in protocol_attrib:
             self.logger.error("NMRError: <%s>, check the log for the full message", error_attrib)
             raise NMRError(f"Error running the protocol <{protocol_attrib}>: {error_attrib}")
 
