@@ -269,7 +269,7 @@ class SpinsolveConnection:
         self._connection_close_requested = threading.Event()
 
         # Response queue for inter threading commincation
-        self.response_queue = queue.Queue(maxsize=1)
+        self.response_queue = queue.Queue()
 
         self.logger = logging.getLogger("spinsolve.connection")
 
@@ -350,6 +350,16 @@ class SpinsolveConnection:
             self.logger.warning("You are trying to close nonexistent connection")
         if self._listener is not None and self._listener.is_alive():
             self._listener.join(timeout=3)
+
+    def _flush_the_queue(self):
+        while True:
+            try:
+                data = self.response_queue.get_nowait()
+                if data:
+                    self.logger.warning("Response queue flushed, something inside %s", data)
+                self.response_queue.task_done()
+            except queue.Empty:
+                break
 
     def is_connection_open(self):
         """Checks if the connection to the instrument is still alive"""
