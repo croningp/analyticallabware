@@ -1,3 +1,6 @@
 .vscode
 .pytest_cache
 __pycache__
+devices/Magritek/Spinsolve.egg-info
+devices/Magritek/old_spectrum.py
+devices/Magritek/old_spinsolve.py
