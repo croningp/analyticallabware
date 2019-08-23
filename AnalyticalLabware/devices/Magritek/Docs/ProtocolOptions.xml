@@ -791,6 +791,7 @@
       </Option>
     </Protocol>
     <Protocol protocol="SHIM 1H SAMPLE">
+      <Option name="SampleReference"/>
       <Option name="Shim">
         <Value>CheckShim</Value>
         <Value>LockAndCalibrateOnly</Value>
