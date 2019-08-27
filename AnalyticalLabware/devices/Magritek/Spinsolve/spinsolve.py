@@ -618,3 +618,8 @@ class SpinsolveNMR:
         """Returns a list of all available protocols"""
 
         return list(self.cmd)
+
+    def get_spectrum(self):
+        """Loads the last measured spectra"""
+
+        return self.spectrum.load_spectra()
