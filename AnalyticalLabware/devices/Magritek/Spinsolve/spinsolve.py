@@ -294,7 +294,11 @@ class SpinsolveConnection:
         self._connection.settimeout(None)
 
         # Connecting and spawning listening thread
-        self._connection.connect((self.HOST, self.PORT))
+        try:
+            self._connection.connect((self.HOST, self.PORT))
+        except ConnectionRefusedError:
+            self._connection = None # Resetting the internal attribute
+            raise ConnectionRefusedError('Please run Spinsolve software and enable remote control!')
         self.logger.debug("Connection at %s:%s is opened", self.HOST, self.PORT)
         self._listener = threading.Thread(target=self.connection_listener, name="{}_listener".format(__name__), daemon=False)
         self._listener.start()
