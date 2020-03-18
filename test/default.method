@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<method>
+    <description></description>
+    <runTime>120</runTime>
+    <scanMode xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="RangeScanMode">
+        <start>10.0</start>
+        <end>1200.0</end>
+        <scanTime>2000.0</scanTime>
+        <scanDelay>5.0</scanDelay>
+    </scanMode>
+</method>
