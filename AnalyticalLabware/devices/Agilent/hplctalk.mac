@@ -1,12 +1,13 @@
 Name MonitorFile
     Parameter infile$, outfile$
-    Local in$, cmd_no, cmd$, response_no, response$, sep_position, cmd_len, last_cmd_no
+    Local in$, cmd_no, cmd$, response_no, response$, sep_position, cmd_len, last_cmd_no, result$
     Print "infile: ", infile$, "outfile: ", outfile$
     
     last_cmd_no = 0
 
     Repeat
         Sleep 0.5
+        result$ = ""
         Open infile$ for input as #3
         Input #3, in$
         Close #3
@@ -17,6 +18,8 @@ Name MonitorFile
 
         If cmd_no > last_cmd_no Then
             last_cmd_no = cmd_no
+
+            Print "Executing: ", in$
 
             ! Acknowledge reading command
             Open outfile$ for output as #4
@@ -29,12 +32,18 @@ Name MonitorFile
                 Evaluate cmd$
             EndIf
 
+            ! Write output
+            Open outfile$ for append as #4
+            Print #4, cmd_no, result$
+            Close #4
+
             ! Confirm command execution
-            Open outfile$ for output as #4
+            Open outfile$ for append as #4
             Print #4, cmd_no, "DONE"
             Close #4
         EndIf
     Until cmd$ = "Exit"
+    Print "Idle"
 EndMacro
 
 MonitorFile "C:\Users\group\Code\cmd", "C:\Users\group\Code\reply"
