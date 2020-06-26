@@ -49,6 +49,9 @@ class HPLCController:
         self.cmd_no += 1
         self._send(cmd, self.cmd_no)
 
+    def receive(self) -> str:
+        return self._receive(self.cmd_no)
+
     def reset_cmd_counter(self):
         self._send("last_cmd_no = 0", cmd_no=MAX_CMD_NO)
         self._receive(cmd_no=MAX_CMD_NO)
