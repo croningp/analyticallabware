@@ -1,5 +1,5 @@
 import time
-from os import path
+import os
 
 MAX_CMD_NO = 256
 
@@ -9,11 +9,14 @@ class HPLCController:
         """
         Initialize HPLC controller.
         """
-        self.cmd_file = path.join(dir, cmd_file)
-        self.reply_file = path.join(dir, reply_file)
+        self.cmd_file = os.path.join(dir, cmd_file)
+        self.reply_file = os.path.join(dir, reply_file)
         self.cmd_no = 0
 
-        # TODO: Create cmd_file if it doesn't exist
+        # Create files if needed
+        open(self.cmd_file, 'a').close()
+        open(self.reply_file, 'a').close()
+
 
         self.reset_cmd_counter()
 
@@ -61,6 +64,6 @@ class HPLCController:
 if __name__ == "__main__":
     import sys
 
-    controller = HPLCController(sys.argv[-1])
+    controller = HPLCController(os.path.dirname(sys.argv[-1]))
 
     controller.send('Print "Hi"')
