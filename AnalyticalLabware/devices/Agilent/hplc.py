@@ -37,11 +37,12 @@ class HPLCController:
             with open(self.reply_file, "r", encoding="utf_16") as reply_file:
                 response = reply_file.read()
 
-            first_line = response.splitlines()[0]
-            response_no = int(first_line.split()[0])
+                if response:
+                    first_line = response.splitlines()[0]
+                    response_no = int(first_line.split()[0])
 
-            if response_no == cmd_no:
-                return response
+                    if response_no == cmd_no:
+                        return response
 
             time.sleep(0.25)
 
