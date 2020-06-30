@@ -21,7 +21,7 @@ def test_receive(ctrlr):
     assert response == "1 ACK\n1 \n1 DONE\n"
 
 def test_reset(ctrlr):
-    for _ in range(256):
+    for _ in range(255):
         ctrlr.send('Print "Hi"')
     time.sleep(1)
     ctrlr.send('Print "Hi"')

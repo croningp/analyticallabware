@@ -47,7 +47,7 @@ class HPLCController:
             time.sleep(0.25)
 
     def send(self, cmd: str):
-        if self.cmd_no > MAX_CMD_NO:
+        if self.cmd_no == MAX_CMD_NO:
             self.reset_cmd_counter()
 
         self.cmd_no += 1
