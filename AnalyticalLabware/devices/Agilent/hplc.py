@@ -7,8 +7,9 @@ MAX_CMD_NO = 255
 
 
 class HPLCController:
-    def __init__(self, dir: str, cmd_file: str = "cmd",
-                 reply_file: str = "reply", logger=None):
+    def __init__(
+        self, dir: str, cmd_file: str = "cmd", reply_file: str = "reply", logger=None
+    ):
         """
         Initialize HPLC controller.
         """
@@ -17,19 +18,18 @@ class HPLCController:
         self.cmd_no = 0
 
         # Create files if needed
-        open(self.cmd_file, 'a').close()
-        open(self.reply_file, 'a').close()
+        open(self.cmd_file, "a").close()
+        open(self.reply_file, "a").close()
 
         if logger:
             self.logger = logger
         else:
-            logging.basicConfig(filename='hplc_logs', level=logging.DEBUG, 
-                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             self.logger = logging.getLogger("hplc_logger")
+            self.logger.addHandler(logging.NullHandler())
 
         self.reset_cmd_counter()
 
-        self.logger.info('HPLC Controller initialized.')
+        self.logger.info("HPLC Controller initialized.")
 
     def _send(self, cmd: str, cmd_no: int):
         """
@@ -55,12 +55,12 @@ class HPLCController:
                     first_line = response.splitlines()[0]
                     response_no = int(first_line.split()[0])
 
+                    # check that response corresponds to sent command
                     if response_no == cmd_no:
                         self.logger.info(f"Reply: \n{response}")
                         return response
 
             time.sleep(0.25)
-
 
     def send(self, cmd: str):
         if self.cmd_no == MAX_CMD_NO:
@@ -73,8 +73,8 @@ class HPLCController:
         return self._receive(self.cmd_no)
 
     def reset_cmd_counter(self):
-        self._send("last_cmd_no = 0", cmd_no=MAX_CMD_NO+1)
-        self._receive(cmd_no=MAX_CMD_NO+1)
+        self._send("last_cmd_no = 0", cmd_no=MAX_CMD_NO + 1)
+        self._receive(cmd_no=MAX_CMD_NO + 1)
         self.cmd_no = 0
 
         self.logger.debug("Reset command counter")
@@ -82,6 +82,8 @@ class HPLCController:
 
 if __name__ == "__main__":
     import sys
+
+    logging.basicConfig(level=logging.DEBUG)
 
     controller = HPLCController(os.path.dirname(sys.argv[-1]))
 
