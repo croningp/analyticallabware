@@ -23,9 +23,7 @@ def test_receive(ctrlr):
 def test_reset(ctrlr):
     for _ in range(255):
         ctrlr.send('Print "Hi"')
-    time.sleep(1)
-    ctrlr.send('Print "Hi"')
-    time.sleep(1)
+    time.sleep(0.5)
     ctrlr.send('Print "Hi"')
     assert ctrlr.cmd_no == 1
 

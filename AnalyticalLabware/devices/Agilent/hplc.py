@@ -1,11 +1,14 @@
 import time
 import os
+import logging
 
-MAX_CMD_NO = 256
+
+MAX_CMD_NO = 255
 
 
 class HPLCController:
-    def __init__(self, dir: str, cmd_file: str = "cmd", reply_file: str = "reply"):
+    def __init__(self, dir: str, cmd_file: str = "cmd",
+                 reply_file: str = "reply", logger=None):
         """
         Initialize HPLC controller.
         """
@@ -17,8 +20,16 @@ class HPLCController:
         open(self.cmd_file, 'a').close()
         open(self.reply_file, 'a').close()
 
+        if logger:
+            self.logger = logger
+        else:
+            logging.basicConfig(filename='hplc_logs', level=logging.DEBUG, 
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            self.logger = logging.getLogger("hplc_logger")
 
         self.reset_cmd_counter()
+
+        self.logger.info('HPLC Controller initialized.')
 
     def _send(self, cmd: str, cmd_no: int):
         """
@@ -28,6 +39,8 @@ class HPLCController:
 
         with open(self.cmd_file, "w", encoding="utf8") as cmd_file:
             cmd_file.write(f"{cmd_no} {cmd}")
+
+        self.logger.info(f"Send command: {cmd_no} {cmd}")
 
     def _receive(self, cmd_no: int) -> str:
         """
@@ -46,6 +59,8 @@ class HPLCController:
 
             time.sleep(0.25)
 
+        self.logger.info(f"Received reply: {cmd_no} {response}")
+
     def send(self, cmd: str):
         if self.cmd_no == MAX_CMD_NO:
             self.reset_cmd_counter()
@@ -57,9 +72,11 @@ class HPLCController:
         return self._receive(self.cmd_no)
 
     def reset_cmd_counter(self):
-        self._send("last_cmd_no = 0", cmd_no=MAX_CMD_NO)
-        self._receive(cmd_no=MAX_CMD_NO)
+        self._send("last_cmd_no = 0", cmd_no=MAX_CMD_NO+1)
+        self._receive(cmd_no=MAX_CMD_NO+1)
         self.cmd_no = 0
+
+        self.logger.debug("Reset command counter")
 
 
 if __name__ == "__main__":
