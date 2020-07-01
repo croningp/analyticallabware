@@ -40,7 +40,7 @@ class HPLCController:
         with open(self.cmd_file, "w", encoding="utf8") as cmd_file:
             cmd_file.write(f"{cmd_no} {cmd}")
 
-        self.logger.info(f"Send command: {cmd_no} {cmd}")
+        self.logger.info(f"Send command No. {cmd_no}: {cmd}.")
 
     def _receive(self, cmd_no: int) -> str:
         """
@@ -51,15 +51,16 @@ class HPLCController:
                 response = reply_file.read()
 
                 if response:
+
                     first_line = response.splitlines()[0]
                     response_no = int(first_line.split()[0])
 
                     if response_no == cmd_no:
+                        self.logger.info(f"Reply: \n{response}")
                         return response
 
             time.sleep(0.25)
 
-        self.logger.info(f"Received reply: {cmd_no} {response}")
 
     def send(self, cmd: str):
         if self.cmd_no == MAX_CMD_NO:
