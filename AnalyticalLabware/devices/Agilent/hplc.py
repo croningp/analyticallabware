@@ -80,24 +80,42 @@ class HPLCController:
         self.logger.debug("Reset command counter")
 
     def sleep(self, time: int):
-        self.send(f'SLEEP {time}')
+        """
+        Tells the HPLC to wait for specified amount of seconds.
+        """
+        self.send(f"SLEEP {time}")
         self.logger.debug("Sleep command sent.")
 
     def standby(self):
-        # TODO Standby cmd
-        pass
+        """
+        Switches all modules in standby mode. 
+        All lamps and pumps are switched off.
+        """
+        self.send(f"Standby")
+        self.logger.debug("Standby command sent.")
 
     def preprun(self):
-        # TODO PrepRun cmd
-        pass
+        """
+        Prepares all modules for run. 
+        All lamps and pumps are switched on.
+        """
+        self.send(f"PrepRun")
+        self.logger.debug("PrepRun command sent.")
 
     def status(self):
-        # TODO print Print AcqStatus$
-        pass
+        """
+        Returns the device status.
+        """
+        self.send("response$ = AcqStatus$")
+        time.sleep(0.25)
+        parsed_response = self.receive().splitlines()[1].split()[1:]
+        return parsed_response
 
     def stop_macro(self):
-        # TODO Stop cmd
-        pass
+        """
+        Stops Macro execution.
+        """
+        self.send("Stop")
 
     def switch_method(self, name: str = "default"):
         # TODO change _MethFile$
@@ -114,6 +132,7 @@ class HPLCController:
 
     def pump_off(self):
         pass
+
 
 # TODO: What else needs to be implemented? CONTINJECT, StartMethod, StopMethod, LCInjReset, On Error
 
