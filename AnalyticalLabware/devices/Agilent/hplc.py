@@ -104,7 +104,19 @@ class HPLCController:
 
     def status(self):
         """
-        Returns the device status.
+        Returns a list with the device status. It can be: 
+        INITIALIZING    Set during initialization
+        NOMODULE        No module configured
+        OFFLINE         Currently in offline mode
+        STANDBY         All modules in standby mode. Lamps/pumps switched off
+        PRERUN          Ready to start run
+        INJECTING       Injecting
+        PREPARING       Run is being prepared. For example, doing a balance
+        RUN             Run is in progress
+        POSTRUN         Postrun is in progress
+        RAWDATA         Rawdata are still being processed following a run
+        NOTREADY        Run cannot be startedERRORError occurred
+        BREAK           Injection paused
         """
         self.send("response$ = AcqStatus$")
         time.sleep(0.25)
@@ -113,7 +125,7 @@ class HPLCController:
 
     def stop_macro(self):
         """
-        Stops Macro execution.
+        Stops Macro execution. Connection will be lost.
         """
         self.send("Stop")
 
@@ -122,16 +134,30 @@ class HPLCController:
         pass
 
     def lamp_on(self):
-        pass
+        self.send("LampAll ON")
 
     def lamp_off(self):
-        pass
+        self.send("LampAll OFF")
 
     def pump_on(self):
-        pass
+        self.send("PumpAll ON")
 
     def pump_off(self):
-        pass
+        self.send("PumpAll OFF")
+
+    def start_run(self):
+        """
+        This starts the currently selected method.
+        Device must be ready. (status="PRERUN")
+        """
+        self.send("StartMethod")
+
+    def abort_run(self):
+        """
+        Stops the run. 
+        A dialog window will pop up and manual intervention may be required.
+        """
+        self.send("StopMethod")
 
 
 # TODO: What else needs to be implemented? CONTINJECT, StartMethod, StopMethod, LCInjReset, On Error
