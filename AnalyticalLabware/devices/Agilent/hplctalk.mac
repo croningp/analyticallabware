@@ -1,11 +1,19 @@
 Name MonitorFile
     Parameter infile$, outfile$
-    Local in$, cmd_no, cmd$, response_no, response$, sep_position, cmd_len, last_cmd_no, result$
+    Local in$, cmd_no, cmd$, response$, sep_position, cmd_len, last_cmd_no
     Print "infile: ", infile$, "outfile: ", outfile$
+
+    ! Overwrite files
+    Open infile$ for output as #3
+    Print #3, "0 Sleep 1"
+    Close #3
+    Open outfile$ for output as #4
+    Close #4
     
     last_cmd_no = 0
 
     Repeat
+        errorflag = 0
         Sleep 0.5
         result$ = ""
         Open infile$ for input as #3
@@ -30,12 +38,15 @@ Name MonitorFile
                 ! do nothing
             Else 
                 Evaluate cmd$
+                On Error HandleError cmd_no, cmd$, outfile$
             EndIf
 
-            ! Write output
-            Open outfile$ for append as #4
-            Print #4, cmd_no, result$
-            Close #4
+            If errorflag = 0 Then
+                ! Write output
+                Open outfile$ for append as #4
+                Print #4, cmd_no, response$
+                Close #4
+            EndIf
 
             ! Confirm command execution
             Open outfile$ for append as #4
@@ -46,4 +57,12 @@ Name MonitorFile
     Print "Idle"
 EndMacro
 
-MonitorFile "C:\Users\group\Code\cmd", "C:\Users\group\Code\reply"
+Name HandleError
+    Parameter cmd_no, cmd$, outfile$
+    errorflag = 1
+    Open outfile$ for append as #4
+    Print #4, "ERROR:", cmd_no, cmd$, "caused Error #", _Error
+    Close #4
+EndMacro    
+
+MonitorFile "C:\Users\group\Code\analyticallabware\AnalyticalLabware\test\cmd", "C:\Users\group\Code\analyticallabware\AnalyticalLabware\test\reply"
