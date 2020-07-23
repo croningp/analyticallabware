@@ -38,6 +38,23 @@ def _load_json(filename: str) -> dict:
     with open(filename) as f_d:
         return json.load(f_d)
 
+def _ensure_serializable(data: dict) -> dict:
+    """Ensures the output data is serializable
+
+    Args:
+        data (Dict): Data to check
+    
+    Returns:
+        Dict: Serializable data
+    """
+
+    for k,v in data.items():
+        if isinstance(v, np.ndarray):
+            data[k] = v.tolist()
+        elif isinstance(v, dict):
+            data[k] = _ensure_serializable(v)
+    return data
+
 def trim_data(self, data: list, lower_range: int, upper_range: int) -> np.ndarray:
     """Trims data within a certain range
     Returns valid indexes that can be used to trim X and Y data
@@ -115,7 +132,8 @@ class IRSpectrum:
     def plot_spectrum(
         self,
         display: bool = False,
-        savepath: str = ""
+        savepath: str = "",
+        limits: tuple = ()
     ):
         """Plots the spectral data
 
@@ -124,23 +142,38 @@ class IRSpectrum:
             savepath (str, optional): Path to save the spectrum graph to disk. Defaults to "".
         """
 
+        # Clear any previous plots/data
         plt.clf()
         plt.cla()
-        plt.gca().set_ylim(bottom=0)
+
+        # TODO::GAK -- Implement limit checks
 
         # Already have a reference set, measured spectrum
         if self.reference:
             plt.xlabel("Wavenumber (cm-1)")
             plt.ylabel("Transmittance (%)")
             plt.title("IR Spectrum")
-            plt.plot(self.wavenumbers, self.transmittance, color="black", linewidth=0.5)
+            plt.plot(
+                self.wavenumbers,
+                self.transmittance,
+                color="black",
+                linewidth=0.5
+            )
 
         # No reference set, reference spectrum
         else:
             plt.xlabel("Wavelength (nm)")
             plt.ylabel("Intensities")
             plt.title("Reference IR Spectrum")
-            plt.plot(self.wavelengths, self.intensities, color="black", linewidth=0.5)
+            plt.plot(
+                self.wavelengths,
+                self.intensities,
+                color="black",
+                linewidth=0.5
+            )
+
+        # Set limits after plotting
+        plt.gca().set_ylim(bottom=0)
 
         # Save plot to disk
         if savepath:
@@ -166,5 +199,7 @@ class IRSpectrum:
             "reference": self.reference,
             "timestamp": time.strftime("%d_%m_%Y_%H:%M:%S")
         }
+
+        out = _ensure_serializable(out)
 
         _write_json(out, filename)

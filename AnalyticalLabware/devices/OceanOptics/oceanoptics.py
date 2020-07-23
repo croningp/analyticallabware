@@ -5,6 +5,8 @@
 import time
 import logging
 import numpy as np
+import seabreeze
+seabreeze.use('cseabreeze')
 import seabreeze.spectrometers as sb
 
 # Spectrometer Types:
@@ -63,11 +65,11 @@ class OceanOpticsSpectrometer():
         self._delay = 0.01
 
         self.logger = logging.getLogger('oceanoptics.spectrometer')
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.INFO)
         # Removing default handlers
         self.logger.handlers = []
         ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)
+        ch.setLevel(logging.INFO)
         console_formatter = logging.Formatter(
             "%(asctime)s ; %(module)s ; %(name)s ; %(message)s")
         ch.setFormatter(console_formatter)
@@ -98,8 +100,9 @@ class OceanOpticsSpectrometer():
         curr_time = time.time()
 
         self.logger.debug('Scanning')
+        self._spectrometer.open()
         while time.time() < curr_time + self.integration_time * n:
             wavelengths, intensities = self._spectrometer.spectrum()
             time.sleep(self._delay)
-
+        self._spectrometer.close()
         return (wavelengths, intensities)

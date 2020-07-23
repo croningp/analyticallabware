@@ -10,6 +10,9 @@
 
 """
 
+import json
+from pathlib import Path
+from typing import Union, Dict
 from .ir_spectrum import IRSpectrum
 from ..oceanoptics import OceanOpticsSpectrometer
 
@@ -28,6 +31,31 @@ class NIRQuest512(OceanOpticsSpectrometer):
         super().__init__("IR", name="NIRQuest512 IR Spectrometer")
         self.reference = {}
         self.__ref_called = False
+
+    def load_reference(self, ref: Union[str, Dict]):
+        """Loads a pre-existing reference from disk or from dict.
+
+        Args:
+            ref (Union[str, Dict]): Reference as either a dictionary
+            or JSON filepath
+        """
+
+        # Filepath, load and set
+        if isinstance(ref, str) or isinstance(ref, Path):
+            with open(ref) as fd:
+                self.reference = json.load(fd)
+                self.__ref_called = True
+
+        # Dict, set
+        elif isinstance(ref, dict):
+            self.reference = ref
+            self.__ref_called = True
+        
+        # Not supported
+        else:
+            self.logger.warning(
+                f'Reference {ref} is unsupported. Not loading'
+            )
 
     def obtain_reference_spectrum(self) -> IRSpectrum:
         """Obtain a reference spectrum

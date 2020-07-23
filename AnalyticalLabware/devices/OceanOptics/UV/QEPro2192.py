@@ -9,7 +9,10 @@
 
 """
 
+import json
+from pathlib import Path
 from .uv_spectrum import UVSpectrum
+from typing import Optional, Union, Dict
 from ..oceanoptics import OceanOpticsSpectrometer
 
 class NoReferenceException(Exception):
@@ -27,6 +30,31 @@ class QEPro2192(OceanOpticsSpectrometer):
         super().__init__("UV", name="QEPro2192 UV Spectrometer")
         self.reference = {}
         self.__ref_called = False
+
+    def load_reference(self, ref: Union[str, Dict]):
+        """Loads a pre-existing reference from disk or from dict.
+
+        Args:
+            ref (Union[str, Dict]): Reference as either a dictionary
+            or JSON filepath
+        """
+
+        # Filepath, load and set
+        if isinstance(ref, str) or isinstance(ref, Path):
+            with open(ref) as fd:
+                self.reference = json.load(fd)
+                self.__ref_called = True
+
+        # Dict, set
+        elif isinstance(ref, dict):
+            self.reference = ref
+            self.__ref_called = True
+        
+        # Not supported
+        else:
+            self.logger.warning(
+                f'Reference {ref} is unsupported. Not loading'
+            )
 
     def obtain_reference_spectrum(self) -> UVSpectrum:
         """Obtain a reference spectrum.

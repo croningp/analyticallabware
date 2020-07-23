@@ -40,9 +40,25 @@ def _load_json(filename: str) -> dict:
     with open(filename) as f_d:
         return json.load(f_d)
 
+def _ensure_serializable(data: dict) -> dict:
+    """Ensures the output data is serializable
+
+    Args:
+        data (Dict): Data to check
+    
+    Returns:
+        Dict: Serializable data
+    """
+
+    for k,v in data.items():
+        if isinstance(v, np.ndarray):
+            data[k] = v.tolist()
+        elif isinstance(v, dict):
+            data[k] = _ensure_serializable(v)
+    return data
 
 
-def trim_data(self, data: list, lower_range: int, upper_range: int) -> np.ndarray:
+def trim_data(data: list, lower_range: int, upper_range: int) -> np.ndarray:
     """Trims data within a certain range
     Returns valid indexes that can be used to trim X and Y data
 
@@ -135,10 +151,11 @@ class UVSpectrum:
             limits (tuple, optional): Trims data within a certain range. Defaults to ().
         """
 
+        # Clear any previous plots/data
         plt.clf()
         plt.cla()
-        plt.gca().set_ylim(bottom=0)
 
+        # Set X label
         plt.xlabel("Wavelength (nm)")
 
         # Trim data within a certain range
@@ -148,7 +165,7 @@ class UVSpectrum:
             self.intensities = self.intensities[trimmed]
 
             # Trim absorbances if they're present
-            if self.absorbances:
+            if len(self.absorbances) > 0:
                 self.absorbances = self.absorbances[trimmed]
 
 
@@ -181,6 +198,9 @@ class UVSpectrum:
             for legobj in leg.legendHandles:
                 legobj.set_linewidth(5.0)
 
+        # Set limits after plotting
+        plt.gca().set_ylim(bottom=0)
+
         # Save if savepath is defined
         if savepath:
             plt.savefig(savepath)
@@ -205,5 +225,7 @@ class UVSpectrum:
             "max_peak": self.max_peak,
             "timestamp": time.strftime("%d_%m_%Y_%H:%M:%S")
         }
+
+        out = _ensure_serializable(out)
 
         _write_json(out, filename)
