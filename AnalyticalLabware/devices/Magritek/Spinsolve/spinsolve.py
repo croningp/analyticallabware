@@ -3,6 +3,8 @@ import logging
 import queue
 import socket
 import threading
+import warnings
+import os
 import time
 
 import xml.etree.ElementTree as ET
@@ -10,7 +12,7 @@ from xml.etree.ElementTree import ParseError
 
 from .exceptions import NMRError, ShimmingError, HardwareError, RequestError
 from .commands import ProtocolCommands, RequestCommands
-from .spectrum import Spectrum
+from .spectrum import SpinsolveNMRSpectrum
 from .spinsolve_logging import get_logger
 
 class ReplyParser:
@@ -25,7 +27,7 @@ class ReplyParser:
     QUICK_SHIM_RESPONSE_TAG = "QuickShimResponse"
     POWER_SHIM_RESPONSE_TAG = "PowerShimResponse"
     COMPLETED_NOTIFICATION_TAG = "CompletedNotificationType"
-    
+
     def __init__(self, device_ready_flag, data_folder_queue):
         """
         Args:
@@ -44,12 +46,12 @@ class ReplyParser:
         # For shimming validation
         self.shimming_line_width_threshold = 1
         self.shimming_base_width_threshold = 40
-    
+
     def parse(self, message):
         """Parses the message into valuable XML element
-        
+
         Depending on the element tag, invokes various parsing methods
-        
+
         Args:
             message (bytes): The message received from the instrument
         """
@@ -83,12 +85,12 @@ class ReplyParser:
         else:
             self.logger.info("No specific parser requested, returning full decoded message")
             return message.decode()
-    
+
     def hardware_processing(self, element):
         """Process the message if the Hardware tag is present
-        
+
         Args:
-            element (:obj: xml.etree.ElementTree.Element): An element containing all 
+            element (:obj: xml.etree.ElementTree.Element): An element containing all
                 usefull information regarding Hardware response from the instrument
 
         Returns:
@@ -103,53 +105,53 @@ class ReplyParser:
         self.connected_tag = element.find(".//ConnectedToHardware").text
         if self.connected_tag == "false":
             raise HardwareError("The instrument is not connected!")
-        
+
         software_tag = element.find(".//SpinsolveSoftware").text
 
         spinsolve_tag = element.find(".//SpinsolveType").text
-        
+
         self.logger.info("The %s NMR instrument is successfully connected \nRunning under %s Spinsolve software version", spinsolve_tag, software_tag)
         if software_tag[:4] != "1.15":
             self.logger.warning("The current software version <%s> was not tested, please update or use at your own risk", software_tag)
-        
+
         # If the instrument is connected, setting the ready flag
         self.device_ready_flag.set()
-        
+
         usefull_information_dict = {"Connected": f"{self.connected_tag}", "SoftwareVersion": f"{software_tag}", "InstrumentType": f"{spinsolve_tag}"}
 
         return usefull_information_dict
-    
+
     def shimming_processing(self, element):
         """Process the message if the Shim tag is present
-        
+
         Args:
-            element (:obj: xml.etree.ElementTree.Element): An element containing all 
+            element (:obj: xml.etree.ElementTree.Element): An element containing all
                 usefull information regarding shimming response from the instrument
-        
+
         Returns:
             True if shimming was successfull
 
         Raises:
             ShimmingError: If the shimming process falied
         """
-        
+
         self.logger.debug("Parsing message with <%s> tag", element.tag)
 
         self.device_ready_flag.set()
-        
+
         error_text = element.get("error")
         if error_text:
             self.logger.error("ShimmingError: check the log for the full message")
             raise ShimmingError(f"Shimming error: {error_text}")
-        
+
         for child in element:
             self.logger.info("%s - %s", child.tag, child.text)
-        
+
         # Obtaining shimming parameters
         line_width = round(float(element.find(".//LineWidth").text), 2)
         base_width = round(float(element.find(".//BaseWidth").text), 2)
         system_ready = element.find(".//SystemIsReady").text
-        
+
         # Checking shimming criteria
         if line_width > self.shimming_line_width_threshold:
             self.logger.critical("Shimming line width <%s> is above requested threshold <%s>, consider running another shimming method", line_width, self.shimming_line_width_threshold)
@@ -163,16 +165,16 @@ class ReplyParser:
 
     def status_processing(self, element):
         """Process the message if the Status tag is present
-        
-        Logs the incoming messages and manages device_ready_flag 
+
+        Logs the incoming messages and manages device_ready_flag
 
         Args:
-            element (:obj: xml.etree.ElementTree.Element): An element containing all 
+            element (:obj: xml.etree.ElementTree.Element): An element containing all
                 usefull information regarding status response from the instrument
-        
+
         Returns:
             str: String containing the path to the saved NMR data
-        
+
         Raises:
             NMRError: in case of the protocol errors
         """
@@ -197,7 +199,7 @@ class ReplyParser:
         status_attrib = state_elem.get("status")
         percentage_attrib = state_elem.get("percentage")
         seconds_remaining_attrib = state_elem.get("secondsRemaining")
-        
+
         # Logging the data
         if state_tag == "State":
             # Resetting the event to False to block the incomming msg
@@ -214,20 +216,20 @@ class ReplyParser:
                 self.logger.info("The protocol <%s> is complete, the NMR data is saved in <%s>", protocol_attrib, data_folder)
                 self.data_folder_queue.put(data_folder)
                 return data_folder
-        
+
         if state_tag == "Progress":
             self.logger.info("The protocol <%s> is performing, %s%% completed, %s seconds remain", protocol_attrib, percentage_attrib, seconds_remaining_attrib)
 
     def estimate_duration_processing(self, element):
         """Process the message if protocol duration was requested
-        
+
         Args:
-            element (:obj: xml.etree.ElementTree.Element): An element containing all 
+            element (:obj: xml.etree.ElementTree.Element): An element containing all
                 usefull information regarding duration estimation from the instrument
-        
+
         Returns:
             int: Estimated duration for the requested protocol in seconds
-        
+
         Raises:
             RequestError: In case the instrument returns an error attribute
         """
@@ -264,11 +266,11 @@ class SpinsolveConnection:
         # Connection parameters
         if HOST is not None:
             self.HOST = HOST
-        else: 
+        else:
             self.HOST = CURR_HOST
         self.PORT = PORT
 
-        # The buffer size is so big for the only large message sent by the instrument - whole list of 
+        # The buffer size is so big for the only large message sent by the instrument - whole list of
         # Protocol options. One day will be reduced with addition of non-blocking parser/connection
         # TODO
         self.BUFSIZE = 65536
@@ -327,10 +329,10 @@ class SpinsolveConnection:
                 self.logger.warning("Connection error")
                 break
         self.logger.info("Exiting listening thread")
-        
+
     def transmit(self, msg):
         """Sends the message to the socket
-        
+
         Args:
             msg (bytes): encoded message to be sent to the instrument
         """
@@ -346,7 +348,7 @@ class SpinsolveConnection:
         reply = self.response_queue.get()
         self.response_queue.task_done()
         self.logger.debug("Message obtained from the queue")
-            
+
         return reply
 
     def close_connection(self):
@@ -383,6 +385,8 @@ class SpinsolveConnection:
 class SpinsolveNMR:
     """ Python class to handle Magritek Spinsolve NMR instrument """
 
+    DEFAULT_EXPERIMENT = ('1D PROTON', {'Scan': 'StandardScan'})
+
     def __init__(self, spinsolve_options_path=None, address=None, port=13000, auto_connect=True):
         """
         Args:
@@ -406,7 +410,7 @@ class SpinsolveNMR:
         self._connection = SpinsolveConnection(HOST=address, PORT=port)
         self.cmd = ProtocolCommands(spinsolve_options_path)
         self.req_cmd = RequestCommands()
-        self.spectrum = Spectrum(self.data_folder_queue)
+        self.spectrum = SpinsolveNMRSpectrum()
 
         if auto_connect:
             self.connect()
@@ -438,7 +442,7 @@ class SpinsolveNMR:
 
     def receive_reply(self, parse=True):
         """Receives the reply from the intrument and parses it if necessary"""
-        
+
         while True:
             self.logger.debug("Reply requested from the connection")
             reply = self._connection.receive()
@@ -474,7 +478,7 @@ class SpinsolveNMR:
 
     def shim(self, option="CheckShimRequest"):
         """Initialise shimming protocol
-        
+
         Consider checking <Spinsolve>.cmd.get_protocol(<Spinsolve>.cmd.SHIM_PROTOCOL) for available options
 
         Args:
@@ -489,13 +493,13 @@ class SpinsolveNMR:
         """Initialise shimming on sample protocol
 
         Consider checking <Spinsolve>.cmd.get_protocol(<Spinsolve>.cmd.SHIM_ON_SAMPLE_PROTOCOL) for available options
-        
+
         Args:
             reference_peak (float): A reference peak to shim and calibrate on
             option (str, optinla): A name of the instrument shimming method
-            line_width_threshold (int, optional): Spectrum line width at 50%, should be below 1 
+            line_width_threshold (int, optional): Spectrum line width at 50%, should be below 1
                 for good quality spectrums
-            base_width_threshold (int, optional): Spectrum line width at 0.55%, should be below 40 
+            base_width_threshold (int, optional): Spectrum line width at 0.55%, should be below 40
                 for good quality spectrums
         """
 
@@ -527,7 +531,7 @@ class SpinsolveNMR:
 
     def user_data(self, data=None, *, solvent, sample):
         """Loads the user data to be saved with the NMR data
-        
+
         Args:
             data (dict, optinal): Any user data that needs to be saved with the spectal
                 data in form of {'key': 'value'}.
@@ -546,12 +550,12 @@ class SpinsolveNMR:
 
     def get_duration(self, protocol, options):
         """Requests for an approximate duration of a specific protocol
-        
+
         Args:
             protocol (str): A name of the specific protocol
             options (dict): Options for the selected protocol
         """
-        
+
         cmd = self.cmd.generate_command((protocol, options), self.cmd.ESTIMATE_DURATION_REQUEST)
         self.send_message(cmd)
         return self.receive_reply()
@@ -562,7 +566,7 @@ class SpinsolveNMR:
         cmd = self.cmd.generate_command((self.cmd.PROTON, {"Scan": f"{option}"}))
         self.send_message(cmd)
         return self.receive_reply()
-    
+
     def proton_extended(self, options):
         """Initialise extended 1D Proton experiment"""
 
@@ -607,7 +611,7 @@ class SpinsolveNMR:
 
     def calibrate(self, reference_peak, option="LockAndCalibrateOnly"):
         """Performs shimming on sample protocol"""
-        
+
         self.logger.warning("DEPRECATION WARNING: use shim_on_sample() method instead")
         return self.shim_on_sample(reference_peak, option)
 
@@ -618,6 +622,38 @@ class SpinsolveNMR:
         return list(self.cmd)
 
     def get_spectrum(self):
-        """Loads the last measured spectra"""
+        """Wrapper method to load the spectral data to inner Spectrum class.
 
-        return self.spectrum.load_spectra()
+        Loads the last measured data. If no data previously measured, will
+            perform self.DEFAULT_EXPERIMENT and load its data.
+        """
+
+        if self.data_folder_queue.empty():
+            self.logger.warning('No previous data. Running default <%s> \
+protocol.', self.DEFAULT_EXPERIMENT[0])
+            cmd = self.cmd.generate_command(self.DEFAULT_EXPERIMENT)
+            self.send_message(cmd)
+            self.receive_reply()
+
+        # will block if spectrum is measuring
+        data_folder = self.data_folder_queue.get()
+
+        self.spectrum.load_spectrum(data_folder)
+
+        warning_message = 'Method "get_spectrum" no longer returns the \
+spectropic data. Please use .spectrum class to access the spectral data and \
+to the documentation for its usage.'
+
+        warnings.warn(warning_message, DeprecationWarning)
+
+        # for backwards compatibility
+        data1d = os.path.join(data_folder, 'data.1d')
+        _, fid_real, fid_img = self.spectrum.extract_data(data1d)
+
+        fid_complex = [
+            complex(real, img)
+            for real, img
+            in zip(fid_real, fid_img)
+        ]
+
+        return fid_complex

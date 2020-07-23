@@ -42,8 +42,13 @@ s.shim_on_sample(
 # where 'option' is a valid option for simple proton protocol ('1D PROTON')
 s.proton(option='option')
 
-# to get crude data points of the spectrum
-s.get_spectrum() # only possible after a spectrum's been measured
+### Basic spectrum processing is available through s.spectrum class ###
+# loads last measured spectrum if any, else runs default protocol
+s.get_spectrum()
+
+# now ppm and spectral data are available as s.spectrum.x and s.spectrum.y
+# hint: to obtain raw FID data use the following public method for the 'data.1d' file
+time_axis, fid_real, fid_imag = s.spectrum.extract_data(<path_to_fid_file>)
 ```
 
 ### OceanOptics Raman spectrometer
@@ -71,24 +76,20 @@ r.get_spectrum()
 
 # the spectrum is now available via r.spectrum
 # you can use the following methods for processing
-r.spectrum.subtract_baseline() # subtracting the baseline
-r.spectrum.smooth() # smoothing the spectrum
+r.spectrum.correct_baseline() # subtracting the baseline
+r.spectrum.smooth_spectrum() # smoothing the spectrum
 r.spectrum.trim(xmin, xmax) # trimming the spectrum on X axis
 
-# finding the peaks, please refer to method documentation for 
+# finding the peaks, please refer to method documentation for
 # attribute assignment
 r.spectrum.find_peaks(threshold, min_width, min_dist)
 # alternative method
 # r.spectrum.find_peaks_iteratively(threshold, steps)
 
 # integration
-r.spectrum.auto_integrate()
+r.spectrum.integrate_area(area)
+r.spectrum.integrate_peak(peak)
 
-# saving the data as .json file
-# if filename is omitted, returns the nested dictionary 
-# with spectral data
-r.spectrum.save_data(filename) # !filename without .json extension!
-
-# basic processing is summarised in default_process method
-r.spectrum.default_processing(filename)
+# saving the data as .pickle file
+r.spectrum.save_data(filename) # !filename without .pickle extension!
 ```
