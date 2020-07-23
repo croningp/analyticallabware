@@ -82,10 +82,12 @@ class OceanOpticsSpectrometer():
             integration_time (float): Desired integration time in seconds!
         """
 
+        self._spectrometer.open()
         self.integration_time = integration_time
         integration_time *= 1000 * 1000 # converting to microseconds
         self.logger.debug('Setting the integration time to %s microseconds', integration_time)
         self._spectrometer.integration_time_micros(integration_time)
+        self._spectrometer.close()
 
     def scan(self, n=3):
         """Reads the spectrometer and returns the spectrum
