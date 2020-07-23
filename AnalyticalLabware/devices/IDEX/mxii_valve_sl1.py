@@ -25,7 +25,7 @@ class IDEXMXIIValve(SerialDevice):
     @command
     def is_connected(self) -> bool:
         try:
-            self.send_message(self.cmd["READ_STATUS"])
+            self.send_message(self.cmd["READ_STATUS"], get_return=True)
         except:
             return False
         return True
@@ -33,7 +33,7 @@ class IDEXMXIIValve(SerialDevice):
     @property
     @command
     def status(self) -> int:
-        status = self.send_message(self.cmd["READ_STATUS"])
+        status = self.send_message(self.cmd["READ_STATUS"], get_return=True)
         # Look up error code; status is okay if no error.
         self.logger.debug("IDEX valve :: OK - status = %s (%s).", status,
                           self.status_codes.get(status, "OK"))
@@ -59,7 +59,7 @@ class IDEXMXIIValve(SerialDevice):
         This is supposed to correspond to the idle position of the valve, i.e.
         any injected sample will go to the sample loop and HPLC eluent is
         route to the waste."""
-        value = self.send_message(self.cmd["MOVE_TO_1"])
+        value = self.move_to_position(1)
         return value
 
     @command
@@ -72,10 +72,14 @@ class IDEXMXIIValve(SerialDevice):
 
         Args:
             position (int): Valve position to move to."""
+        # do nothing if already in requested position
+        if position == self.current_position:
+            return position
+
         if position == 1:
-            value = self.send_message(self.cmd["MOVE_TO_1"])
+            value = self.send_message(self.cmd["MOVE_TO_1"], get_return=True)
         elif position == 2:
-            value = self.send_message(self.cmd["MOVE_TO_2"])
+            value = self.send_message(self.cmd["MOVE_TO_2"], get_return=True)
         # TODO: Implement multi-position valves.
         else:
             raise ValueError("Position has to be one of 1 or 2.")
