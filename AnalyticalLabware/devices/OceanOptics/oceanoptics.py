@@ -58,7 +58,7 @@ class OceanOpticsSpectrometer():
             spec_type (str): The type of spectrometer, e.g. 'IR', 'raman', etc.
             name (str, optional): Device name for easier access
         """
-        self.integration_time = 0.3 # in seconds
+        self.integration_time = 0.01 # in seconds
         self.__spec = _get_spectrometer(spec_type)
         self._spectrometer = sb.Spectrometer(self.__spec)
         self.name = name
@@ -74,6 +74,7 @@ class OceanOpticsSpectrometer():
             "%(asctime)s ; %(module)s ; %(name)s ; %(message)s")
         ch.setFormatter(console_formatter)
         self.logger.addHandler(ch)
+        self.set_integration_time(self.integration_time)
 
     def set_integration_time(self, integration_time):
         """Sets the integration time for the spectrometer
