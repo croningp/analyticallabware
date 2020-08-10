@@ -129,9 +129,13 @@ class HPLCController:
         """
         self.send("Stop")
 
-    def switch_method(self, name: str = "default"):
-        # TODO change _MethFile$
-        pass
+    def switch_method(self, name: str = "AH_default"):
+        self.send(f'LoadMethod "C:\\Chem32\\1\\Methods\\", "{name}.M"')
+        time.sleep(1)
+        self.send("response$ = _MethFile$")
+        time.sleep(0.25)
+        parsed_response = self.receive().splitlines()[1].split()[1:][0]
+        return parsed_response
 
     def lamp_on(self):
         self.send("LampAll ON")
