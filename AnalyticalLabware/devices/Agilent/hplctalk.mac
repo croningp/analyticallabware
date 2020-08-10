@@ -1,0 +1,68 @@
+Name MonitorFile
+    Parameter infile$, outfile$
+    Local in$, cmd_no, cmd$, response$, sep_position, cmd_len, last_cmd_no
+    Print "infile: ", infile$, "outfile: ", outfile$
+
+    ! Overwrite files
+    Open infile$ for output as #3
+    Print #3, "0 Sleep 1"
+    Close #3
+    Open outfile$ for output as #4
+    Close #4
+    
+    last_cmd_no = 0
+
+    Repeat
+        errorflag = 0
+        Sleep 0.5
+        result$ = ""
+        Open infile$ for input as #3
+        Input #3, in$
+        Close #3
+        sep_position = InStr (in$, " ")
+        cmd_len = Len (in$)
+        cmd_no = Val (in$[1:sep_position])
+        cmd$ = in$[(sep_position+1):cmd_len]
+
+        If cmd_no > last_cmd_no Then
+            last_cmd_no = cmd_no
+
+            Print "Executing: ", in$
+
+            ! Acknowledge reading command
+            Open outfile$ for output as #4
+            Print #4, cmd_no, "ACK"
+            Close #4
+
+            If cmd$ = "Exit" Then
+                ! do nothing
+            Else 
+                Evaluate cmd$
+                On Error HandleError cmd_no, cmd$, outfile$
+            EndIf
+
+            If errorflag = 0 Then
+                ! Write output
+                Open outfile$ for append as #4
+                Print #4, cmd_no, response$
+                Close #4
+            EndIf
+
+            ! Confirm command execution
+            Open outfile$ for append as #4
+            Print #4, cmd_no, "DONE"
+            Close #4
+        EndIf
+    Until cmd$ = "Exit"
+    Print "Idle"
+EndMacro
+
+Name HandleError
+    Parameter cmd_no, cmd$, outfile$
+    errorflag = 1
+    Open outfile$ for append as #4
+    Print #4, "ERROR:", cmd_no, cmd$, "caused Error #", _Error
+    Close #4
+EndMacro    
+
+MonitorFile "C:\Users\group\Code\analyticallabware\AnalyticalLabware\test\cmd", "C:\Users\group\Code\analyticallabware\AnalyticalLabware\test\reply"
