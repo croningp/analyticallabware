@@ -11,7 +11,12 @@ class HPLCController:
         self, dir: str, cmd_file: str = "cmd", reply_file: str = "reply", logger=None
     ):
         """
-        Initialize HPLC controller.
+        Initialize HPLC controller.  
+        dir: Name of directory
+        cmd_file: name of command file
+        reply_file: name of reply file
+        The macro must be loaded in the Chemstation software.
+        dir and filenames must match those specified in the Macro.
         """
         self.cmd_file = os.path.join(dir, cmd_file)
         self.reply_file = os.path.join(dir, reply_file)
@@ -130,12 +135,16 @@ class HPLCController:
         self.send("Stop")
 
     def switch_method(self, name: str = "AH_default"):
+        """
+        Allows the user to switch between pre-programmed methods.
+        """
         self.send(f'LoadMethod "C:\\Chem32\\1\\Methods\\", "{name}.M"')
         time.sleep(1)
         self.send("response$ = _MethFile$")
         time.sleep(0.25)
+        # check that method switched
         parsed_response = self.receive().splitlines()[1].split()[1:][0]
-        return parsed_response
+        assert parsed_response == f"{name}.M", "Switching Methods failed."
 
     def lamp_on(self):
         self.send("LampAll ON")
@@ -162,9 +171,6 @@ class HPLCController:
         A dialog window will pop up and manual intervention may be required.
         """
         self.send("StopMethod")
-
-
-# TODO: What else needs to be implemented? CONTINJECT, StartMethod, StopMethod, LCInjReset, On Error
 
 
 if __name__ == "__main__":
