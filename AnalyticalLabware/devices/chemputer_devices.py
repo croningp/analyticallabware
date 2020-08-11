@@ -12,7 +12,7 @@ from AnalyticalLabware import IDEXMXIIValve, SpinsolveNMR, OceanOpticsRaman
 ### Physical devices ###
 
 class ChemputerIDEX(IDEXMXIIValve, ChemputerDevice):
-    def __init__(self, name, address):
+    def __init__(self, name, address, port=5000):
         ChemputerDevice.__init__(self, name)
         IDEXMXIIValve.__init__(
             self,
