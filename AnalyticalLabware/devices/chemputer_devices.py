@@ -84,6 +84,9 @@ class SimChemputerIDEX(IDEXMXIIValve, ChemputerDevice):
     def capabilities(self):
         return [("sink", 0)]
 
+    def open_connection(self):
+        self.logger.info("Opening connection!")
+
     def wait_until_ready(self):
         pass
 
