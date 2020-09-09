@@ -422,3 +422,16 @@ rules are supported!')
             window_length=window_length,
             polyorder=polyorder,
         )
+
+    def default_processing(self):
+        """Dummy method to return spectral data.
+
+        Normally redefined in ancestor classes to include basic processing for
+            specific spectrum type.
+
+        Returns:
+            Tuple[np.array, np.array, float]: Spectral data as X and Y
+                coordinates and a timestamp.
+        """
+
+        return self.x, self.y, self.timestamp

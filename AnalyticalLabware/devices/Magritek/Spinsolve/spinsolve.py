@@ -621,7 +621,7 @@ class SpinsolveNMR:
 
         return list(self.cmd)
 
-    def get_spectrum(self):
+    def get_spectrum(self, protocol=None):
         """Wrapper method to load the spectral data to inner Spectrum class.
 
         Loads the last measured data. If no data previously measured, will
@@ -629,9 +629,12 @@ class SpinsolveNMR:
         """
 
         if self.data_folder_queue.empty():
-            self.logger.warning('No previous data. Running default <%s> \
-protocol.', self.DEFAULT_EXPERIMENT[0])
-            cmd = self.cmd.generate_command(self.DEFAULT_EXPERIMENT)
+            self.logger.warning('No previous data.')
+            if protocol is None:
+                protocol = self.DEFAULT_EXPERIMENT
+                self.logger.warning('Running default <%s> protocol.',
+                                    self.DEFAULT_EXPERIMENT[0])
+            cmd = self.cmd.generate_command(protocol)
             self.send_message(cmd)
             self.receive_reply()
 
@@ -640,7 +643,7 @@ protocol.', self.DEFAULT_EXPERIMENT[0])
 
         self.spectrum.load_spectrum(data_folder)
 
-        warning_message = 'Method "get_spectrum" no longer returns the \
+        warning_message = 'Method "get_spectrum" will no longer return the \
 spectropic data. Please use .spectrum class to access the spectral data and \
 to the documentation for its usage.'
 

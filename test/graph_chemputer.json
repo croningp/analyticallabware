@@ -1,0 +1,225 @@
+{
+  "nodes": [
+    {
+      "type": "reactor",
+      "x": 240,
+      "y": 240,
+      "internalId": 10,
+      "label": "reactor",
+      "id": "reactor",
+      "class": "ChemputerReactor",
+      "name": "reactor",
+      "current_volume": 0,
+      "max_volume": 300,
+      "necks": 2
+    },
+    {
+      "type": "valve",
+      "x": 240,
+      "y": 120,
+      "internalId": 16,
+      "label": "valve_H",
+      "id": "valve_H",
+      "class": "ChemputerValve",
+      "name": "valve_H",
+      "address": "192.168.1.122"
+    },
+    {
+      "type": "pump",
+      "x": 240,
+      "y": 40,
+      "internalId": 17,
+      "label": "pump_H",
+      "id": "pump_H",
+      "class": "ChemputerPump",
+      "name": "pump_H",
+      "address": "192.168.1.102",
+      "max_volume": 25,
+      "current_volume": 0
+    },
+    {
+      "type": "waste",
+      "x": 320,
+      "y": 40,
+      "internalId": 18,
+      "label": "waste_H",
+      "id": "waste_H",
+      "class": "ChemputerWaste",
+      "name": "waste_H",
+      "current_volume": 0,
+      "max_volume": 2000,
+      "necks": 1
+    },
+    {
+      "type": "heater",
+      "x": 240,
+      "y": 320,
+      "internalId": 78,
+      "label": "stirrer_reactor",
+      "id": "stirrer_reactor",
+      "mode": "ethernet",
+      "class": "IKARCTDigital",
+      "name": "stirrer_reactor",
+      "address": "192.168.1.203"
+    },
+    {
+      "type": "flask",
+      "x": 160,
+      "y": 200,
+      "label": "flask_water",
+      "id": "flask_water",
+      "internalId": 0,
+      "max_volume": 100,
+      "current_volume": 0,
+      "class": "ChemputerFlask",
+      "chemical": "water",
+      "name": "flask_water"
+    },
+    {
+      "type": "flask",
+      "x": 320,
+      "y": 200,
+      "label": "flask_nitrogen",
+      "id": "flask_nitrogen",
+      "internalId": 1,
+      "max_volume": 100,
+      "current_volume": 0,
+      "class": "ChemputerFlask",
+      "chemical": "nitrogen",
+      "name": "flask_nitrogen"
+    },
+    {
+      "id": "spinsolvenmr",
+      "type": "custom",
+      "x": 120,
+      "y": 120,
+      "customProperties": {
+        "name": {
+          "name": "name",
+          "id": "name",
+          "units": "",
+          "type": "str"
+        },
+        "current_volume": {
+          "name": "current_volume",
+          "id": "current_volume",
+          "units": "",
+          "type": "number"
+        }
+      },
+      "internalId": 2,
+      "label": "spinsolvenmr",
+      "class": "ChemputerNMR",
+      "name": "spinsolvenmr",
+      "current_volume": 0
+    },
+    {
+      "id": "raman",
+      "type": "custom",
+      "x": 360,
+      "y": 320,
+      "customProperties": {
+        "name": {
+          "name": "name",
+          "id": "name",
+          "units": "",
+          "type": "str"
+        }
+      },
+      "internalId": 3,
+      "label": "raman",
+      "class": "OceanOpticsRaman",
+      "name": "raman"
+    }
+  ],
+  "links": [
+    {
+      "id": 49,
+      "sourceInternal": 10,
+      "targetInternal": 16,
+      "source": "reactor",
+      "target": "valve_H",
+      "port": "(0,4)"
+    },
+    {
+      "id": 34,
+      "sourceInternal": 16,
+      "targetInternal": 17,
+      "source": "valve_H",
+      "target": "pump_H",
+      "port": "(-1,0)"
+    },
+    {
+      "id": 48,
+      "sourceInternal": 16,
+      "targetInternal": 10,
+      "source": "valve_H",
+      "target": "reactor",
+      "port": "(4,0)"
+    },
+    {
+      "id": 96,
+      "sourceInternal": 16,
+      "targetInternal": 18,
+      "source": "valve_H",
+      "target": "waste_H",
+      "port": "(0,0)"
+    },
+    {
+      "id": 33,
+      "sourceInternal": 17,
+      "targetInternal": 16,
+      "source": "pump_H",
+      "target": "valve_H",
+      "port": "(0,-1)"
+    },
+    {
+      "id": 79,
+      "sourceInternal": 78,
+      "targetInternal": 10,
+      "source": "stirrer_reactor",
+      "target": "reactor",
+      "port": "(,)"
+    },
+    {
+      "id": 0,
+      "sourceInternal": 0,
+      "targetInternal": 16,
+      "source": "flask_water",
+      "target": "valve_H",
+      "port": "(0,3)"
+    },
+    {
+      "id": 1,
+      "sourceInternal": 1,
+      "targetInternal": 16,
+      "source": "flask_nitrogen",
+      "target": "valve_H",
+      "port": "(0,5)"
+    },
+    {
+      "id": 4,
+      "sourceInternal": 2,
+      "targetInternal": 16,
+      "source": "spinsolvenmr",
+      "target": "valve_H",
+      "port": "(0,2)"
+    },
+    {
+      "id": 5,
+      "sourceInternal": 16,
+      "targetInternal": 2,
+      "source": "valve_H",
+      "target": "spinsolvenmr",
+      "port": "(2,0)"
+    },
+    {
+      "id": 6,
+      "sourceInternal": 3,
+      "targetInternal": 78,
+      "source": "raman",
+      "target": "stirrer_reactor",
+      "port": "(,)"
+    }
+  ]
+}
