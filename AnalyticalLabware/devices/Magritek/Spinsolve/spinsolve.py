@@ -338,6 +338,16 @@ class SpinsolveConnection:
         """
 
         self.logger.debug("Sending the message")
+        # This is necessary due to a random bug in the Spinsolve software with
+        # wrong order of the messages sent. 
+        # See details in AnalyticalLabware/issues/22
+        while True:
+            try:
+                unprocessed = self.response_queue.get_nowait()
+                self.logger.error('Unprocessed message obtained from the response queue, \
+see below:\n%s', unprocessed)
+            except queue.Empty:
+                break
         self._connection.send(msg)
         self.logger.debug("Message sent")
 
