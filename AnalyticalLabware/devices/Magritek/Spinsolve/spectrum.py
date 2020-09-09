@@ -16,7 +16,7 @@ PROCESSED_SPECTRUM = 'spectrum_processed.1d' # not always present
 PROTOCOL_PARAMETERS = 'protocol.par'
 
 # format used in acquisition parameters
-TIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
+TIME_FORMAT = r'%Y-%m-%dT%H:%M:%S.%f'
 
 # reserved for future use
 JCAMP_DX_SPECTRUM = 'nmr_fid.dx'

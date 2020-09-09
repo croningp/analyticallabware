@@ -146,4 +146,4 @@ diff - %s', i+1, n, diff)
         self.smooth_spectrum()
         self.find_peaks_iteratively()
 
-        return self.x, self.y
+        return self.x, self.y, self.timestamp
