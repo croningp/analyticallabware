@@ -93,3 +93,6 @@ r.spectrum.integrate_peak(peak)
 # saving the data as .pickle file
 r.spectrum.save_data(filename) # !filename without .pickle extension!
 ```
+
+## Contribution
+If you wish to contribute, branch off master, use the general style of the device classes and your common sense. `AbstractSpectrum` class is there for you to provide &#0177;unified API for the spectral data, feel free to rewrite the parent processing methods and add your own. When done - submit a merge request.
