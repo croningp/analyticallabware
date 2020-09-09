@@ -149,6 +149,8 @@ class ProtocolCommands:
             raise ProtocolError('Supplied protocol <{}> is not a valid protocol'.format(protocol_and_options[0])) from None
         try:
             for key, value in protocol_and_options[1].items():
+                # Casting the value to string, as all stored values are strings
+                value = str(value)
                 # If the value list is empty but the value is expected, e.g. SHIM 1H SAMPLE - SampleReference
                 # All value checks should be performed when the method called
                 if value not in full_command[1].get(key) and full_command[1].get(key):
