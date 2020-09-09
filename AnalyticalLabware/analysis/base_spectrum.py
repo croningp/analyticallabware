@@ -45,15 +45,19 @@ class AbstractSpectrum(ABC):
         'baseline',
     ]
 
-    def __init__(self, save_path=None):
+    def __init__(self, save_path=None, autosaving=True):
         """Default constructor, loads properties into instance namespace.
 
         Can be redefined in ancestor classes.
 
         Args:
-            save_path (str, optional): Valid path to save data to. If omitted,
-                uses ".//spectrum". If False - no folder created.
+            save_path (Union[str, bool], optional): Valid path to save data to. 
+                If omitted, uses ".//spectrum". If False - no folder created.
+            autosaving (bool, optional): If the True (default) will save the
+                spectrum when the new one is loaded. Will drop otherwise.
         """
+
+        self.autosaving = autosaving
 
         # loading public properties
         for prop in self.PUBLIC_PROPERTIES:
@@ -81,7 +85,7 @@ class AbstractSpectrum(ABC):
         """Dummy method to dump all spectral data. Used before loading new data.
         """
 
-        self.__init__(self.path)
+        self.__init__(self.path, self.autosaving)
 
     @abstractmethod
     def load_spectrum(self, x, y, timestamp):
@@ -99,9 +103,10 @@ class AbstractSpectrum(ABC):
             assert x.shape == y.shape
         except AssertionError:
             raise ValueError('X and Y data must have same dimension.') from None
-
+        
         if self.x is not None:
-            self.save_data()
+            if self.autosaving:
+                self.save_data()
             self._dump()
 
         self.x = x
