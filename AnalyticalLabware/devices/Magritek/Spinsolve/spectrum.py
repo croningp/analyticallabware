@@ -37,7 +37,7 @@ class SpinsolveNMRSpectrum(AbstractSpectrum):
         'data_path',
     ]
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, autosaving=False):
 
         if path is not None:
             os.makedirs(path, exist_ok=True)
@@ -49,7 +49,8 @@ class SpinsolveNMRSpectrum(AbstractSpectrum):
         self.logger = logging.getLogger(
             'spinsolve.spectrum')
 
-        super().__init__(self.path)
+        # autosaving set to False, since spectra are saved by Spinsolve anyway
+        super().__init__(self.path, autosaving)
 
     def load_spectrum(self, data_path, start_time=None):
         """Loads the spectra from the given folder.
@@ -65,9 +66,11 @@ class SpinsolveNMRSpectrum(AbstractSpectrum):
                 parameters.
         """
 
-        # to avoid dropping parameters when called in parent class
+        # this is needed to avoid dropping parameters when called in parent 
+        # class, since _dump() is called there as well
         if self.x is not None:
-            self.save_data()
+            if self.autosaving:
+                self.save_data()
             self._dump()
 
         # filepaths
