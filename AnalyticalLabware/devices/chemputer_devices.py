@@ -5,7 +5,7 @@ import numpy as np
 
 from ChemputerAPI import ChemputerDevice
 
-from AnalyticalLabware import IDEXMXIIValve, SpinsolveNMR, OceanOpticsRaman
+from AnalyticalLabware import IDEXMXIIValve, SpinsolveNMR, OceanOpticsRaman, HPLCController
 
 # from ..analysis.base_spectrum import AbstractSpectrum
 
@@ -92,3 +92,29 @@ class SimChemputerIDEX(IDEXMXIIValve, ChemputerDevice):
 
     def sample(self):
         self.logger.info("Valving sampling!")
+
+class SimHPLCController(HPLCController, ChemputerDevice):
+    
+    def __init__(self, name):
+        ChemputerDevice.__init__(self, name)
+
+    def switch_method(self):
+        pass
+
+    def send(self):
+        pass
+    
+    def receive(self):
+        pass
+
+    def standby(self):
+        pass
+
+    def preprun(self):
+        pass
+
+    def sleep(self):
+        pass
+
+    def status(self):
+        pass
