@@ -7,7 +7,7 @@ from ChemputerAPI import ChemputerDevice
 
 from AnalyticalLabware import IDEXMXIIValve, SpinsolveNMR, OceanOpticsRaman, HPLCController
 
-# from ..analysis.base_spectrum import AbstractSpectrum
+from ..analysis.base_spectrum import AbstractSpectrum
 
 ### Physical devices ###
 
@@ -39,42 +39,45 @@ class ChemputerNMR(SpinsolveNMR, ChemputerDevice):
 
 ### Simulated devices ###
 
-# class _SimulatedSpectrum(AbstractSpectrum):
+class _SimulatedSpectrum(AbstractSpectrum):
 
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(save_path=False)
+    def __init__(self, *args, **kwargs):
+        super().__init__(save_path=False)
 
-#     def load_spectrum(self, *args, **kwargs):
-#         x = np.linspace(-100, 100, 1000)
-#         y = 1/(1 + x**2)
-#         super().load_spectrum(x=x, y=y, timestamp=time.time())
+    def load_spectrum(self, *args, **kwargs):
+        x = np.linspace(-100, 100, 1000)
+        y = 1/(1 + x**2)
+        super().load_spectrum(x=x, y=y, timestamp=time.time())
 
-#     def save_data(self, *args, **kwargs):
-#         pass
+    def save_data(self, *args, **kwargs):
+        pass
 
-# class SimChemputerNMR(ChemputerDevice):
-#     def __init__(self, name):
-#         ChemputerDevice.__init__(self, name)
-#         self.spectrum = _SimulatedSpectrum()
+    def default_processing(self, *args, **kwargs):
+        return self.x, self.y, 42.0
 
-#     def get_spectrum(self, *args, **kwargs):
-#         self.spectrum.load_spectrum()
+class SimChemputerNMR(ChemputerDevice):
+    def __init__(self, name):
+        ChemputerDevice.__init__(self, name)
+        self.spectrum = _SimulatedSpectrum()
 
-#     @property
-#     def capabilities(self):
-#         return [("sink", 0)]
+    def get_spectrum(self, *args, **kwargs):
+        self.spectrum.load_spectrum()
 
-# class SimOceanOpticsRaman():
+    @property
+    def capabilities(self):
+        return [("sink", 0)]
 
-#     def __init__(self, *args, **kwargs):
-#         self.logger = logging.getLogger('simulated.oceanopticsraman')
-#         self.spectrum = _SimulatedSpectrum()
+class SimOceanOpticsRaman():
 
-#     def get_spectrum(self):
-#         self.spectrum.load_spectrum()
+    def __init__(self, *args, **kwargs):
+        self.logger = logging.getLogger('simulated.oceanopticsraman')
+        self.spectrum = _SimulatedSpectrum()
 
-#     def obtain_reference_spectrum(self):
-#         pass
+    def get_spectrum(self):
+        self.spectrum.load_spectrum()
+
+    def obtain_reference_spectrum(self):
+        pass
 
 class SimChemputerIDEX(IDEXMXIIValve, ChemputerDevice):
     def __init__(self, name, address, port=5000):
