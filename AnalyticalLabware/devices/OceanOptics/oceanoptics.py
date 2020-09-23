@@ -100,7 +100,7 @@ class OceanOpticsSpectrometer():
             (Tuple): Tuple containing spectrum wavelengths and intensities as numpy arrays
                 Example: (array(wavelengths), array(intensities))
         """
-        
+
         i_mean = []
         self.logger.debug('Scanning')
         self._spectrometer.open()
@@ -108,7 +108,7 @@ class OceanOpticsSpectrometer():
             wavelengths, intensities = self._spectrometer.spectrum()
             i_mean.append(intensities)
             time.sleep(self._delay)
-        
-        intensities = np.mean(i_mean, axis=0).tolist()
+
+        intensities = np.mean(i_mean, axis=0)
         self._spectrometer.close()
         return (wavelengths, intensities)

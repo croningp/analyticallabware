@@ -57,7 +57,7 @@ class RamanSpectrum(AbstractSpectrum):
         'baseline',
     ]
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, autosaving=True):
 
         if path is not None:
             os.makedirs(path, exist_ok=True)
@@ -69,7 +69,7 @@ class RamanSpectrum(AbstractSpectrum):
         self.logger = logging.getLogger(
             'oceanoptics.spectrometer.raman.spectrum')
 
-        super().__init__(self.path)
+        super().__init__(self.path, autosaving)
 
     def find_peaks_iteratively(self, limit=10, steps=100):
         """Finds all peaks iteratively moving the threshold
