@@ -33,17 +33,17 @@ class AbstractSpectrum(ABC):
     }
 
     # list of properties to be saved
-    PUBLIC_PROPERTIES = [
+    PUBLIC_PROPERTIES = {
         'x',
         'y',
         'peaks',
         'timestamp',
-    ]
+    }
 
     # list of internal properties to be dumped during new data loading
-    INTERNAL_PROPERTIES = [
+    INTERNAL_PROPERTIES = {
         'baseline',
-    ]
+    }
 
     def __init__(self, save_path=None, autosaving=True):
         """Default constructor, loads properties into instance namespace.
@@ -51,7 +51,7 @@ class AbstractSpectrum(ABC):
         Can be redefined in ancestor classes.
 
         Args:
-            save_path (Union[str, bool], optional): Valid path to save data to. 
+            save_path (Union[str, bool], optional): Valid path to save data to.
                 If omitted, uses ".//spectrum". If False - no folder created.
             autosaving (bool, optional): If the True (default) will save the
                 spectrum when the new one is loaded. Will drop otherwise.
@@ -71,11 +71,12 @@ class AbstractSpectrum(ABC):
         if save_path is None:
             self.path = os.path.join('.', 'spectrum')
             os.makedirs(self.path, exist_ok=True)
-        elif not save_path:
-            self.path = None
         else:
-            os.makedirs(save_path, exist_ok=True)
-            self.path = save_path
+            try:
+                os.makedirs(save_path, exist_ok=True)
+                self.path = save_path
+            except TypeError: # type(save_path) -> bool
+                self.path = '.'
 
         # creating logger
         if not hasattr(self, 'logger'):
@@ -103,7 +104,7 @@ class AbstractSpectrum(ABC):
             assert x.shape == y.shape
         except AssertionError:
             raise ValueError('X and Y data must have same dimension.') from None
-        
+
         if self.x is not None:
             if self.autosaving:
                 self.save_data()
