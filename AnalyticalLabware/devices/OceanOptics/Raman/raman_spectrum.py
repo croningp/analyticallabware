@@ -44,27 +44,16 @@ class RamanSpectrum(AbstractSpectrum):
         'y': 'intensities',
     }
 
-    PUBLIC_PROPERTIES = [
-        'x',
-        'y',
-        'peaks',
-        'timestamp',
-    ]
-
-    INTERNAL_PROPERTIES = [
+    INTERNAL_PROPERTIES = {
         'reference',
         'original',
         'baseline',
-    ]
+    }
 
     def __init__(self, path=None, autosaving=True):
 
         if path is not None:
-            os.makedirs(path, exist_ok=True)
-            self.path = path
-        else:
-            self.path = os.path.join('.', 'raman_data')
-            os.makedirs(self.path, exist_ok=True)
+            path = os.path.join('.', 'raman_data')
 
         self.logger = logging.getLogger(
             'oceanoptics.spectrometer.raman.spectrum')
