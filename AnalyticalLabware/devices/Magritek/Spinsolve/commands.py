@@ -366,17 +366,29 @@ class RequestCommands:
 
         return self.generate_request(self.AVAILABLE_PROTOCOL_OPTIONS_REQUEST)
 
-    def set_experiment_data(self, *, solvent, sample):
-        """Returns the message for setting the experiment specific data
-
-        Must be called using keyword arguments!
+    def set_solvent_data(self, solvent):
+        """Returns the message to set the solvent data.
 
         Args:
-            solvent (str): Solvent name to be saved with the spectrum data
-            sample (str): Sample name to be saved with the spectrum data
+            solvent (str): Solvent name to be saved with the spectrum data.
         """
 
-        return self.generate_request(self.SET_TAG, {self.SOLVENT_TAG: f"{solvent}", self.SAMPLE_TAG: f"{sample}"})
+        return self.generate_request(
+            self.SET_TAG,
+            {self.SOLVENT_TAG: f"{solvent}"}
+        )
+
+    def set_sample_data(self, sample):
+        """Returns the message to set the solvent data.
+
+        Args:
+            sample (str): Sample name to be saved with the spectrum data.
+        """
+
+        return self.generate_request(
+            self.SET_TAG,
+            {self.SAMPLE_TAG: f"{sample}"}
+        )
 
     def set_data_folder(self, data_folder_path, data_folder_method):
         """Returns the message to set the data saving method and path
