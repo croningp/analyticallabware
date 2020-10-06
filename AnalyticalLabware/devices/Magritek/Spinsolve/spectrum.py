@@ -204,14 +204,22 @@ supplied directory <{data_path}>')
             param = fileobj.readline()
             while param:
                 # in form of "Param"       = "Value"\n
-                parameter, value = param.split('=')
+                parameter, value = param.split('=', maxsplit=1)
                 # stripping from whitespaces, newlines and extra doublequotes
                 parameter = parameter.strip()
-                value = value.strip().strip('"')
+                value = value.strip(' \n"')
+                # special case: userData
+                # converting to nested dict
+                if parameter == 'userData':
+                    values = value.split(';')
+                    value = {}
+                    for key_value in values:
+                        key, val = key_value.split('=')
+                        value[key] = val
                 # converting values to float if possible
                 try:
                     spec_params[parameter] = float(value)
-                except ValueError:
+                except (ValueError, TypeError):
                     spec_params[parameter] = value
                 param = fileobj.readline()
 
