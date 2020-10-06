@@ -25,7 +25,7 @@ def load_commands_from_file(protocols_path=None):
             {'1D PROTON': <Element 'Protocol'>, '1D CARBON': <Element 'Protocol'>}
 
     Raises:
-        ProtocolError: In case the XML command file wasn't found or the supplied file is not 
+        ProtocolError: In case the XML command file wasn't found or the supplied file is not
             a valid XML file
     """
     # If the xml wasn't provided check for it in the standard Magritek folder
@@ -50,11 +50,11 @@ def load_commands_from_file(protocols_path=None):
 
 def load_commands_from_device(device_message):
     """Loads command list from the connected device
-    
+
     Args:
         device_message (bytes): A message from the instrument containing all possible
             protocols and their options
-    
+
     Returns:
         dict: A dictionary containg protocol name as a key and XML element as a value
             For example:
@@ -88,16 +88,16 @@ class ProtocolCommands:
 
     def __init__(self, protocols_path=None):
         """Initialiser for the protocol commands
-        
+
         Loads the commands from the supplied file or directly from the NMR
         instrument and stores them as an internal dictionary. Also provides
         methods to access specific commands and generate valid XML strings
         from supplied command tuple
 
         Args:
-            protocol_path (str, optional): Optional path to the location of the 
+            protocol_path (str, optional): Optional path to the location of the
                 ProtocolOptions.xml file
-            device (Any, optional): Reserved for future use to load command list from the 
+            device (Any, optional): Reserved for future use to load command list from the
                 instrument
         """
 
@@ -113,15 +113,15 @@ class ProtocolCommands:
 
     def generate_command(self, protocol_and_options, custom_tag="Start"):
         """Generates XML message for the command to execute the requested protocol with requested options
-        
+
         Args:
             protocol_and_options (tuple): Tuple with protocol name and dictionary with protocol
                 option names and values. Example: ('1D PROTON', {'Scan': 'QuickScan'})
-        
+
         Returns:
-            bytes: encoded to 'utf-8' string containing the valid XML message to be sent to the 
+            bytes: encoded to 'utf-8' string containing the valid XML message to be sent to the
                 NMR instrument to start the requested protocol
-        
+
         Raises:
             ProtocolError: If the supplied protocol is not a valid command
             ProtocolOptionsError: If the supplied option or its value are not validated in a protocol
@@ -166,7 +166,7 @@ class ProtocolCommands:
         msg = BytesIO()
         # First element of the XML message
         msg_root = ET.Element("Message")
-        # First subelement of the message root as <"command"/> 
+        # First subelement of the message root as <"command"/>
         # with attributes as "command_option_key"="command_option_value"
         msg_root_command = ET.SubElement(msg_root, custom_tag, {"protocol": f"{protocol_and_options[0]}"})
         # If additional options required
@@ -180,17 +180,17 @@ class ProtocolCommands:
         self.logger.debug("Message built: <%s>", msg.getvalue())
 
         return msg.getvalue()
-        
+
     def get_protocol(self, protocol_name):
         """Obtains the command from XML with all available options
-        
+
         Args:
             protocol_name (str): Valid protocol name
-        
+
         Returns:
             tuple: Containg protocol name and protocol options with all possible
                 values packed as dictionary, as required by generate_command method
-        
+
         Raises:
             ProtocolError
         """
@@ -218,12 +218,12 @@ class ProtocolCommands:
         self.logger.debug("Requested protocols update")
         self._protocols = load_commands_from_device(data)
         self.logger.info("Protocols dictionary updated")
-    
+
     ### For easier access the following properties are added ###
 
     def shim_on_sample(self, reference_peak, option):
         """Generates the command for shimming on sample
-        
+
         Args:
             reference_peak (float): Largest peak of the supplied sample used for shimming
                 and scale calibration
@@ -234,14 +234,14 @@ class ProtocolCommands:
             reference_peak = str(round(reference_peak, 2))
         else:
             raise ProtocolOptionsError("Supplied reference peak must be float!")
-        
+
         return self.generate_command((self.SHIM_ON_SAMPLE_PROTOCOL, {"SampleReference": f"{reference_peak}", "Shim": f"{option}"}))
 
     @property
     def proton_protocol(self):
         """Gets protocol name and available options for simple 1D Proton experiment"""
         return self.get_protocol('1D PROTON')
-    
+
     @property
     def proton_extended_protocol(self):
         """Gets protocol name and available options for extended 1D Proton experiment"""
@@ -251,7 +251,7 @@ class ProtocolCommands:
     def carbon_protocol(self):
         """Gets protocol name and available options for simple 1D Carbon experiment"""
         return self.get_protocol('1D CARBON')
-    
+
     @property
     def carbon_extended_protocol(self):
         """Gets protocol name and available options for extended 1D Carbon experiment"""
@@ -293,19 +293,19 @@ class RequestCommands:
     USER_DATA_TAG = "UserData"
 
     def __init__(self):
-        
+
         self.logger = logging.getLogger("spinsolve.requestsapi")
 
     def generate_request(self, tag, options=None):
         """Generate the XML request message
 
-        The syntax for the request commands is slightly different from 
+        The syntax for the request commands is slightly different from
         protocol commands, so this separate method is present
 
         Args:
             tag (str): The main message tag for the request command
             options (dict, optional): Request options to be supplied to the request message
-        
+
         Returns:
             bytes: encoded to 'utf-8' string containing the valid XML request message
             to be sent to the NMR instrument
@@ -317,13 +317,24 @@ class RequestCommands:
         msg = BytesIO()
         # First element of the XML message
         msg_root = ET.Element("Message")
-        # First subelement of the message root as <"command"/> 
+        # First subelement of the message root as <"command"/>
         # with attributes as "command_option_key"="command_option_value"
         msg_root_element = ET.SubElement(msg_root, f"{tag}")
-        # Spesical case - UserData
-        if tag == self.USER_DATA_TAG:
+        # Special case - UserData
+        if options is not None and self.USER_DATA_TAG in options:
+            # Removing the appended key
+            options.pop(self.USER_DATA_TAG)
+            # Creating new subelement
+            user_data_subelement = ET.SubElement(
+                msg_root_element,
+                self.USER_DATA_TAG
+            )
             for key, value in options.items():
-                subelem = ET.SubElement(msg_root_element, "Data", {"key": f"{key}", "value": f"{value}"})
+                subelem = ET.SubElement(
+                    user_data_subelement,
+                    "Data",
+                    {"key": f"{key}", "value": f"{value}"}
+                )
         elif options is not None:
             for key, value in options.items():
                 subelem = ET.SubElement(msg_root_element, f"{key}")
@@ -342,14 +353,14 @@ class RequestCommands:
 
         if shim_request_option not in [self.CHECK_SHIM_REQUEST, self.POWER_SHIM_REQUEST, self.QUICK_SHIM_REQUEST]:
             raise RequestError("Supplied shimming option is not valid")
-        
+
         return self.generate_request(shim_request_option)
 
     def request_hardware(self):
         """Returns the message for the hardware request"""
-        
+
         return self.generate_request(self.HARDWARE_REQUEST)
-    
+
     def request_available_protocol_options(self):
         """Returns the message to request full list of available protocols and their options"""
 
@@ -364,12 +375,12 @@ class RequestCommands:
             solvent (str): Solvent name to be saved with the spectrum data
             sample (str): Sample name to be saved with the spectrum data
         """
-        
-        return self.generate_request(self.SET_TAG, {self.SOLVENT_TAG: f"{solvent}", self.SAMPLE_TAG: f"{sample}"})    
+
+        return self.generate_request(self.SET_TAG, {self.SOLVENT_TAG: f"{solvent}", self.SAMPLE_TAG: f"{sample}"})
 
     def set_data_folder(self, data_folder_path, data_folder_method):
         """Returns the message to set the data saving method and path
-        
+
         Args:
             data_folder_path (str): valid path to save the spectral data
             data_folder_method (str): one of three methods according to the manual:
@@ -389,11 +400,12 @@ class RequestCommands:
         """Returns the message for setting the user data
 
         Args:
-            user_data (dict): Dictionary containg user specific data, will be saved
+            user_data (dict): Dictionary contaning user specific data, will be saved
                 in the "acq.par" file together with spectral data
         """
-
-        return self.generate_request(self.USER_DATA_TAG, user_data)
+        # appending "UserData" key to allow custom message creation
+        user_data.update({self.USER_DATA_TAG: ''})
+        return self.generate_request(self.SET_TAG, user_data)
 
     def abort(self):
         """Returns the message to abort the current operation"""
