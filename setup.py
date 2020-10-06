@@ -10,6 +10,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "SerialLabware @ git+ssh://git@gitlab.com/croningroup/chemputer/seriallabware.git",
+        "ChemputerAPI @ git+ssh://git@gitlab.com/croningroup/chemputer/seriallabware.git",
         "scipy",
         "matplotlib",
         "seabreeze",

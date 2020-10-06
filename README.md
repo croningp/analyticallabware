@@ -13,6 +13,10 @@ If you need to use Advion MS instrument, please contact @hessammehr for the inst
 - seabreeze (python wrapper for OceanOptics Seabreeze library, [git](https://github.com/ap--/python-seabreeze)/[docs](https://python-seabreeze.readthedocs.io/en/latest/index.html))
 - nmrglue (python library for nmr data processing, [git](https://github.com/jjhelmus/nmrglue)/[docs](https://nmrglue.readthedocs.io/en/latest/index.html))
 
+#### _Chemputer specific_
+- ChemputerAPI
+- SerialLabware
+
 
 ## Usage guides
 
