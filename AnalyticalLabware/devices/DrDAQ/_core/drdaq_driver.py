@@ -15,10 +15,13 @@ import logging
 import numpy as np
 
 def _load_library() -> ctypes.CDLL:
-    """Loads the appropriate library for USB Dr DAQ dependent on operating system.
+    """Loads the appropriate library for USB Dr DAQ dependent on operating
+    system.
 
     Raises:
-        NotImplementedError: Not implemented because no idea where the Windows DLL is stored.
+        NotImplementedError: Not implemented because no idea where the Windows
+        DLL is stored.
+
         OSError: Operating system is not supported (macOS).
 
     Returns:
@@ -27,7 +30,9 @@ def _load_library() -> ctypes.CDLL:
 
     # Load for Windows
     if sys.platform == "win":
-        raise NotImplementedError("Windows not implemented yet, feel free to add :D")
+        raise NotImplementedError(
+            "Windows not implemented yet, feel free to add :D"
+        )
 
     # Load for Linux
     elif sys.platform == "linux":
@@ -44,7 +49,11 @@ class DrDAQDriver:
 
     def __init__(self):
         # Set the appropriate variables for measurements
-        self._set_variables()
+        self.recording_block = ctypes.c_int16(200000)
+        self.no_of_samples = ctypes.c_int16(20000)
+        self.channel = ctypes.c_int16(5)
+        self.no_of_active_channels = ctypes.c_int16(1)
+        self.measurement_results = (ctypes.c_short * 20000)()
 
         # Load the library
         self.lib = _load_library()
@@ -61,18 +70,6 @@ class DrDAQDriver:
         # Enable control of the RGB LED
         self.enable_rgb()
 
-
-    def _set_variables(self):
-        """Set variables for the device to obtain measurements.
-        """
-
-        self.__setattr__("recording_block", ctypes.c_int16(200000))
-        self.__setattr__("no_of_samples", ctypes.c_int16(20000))
-        self.__setattr__("channel", ctypes.c_int16(5))
-        self.__setattr__("no_of_active_channels", ctypes.c_int(1))
-        self.__setattr__("measurement_results", (ctypes.c_short * 2000)())
-
-
     def open_unit(self) -> ctypes.c_int16:
         """Open the Dr DAQ unit for measurements.
 
@@ -87,7 +84,6 @@ class DrDAQDriver:
 
         return hdl
 
-
     def close_unit(self):
         """Close connection to the Dr DAQ unit.
         """
@@ -97,15 +93,13 @@ class DrDAQDriver:
             result = self.lib.UsbDrDaqCloseUnit(self.handle)
             self.logger.debug(f"Pico Status: {result}.")
         except Exception:
-            self.logger.critical(f"Unable to close Dr DAQ unit.")
-
+            self.logger.critical("Unable to close Dr DAQ unit.")
 
     def enable_rgb(self):
         """Enable usage of the RGB LED on the Dr DAQ unit.
         """
 
         self.lib.UsbDrDaqEnableRGBLED(self.handle, ctypes.c_short(1))
-
 
     def set_rgb(self, r: int, g: int, b: int):
         """Set the RGB value of the LED on the Dr DAQ unit.
@@ -117,12 +111,17 @@ class DrDAQDriver:
         """
 
         self.lib.UsbDrDaqSetRGBLED(
-            self.handle, ctypes.c_ushort(r), ctypes.c_ushort(g), ctypes.c_ushort(b)
+            self.handle,
+            ctypes.c_ushort(r),
+            ctypes.c_ushort(g),
+            ctypes.c_ushort(b)
         )
 
-
-    def set_DAQ_interval(self):
+    def set_DAQ_interval(self) -> int:
         """Set the sampling rate of the Dr DAQ unit.
+
+        Returns:
+            int: Result of the operation
         """
 
         self.logger.debug("Setting Dr DAQ sampling rate.")
@@ -135,18 +134,28 @@ class DrDAQDriver:
         )
         self.logger.debug(f"Status of Dr DAQ interval setting: {result}.")
 
+        return result
 
-    def run_single_shot(self):
+    def run_single_shot(self) -> int:
         """Perform a single shot run of the Dr DAQ unit.
+
+        Returns:
+            int: Result of the operation
         """
 
-        result = self.lib.UsbDrDaqRun(self.handle, self.no_of_samples, ctypes.c_int16(1))
+        result = self.lib.UsbDrDaqRun(
+            self.handle, self.no_of_samples, ctypes.c_int16(1)
+        )
         self.logger.debug("Initialising Dr DAQ single show run.")
         self.logger.debug(f"Status of Dr DAQ single shot run: {result}.")
 
+        return result
 
     def sampling_done(self):
         """Determine if the sampling has finished for the Dr DAQ unit.
+
+        Returns:
+            bool: Sampling is done or not
         """
 
         done = ctypes.c_bool(0)
@@ -155,15 +164,23 @@ class DrDAQDriver:
         self.logger.debug(f"Pico Status: {result}.")
         self.logger.debug(f"Dr DAQ sampling is: {done}")
 
+        if result == 0:
+            return bool(done)
+
+        return False
 
     def stop_sampling(self):
         """Stop current sampling on the Dr DAQ unit.
+
+        Returns:
+            int: Result of the operation
         """
 
         result = self.lib.UsbDrDaqStop(self.handle)
         self.logger.debug("Dr DAQ stopping sampling.")
         self.logger.debug(f"Pico Status: {result}")
 
+        return result
 
     def get_sampled_values(self) -> np.array:
         """Get the values sampled form the Dr DAQ unit.
@@ -172,17 +189,21 @@ class DrDAQDriver:
             np.array: Measured values or empty list if none available
         """
 
+        no_of_values = self.no_of_samples
         overflow = ctypes.c_int16(0)
+
         result = self.lib.UsbDrDaqGetValues(
             self.handle,
             ctypes.byref(self.measurement_results),
-            ctypes.byref(self.no_of_samples),
+            ctypes.byref(no_of_values),
             ctypes.byref(overflow),
             None
         )
 
         self.logger.debug(f"Pico Status sampling: {result}")
-        self.logger.debug(f"Dr DAQ number of samples measured: {self.no_of_samples}")
+        self.logger.debug(
+            f"Dr DAQ number of samples measured: {self.no_of_samples}"
+        )
         self.logger.debug(f"Dr DAQ Channel with overflow: {overflow}")
 
         if result == 0:

@@ -210,7 +210,7 @@ supplied directory <{data_path}>')
                 value = value.strip(' \n"')
                 # special case: userData
                 # converting to nested dict
-                if parameter == 'userData':
+                if parameter == 'userData' and value:
                     values = value.split(';')
                     value = {}
                     for key_value in values:
