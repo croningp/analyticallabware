@@ -67,7 +67,7 @@ class DrDAQDriver:
         """
 
         self.__setattr__("recording_block", ctypes.c_int16(200000))
-        self.__setattr__("no_of_samples", ctypes.c_int16(20000))
+        self.__setattr__("no_of_samples", ctypes.c_uint32(20000))
         self.__setattr__("channel", ctypes.c_int16(5))
         self.__setattr__("no_of_active_channels", ctypes.c_int(1))
         self.__setattr__("measurement_results", (ctypes.c_short * 2000)())
