@@ -9,6 +9,7 @@
 
 import time
 import numpy as np
+from typing import List
 from ._core import DrDAQDriver
 
 
@@ -79,11 +80,11 @@ class DrDaqPHModule:
 
         return float(value) * (sum(fit))
 
-    def measure_pH(self) -> float:
-        """Obtain a pH measurement from the device.
+    def measure_analog_values(self) -> List[float]:
+        """Obtains the analog readings from the pH driver
 
         Returns:
-            float: Measured pH value.
+            List[float]: Analog readings
         """
 
         # Set RGB to blue to indicate we're currently measuring.
@@ -101,6 +102,18 @@ class DrDaqPHModule:
 
         # Set RGB to green indicating that we're done
         self.driver.set_rgb(0, 0, 255)
+
+        return samples
+
+    def measure_pH(self) -> float:
+        """Obtain a pH measurement from the device.
+
+        Returns:
+            float: Measured pH value.
+        """
+
+        # Get the analog readings from the pH driver
+        samples = self.measure_analog_values()
 
         # Convert the mV measurement to a pH value.
         return self.fit_measurement(np.mean(samples))
