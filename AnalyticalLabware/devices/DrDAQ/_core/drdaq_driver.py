@@ -160,7 +160,7 @@ class DrDAQDriver:
         """Stop current sampling on the Dr DAQ unit.
         """
 
-        result = self.lib.UsbDrDaqDtop(self.handle)
+        result = self.lib.UsbDrDaqStop(self.handle)
         self.logger.debug("Dr DAQ stopping sampling.")
         self.logger.debug(f"Pico Status: {result}")
 
