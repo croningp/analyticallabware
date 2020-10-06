@@ -339,7 +339,7 @@ class SpinsolveConnection:
 
         self.logger.debug("Sending the message")
         # This is necessary due to a random bug in the Spinsolve software with
-        # wrong order of the messages sent. 
+        # wrong order of the messages sent.
         # See details in AnalyticalLabware/issues/22
         while True:
             try:
@@ -540,22 +540,30 @@ class SpinsolveNMR:
         return True
 
     def user_data(self, data=None, *, solvent, sample):
-        """Loads the user data to be saved with the NMR data
+        """Loads the user data to be saved with the NMR data.
 
         Args:
-            data (dict, optinal): Any user data that needs to be saved with the spectal
-                data in form of {'key': 'value'}.
-            solvent (str): Name of the solvent to be saved with the spectral data
-            sample (str): Sample name to be saved with the spectral data
+            data (dict, optional): Any user data that needs to be saved with the
+                spectral data in form of {'key': 'value'}.
+            solvent (str): Name of the solvent to be saved with the spectral
+                data.
+            sample (str): Sample name to be saved with the spectral data.
 
         Returns:
-            bool: True if successfull
+            bool: True if successfull.
         """
+
         if data is not None:
             user_data_cmd = self.req_cmd.set_user_data(data)
             self.send_message(user_data_cmd)
-        experiment_data_cmd = self.req_cmd.set_experiment_data(solvent=solvent, sample=sample)
-        self.send_message(experiment_data_cmd)
+
+        # setting solvent and sample separately
+        solvent_data_cmd = self.req_cmd.set_solvent_data(solvent)
+        self.send_message(solvent_data_cmd)
+
+        sample_data_cmd = self.req_cmd.set_sample_data(sample)
+        self.send_message(sample_data_cmd)
+
         return True
 
     def get_duration(self, protocol, options):
