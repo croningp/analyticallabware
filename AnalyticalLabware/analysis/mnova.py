@@ -5,6 +5,8 @@ import numpy as np
 
 from AnalyticalLabware import SpinsolveNMRSpectrum
 
+from .utils import find_nearest_value_index
+
 def create_binary_peak_map(data):
     """ Return binary map of the peaks within data points.
 
@@ -133,7 +135,7 @@ def merge_regions(x_data, peaks_regions, d_merge, recursively=True):
             all regions with distance < than d_merge will merge.
 
     Returns:
-        :obj:np.array: 2D Nx2 array with peak regions indexes (rows) as left and
+        :obj:np.array: 2D Mx2 array with peak regions indexes (rows) as left and
             right borders (columns), merged according to predefined minimal
             distance.
 
@@ -191,7 +193,37 @@ def merge_regions(x_data, peaks_regions, d_merge, recursively=True):
     return merge_regions(x_data, merged_regions, d_merge, recursively=True)
 
 def expand_regions(x_data, peaks_regions, d_expand):
-    """ Expand the peak regions by the desired value. """
+    """ Expand the peak regions by the desired value.
+
+    Args:
+        x_data (:obj:np.array): X data points.
+        peaks_regions (:obj:np.array): 2D Nx2 array with peak regions indexes
+            (rows) as left and right borders (columns).
+        d_expand (float): Value to expand borders to (in X data scale).
+
+    Returns:
+        :obj:np.array: 2D Nx2 array with expanded peak regions indexes (rows) as
+            left and right borders (columns).
+    """
+
+    data_regions = np.copy(x_data[peaks_regions])
+
+    # determine scale orientation, i.e. decreasing (e.g. ppm on NMR spectrum)
+    # or increasing (e.g. wavelength on UV spectrum)
+    if (data_regions[:, 0] - data_regions[:, 1]).mean() > 0:
+        # ppm-like scale
+        data_regions[:, 0] += d_expand
+        data_regions[:, -1] -= d_expand
+    else:
+        # wavelength-like scale
+        data_regions[:, 0] -= d_expand
+        data_regions[:, -1] += d_expand
+
+    # converting new values to new indexes
+    for index_, value in np.ndenumerate(data_regions):
+        data_regions[index_] = find_nearest_value_index(x_data, value)[1]
+
+    return data_regions.astype(int)
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
