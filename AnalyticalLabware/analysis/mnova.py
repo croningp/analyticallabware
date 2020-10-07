@@ -2,36 +2,14 @@ import os
 import time
 
 import numpy as np
-import matplotlib.pyplot as plt
-import scipy
 
-from AnalyticalLabware.devices.Magritek.Spinsolve.spectrum import SpinsolveNMRSpectrum
-
-
-plt.ion()
-fig, ax = plt.subplots()
-HERE = os.path.abspath(os.path.dirname(__file__))
-DATA = os.path.join(HERE, 'data.1d')
-ACQU_PARS = os.path.join(HERE, 'acqu.par')
-
-spec = SpinsolveNMRSpectrum(False)
-spec.load_spectrum(HERE)
-spec.fft()
-
-x, y = spec.x, spec.y
-params = spec.extract_parameters(ACQU_PARS)
-
-# switching to magnitude mode
-y_m = np.sqrt(y.real**2 + y.imag**2)
-
-# derivative for further calculation
-y_m_der = np.gradient(y_m)
-
-# Gussian filtered
-y_m_g = scipy.ndimage.gaussian_filter1d(y_m, 3)
+from AnalyticalLabware import SpinsolveNMRSpectrum
 
 def create_binary_peak_map(data):
-    """ Return binary map of the peaks within data points. """
+    """ Return binary map of the peaks within data points.
+
+    True value is assigned to potential peak points, False - to baseline.
+    """
     # copying array
     data_c = np.copy(data)
 
@@ -95,7 +73,7 @@ def filter_regions(x_data, peaks_regions):
     data_regions = np.copy(x_data[peaks_regions])
 
     # get arguments where absolute difference is greater than data resolution
-    resolution = np.mean(np.diff(x_data))
+    resolution = np.absolute(np.mean(np.diff(x_data)))
     valid_regions_map = np.absolute(np.diff(data_regions)) > resolution
 
     # get their indexes, mind the flattening of all arrays!
@@ -104,8 +82,36 @@ def filter_regions(x_data, peaks_regions):
     # filtering!
     peaks_regions = peaks_regions[valid_regions_indexes]
 
+    return peaks_regions
+
 def merge_regions(x_data, peaks_regions, d_merge):
     """ Merge peak regions if distance between is less than delta. """
 
 def expand_regions(x_data, peaks_regions, d_expand):
     """ Expand the peak regions by the desired value. """
+
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+    import scipy
+
+    plt.ion()
+    fig, ax = plt.subplots()
+    HERE = os.path.abspath(os.path.dirname(__file__))
+    DATA = os.path.join(HERE, 'data.1d')
+    ACQU_PARS = os.path.join(HERE, 'acqu.par')
+
+    spec = SpinsolveNMRSpectrum(False)
+    spec.load_spectrum(HERE)
+    spec.fft()
+
+    x, y = spec.x, spec.y
+    params = spec.extract_parameters(ACQU_PARS)
+
+    # switching to magnitude mode
+    y_m = np.sqrt(y.real**2 + y.imag**2)
+
+    # derivative for further calculation
+    y_m_der = np.gradient(y_m)
+
+    # Gussian filtered
+    y_m_g = scipy.ndimage.gaussian_filter1d(y_m, 3)
