@@ -8,7 +8,14 @@ from AnalyticalLabware import SpinsolveNMRSpectrum
 def create_binary_peak_map(data):
     """ Return binary map of the peaks within data points.
 
-    True value is assigned to potential peak points, False - to baseline.
+    True values are assigned to potential peak points, False - to baseline.
+
+    Args:
+        data (:obj:np.array): 1D array with data points.
+
+    Returns:
+        :obj:np.array, dtype=bool: Mapping of data points, where True is
+            potential peak region point, False - baseline.
     """
     # copying array
     data_c = np.copy(data)
@@ -37,7 +44,21 @@ def create_binary_peak_map(data):
     return peak_map
 
 def combine_map_to_regions(mapping):
-    """ Combine Falses and Trues values into their indexes arrays. """
+    """ Combine True values into their indexes arrays.
+
+    Args:
+        mapping (:obj:np.array): Boolean mapping array to extract the indexes
+            from.
+
+    Returns:
+        :obj:np.array: 2D array with left and right borders of regions, where
+            mapping is True.
+
+    Example:
+        >>> combine_map_to_regions(np.array([True, True, False, True, False]))
+        array([[0, 1],
+                [3, 3]])
+    """
 
     # region borders
     region_borders = np.diff(mapping)
@@ -65,7 +86,22 @@ def combine_map_to_regions(mapping):
     return np.hstack((lefts, rights))
 
 def filter_regions(x_data, peaks_regions):
-    """ Filter peak regions. """
+    """ Filter peak regions.
+
+    Peak regions are filtered to removed potential false positives (e.g. noise
+        spikes).
+
+    Args:
+        x_data (:obj:np.array): X data points, needed to pick up the data
+            resolution and map the region indexes to the corresponding data
+            points.
+        peaks_regions (:obj:np.array): 2D Nx2 array with peak regions indexes
+            (rows) as left and right borders (columns).
+
+    Returns:
+        :obj:np.array: 2D Mx2 array with filtered peak regions indexes(rows) as
+            left and right borders (columns).
+    """
 
     # filter peaks where region is smaller than spectrum resolution
     # like single spikes, e.g. noise
@@ -84,8 +120,75 @@ def filter_regions(x_data, peaks_regions):
 
     return peaks_regions
 
-def merge_regions(x_data, peaks_regions, d_merge):
-    """ Merge peak regions if distance between is less than delta. """
+def merge_regions(x_data, peaks_regions, d_merge, recursively=True):
+    """ Merge peak regions if distance between is less than delta.
+
+    Args:
+        x_data (:obj:np.array): X data points.
+        peaks_regions (:obj:np.array): 2D Nx2 array with peak regions indexes
+            (rows) as left and right borders (columns).
+        d_merge (float): Minimum distance in X data points to merge two or more
+            regions together.
+        recursively (bool, optional): If True - will repeat the procedure until
+            all regions with distance < than d_merge will merge.
+
+    Returns:
+        :obj:np.array: 2D Nx2 array with peak regions indexes (rows) as left and
+            right borders (columns), merged according to predefined minimal
+            distance.
+
+    Example:
+        >>> regions = np.array([
+                [1, 10],
+                [11, 20],
+                [25, 45],
+                [50, 75],
+                [100, 120],
+                [122, 134]
+            ])
+        >>> data = np.ones_like(regions) # ones as example
+        >>> merge_regions(data, regions, 1)
+        array([[  1,  20],
+               [ 25,  45],
+               [ 50,  75],
+               [100, 120],
+               [122, 134]])
+        >>> merge_regions(data, regions, 20, True)
+        array([[  1,  75],
+               [100, 134]])
+    """
+    # the code is pretty ugly but works
+    merged_regions = []
+
+    # converting to list to drop the data of the fly
+    regions = peaks_regions.tolist()
+
+    for i, _ in enumerate(regions):
+        try:
+            # check left border of i regions with right of i+1
+            if abs(x_data[regions[i][-1]] - x_data[regions[i+1][0]]) <= d_merge:
+                # if lower append merge the regions
+                merged_regions.append([regions[i][0], regions[i+1][-1]])
+                # drop the merged one
+                regions.pop(i+1)
+            else:
+                # if nothing to merge, just append the current region
+                merged_regions.append(regions[i])
+        except IndexError:
+            # last row
+            merged_regions.append(regions[i])
+
+    merged_regions = np.array(merged_regions)
+
+    if not recursively:
+        return merged_regions
+
+    # if recursively, check for the difference
+    if (merged_regions == regions).all():
+        # done
+        return merged_regions
+
+    return merge_regions(x_data, merged_regions, d_merge, recursively=True)
 
 def expand_regions(x_data, peaks_regions, d_expand):
     """ Expand the peak regions by the desired value. """
