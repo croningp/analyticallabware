@@ -3,6 +3,7 @@ import time
 
 import numpy as np
 import nmrglue as ng
+import scipy
 
 from AnalyticalLabware import SpinsolveNMRSpectrum
 
@@ -228,7 +229,7 @@ def expand_regions(x_data, peaks_regions, d_expand):
 
 #TODO method for validating peak regions
 
-def phase_region(self, y_data, region, space=20, n_iter=3):
+def phase_region(y_data, region, space=20, n_iter=3):
     """ Phase individual region of spectral points.
 
     Optimal phase is found iteratively by minimizing the area under the baseline
@@ -243,7 +244,7 @@ def phase_region(self, y_data, region, space=20, n_iter=3):
         n_iter (int, optional): Number of iterations.
 
     Returns:
-        List[:obj:np.array, float, :obj:np.array]:
+        List[int, float, :obj:np.array]:
             - peak position (index) on the y data or averaged value in case of
                 several peaks in the region;
             - optimal phase for the region;
@@ -284,6 +285,10 @@ def phase_region(self, y_data, region, space=20, n_iter=3):
         # converting to int to use as index
         peak_id = np.around(peak_id.mean()).astype(int)
         peak_dic['peak_heights'] = peak_dic['peak_heights'].sum()
+    else:
+        # just peak up the value
+        peak_id = peak_id[0]
+        peak_dic['peak_heights'] = peak_dic['peak_heights'][0]
 
     return [region[0] + peak_id, phases[9], peak_dic['peak_heights']]
 
