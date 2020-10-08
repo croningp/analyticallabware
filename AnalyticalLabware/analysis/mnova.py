@@ -2,6 +2,7 @@ import os
 import time
 
 import numpy as np
+import nmrglue as ng
 
 from AnalyticalLabware import SpinsolveNMRSpectrum
 
@@ -224,6 +225,67 @@ def expand_regions(x_data, peaks_regions, d_expand):
         data_regions[index_] = find_nearest_value_index(x_data, value)[1]
 
     return data_regions.astype(int)
+
+#TODO method for validating peak regions
+
+def phase_region(self, y_data, region, space=20, n_iter=3):
+    """ Phase individual region of spectral points.
+
+    Optimal phase is found iteratively by minimizing the area under the baseline
+    for the corresponding region.
+
+    Args:
+        y_data (:obj:np.array): 1D array of spectral data points.
+        region (Union[List, :obj:np.array]): Indexes of left and right border of
+            region of interest.
+        space (int, optional): Number of evenly spaced phase values to iterate
+            through.
+        n_iter (int, optional): Number of iterations.
+
+    Returns:
+        List[:obj:np.array, float, :obj:np.array]:
+            - peak position (index) on the y data or averaged value in case of
+                several peaks in the region;
+            - optimal phase for the region;
+            - height(s) of the found peak(s) in the region.
+    """
+    # slicing the region of interest
+    data_region = y_data[region[0]:region[-1]]
+
+    # initial coarse adjustment space
+    phases = np.linspace(-180, 180, space)
+
+    for _ in range(n_iter):
+        sum_vals = []
+        for phase in phases:
+            # phasing the region
+            phased = ng.proc_base.ps(data_region, phase)
+            # building baseline as linspace between region edge points
+            baseline = np.linspace(
+                data_region[0], data_region[-1], len(data_region))
+            # mapping the points under the baseline
+            points_below = np.ma.less(phased, baseline)
+            # original paper was calculating area under the curve
+            # but simple number of points give sufficient results
+            # or even better for really noisy spectra
+            sum_points = np.sum(points_below)
+            sum_vals.append(sum_points)
+        min_sum = np.argmin(sum_vals)
+        # building new adjustment space within found minimum
+        phases = np.linspace(phases[min_sum-1], phases[min_sum+1], space)
+
+    # 0.3 height was chosen arbitrary to catch all peaks in the region
+    # and at the same time skip noise spikes
+    peak_id, peak_dic = scipy.signal.find_peaks(
+        phased, height=data_region.max()*0.3)
+
+    # calculate relative region position if several peaks found in the region
+    if len(peak_id) > 1:
+        # converting to int to use as index
+        peak_id = np.around(peak_id.mean()).astype(int)
+        peak_dic['peak_heights'] = peak_dic['peak_heights'].sum()
+
+    return [region[0] + peak_id, phases[9], peak_dic['peak_heights']]
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
