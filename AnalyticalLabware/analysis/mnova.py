@@ -92,13 +92,15 @@ def combine_map_to_regions(mapping):
 def filter_regions(x_data, peaks_regions):
     """ Filter peak regions.
 
-    Peak regions are filtered to removed potential false positives (e.g. noise
+    Peak regions are filtered to remove potential false positives (e.g. noise
         spikes).
 
     Args:
         x_data (:obj:np.array): X data points, needed to pick up the data
             resolution and map the region indexes to the corresponding data
             points.
+        y_data (:obj:np.array): Y data points, needed to validate if the peaks
+            are actually present in the region and remove invalid regions.
         peaks_regions (:obj:np.array): 2D Nx2 array with peak regions indexes
             (rows) as left and right borders (columns).
 
@@ -110,17 +112,79 @@ def filter_regions(x_data, peaks_regions):
     # filter peaks where region is smaller than spectrum resolution
     # like single spikes, e.g. noise
     # compute the regions first
-    data_regions = np.copy(x_data[peaks_regions])
+    x_data_regions = np.copy(x_data[peaks_regions])
 
     # get arguments where absolute difference is greater than data resolution
     resolution = np.absolute(np.mean(np.diff(x_data)))
-    valid_regions_map = np.absolute(np.diff(data_regions)) > resolution
+
+    # (N, 1) array!
+    valid_regions_map = np.absolute(np.diff(x_data_regions)) > resolution
 
     # get their indexes, mind the flattening of all arrays!
     valid_regions_indexes = np.argwhere(valid_regions_map.flatten()).flatten()
 
     # filtering!
     peaks_regions = peaks_regions[valid_regions_indexes]
+
+    return peaks_regions
+
+def filter_noisy_regions(y_data, peaks_regions):
+    """ Remove noisy regions from given regions array.
+
+    Peak regions are filtered to remove false positive noise regions, e.g.
+        incorrectly assigned due to curvy baseline. Filtering is performed by
+        computing average peak points/data points ratio.
+
+    Args:
+        y_data (:obj:np.array): Y data points, needed to validate if the peaks
+            are actually present in the region and remove invalid regions.
+        peaks_regions (:obj:np.array): 2D Nx2 array with peak regions indexes
+            (rows) as left and right borders (columns).
+
+    Returns:
+        :obj:np.array: 2D Mx2 array with filtered peak regions indexes(rows) as
+            left and right borders (columns).
+    """
+
+    # compute the actual regions data points
+    y_data_regions = []
+    for region in peaks_regions:
+        y_data_regions.append(
+            y_data[region[0]:region[-1]]
+        )
+
+    # compute noise data regions, i.e. in between peak regions
+    noise_data_regions = []
+    for row, _ in enumerate(peaks_regions):
+        try:
+            noise_data_regions.append(
+                y_data[peaks_regions[row][1]:peaks_regions[row+1][0]]
+            )
+        except IndexError:
+            # exception for the last row -> discard
+            pass
+
+    # compute average peaks/data points ratio for noisy regions
+    noise_peaks_ratio = []
+    for region in noise_data_regions:
+        # minimum height is pretty low to ensure enough noise is picked
+        peaks, _ = scipy.signal.find_peaks(region, height=region.max()*0.2)
+        noise_peaks_ratio.append(peaks.size/region.size)
+
+    # compute average with weights equal to the region length
+    noise_peaks_ratio = np.average(
+        noise_peaks_ratio,
+        weights=[region.size for region in noise_data_regions]
+    )
+
+    # filtering!
+    valid_regions_indexes = []
+    for row, region in enumerate(y_data_regions):
+        peaks, _ = scipy.signal.find_peaks(region, height=region.max()*0.2)
+        if peaks.size != 0 and peaks.size/region.size < noise_peaks_ratio:
+            valid_regions_indexes.append(row)
+
+    peaks_regions = peaks_regions[np.array(valid_regions_indexes)]
 
     return peaks_regions
 
