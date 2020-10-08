@@ -44,6 +44,9 @@ class HPLCController:
 
         with open(self.cmd_file, "w", encoding="utf8") as cmd_file:
             cmd_file.write(f"{cmd_no} {cmd}")
+        
+        # wait one second to make sure it command it processed by hplc
+        time.sleep(1)
 
         self.logger.info(f"Send command No. {cmd_no}: {cmd}.")
 
@@ -120,7 +123,8 @@ class HPLCController:
         RUN             Run is in progress
         POSTRUN         Postrun is in progress
         RAWDATA         Rawdata are still being processed following a run
-        NOTREADY        Run cannot be startedERRORError occurred
+        NOTREADY        Run cannot be started
+        ERROR           Error occurred
         BREAK           Injection paused
         """
         self.send("response$ = AcqStatus$")
