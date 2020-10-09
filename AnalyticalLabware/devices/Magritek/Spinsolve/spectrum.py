@@ -361,6 +361,9 @@ supplied directory <{data_path}>')
         if self.udic[0]['freq']:
             self.AXIS_MAPPING.update(x='ppm')
 
+        elif self.udic[0]['time']:
+            self.AXIS_MAPPING.update(x='time')
+
     def smooth_spectrum(self, in_place=True, routine='ng', **params):
         """ Smoothes the spectrum.
 
