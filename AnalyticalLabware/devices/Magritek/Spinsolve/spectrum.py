@@ -568,3 +568,12 @@ skipped')
             return
 
         return ng.process.proc_base.zf_double(self.y, n)
+
+    def find_peak_regions(self):
+        pass
+
+    def autointegrate(self):
+        """ Look for peak regions and return them with corresponding integrals.
+        """
+
+        # looking for peaks in magnitude mode, derivative and
