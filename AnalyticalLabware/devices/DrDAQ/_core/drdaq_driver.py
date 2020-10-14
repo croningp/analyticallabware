@@ -1,11 +1,13 @@
 """
 .. module:: drdaq_driver
-    :synopsis: Driver for interfacing with the Dr DAQ Picoscope for pH measurements
+    :synopsis: Driver for interfacing with the Dr DAQ Picoscope for pH
+    measurements
+
     :platforms: Unix, Windows
 
 .. moduleauthor:: Graham Keenan (Cronin Lab 2020)
 
-.. note:: Code is adapted from code written by Abhishek Sharma (Cronin Lab 2018).
+.. note:: Code is adapted from code written by Abhishek Sharma (Cronin Lab 2018)
 
 """
 
@@ -13,8 +15,9 @@ import sys
 import ctypes
 import logging
 import numpy as np
+from typing import Union
 
-def _load_library() -> ctypes.CDLL:
+def _load_library() -> Union[ctypes.CDLL, ctypes.WinDLL]:
     """Loads the appropriate library for USB Dr DAQ dependent on operating
     system.
 
@@ -25,14 +28,16 @@ def _load_library() -> ctypes.CDLL:
         OSError: Operating system is not supported (macOS).
 
     Returns:
-        ctypes.CDLL: Loaded USB Dr DAQ library
+        Union[ctypes.CDLL, ctypes.WinDLL]: Loaded USB Dr DAQ library
     """
 
     # Load for Windows
-    if sys.platform == "win":
-        raise NotImplementedError(
-            "Windows not implemented yet, feel free to add :D"
+    if "win" in sys.platform:
+        bit = " (x86)" if sys.platform == "win32" else ""
+        windows_path = (
+            f"C:\\Program Files{bit}\\Pico Technology\\SDK\\lib\\usbdrdaq.dll"
         )
+        return ctypes.windll.LoadLibrary(windows_path)
 
     # Load for Linux
     elif sys.platform == "linux":
