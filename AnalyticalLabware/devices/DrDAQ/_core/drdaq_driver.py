@@ -15,9 +15,8 @@ import sys
 import ctypes
 import logging
 import numpy as np
-from typing import Union
 
-def _load_library() -> Union[ctypes.CDLL, ctypes.WinDLL]:
+def _load_library() -> ctypes.CDLL:
     """Loads the appropriate library for USB Dr DAQ dependent on operating
     system.
 
