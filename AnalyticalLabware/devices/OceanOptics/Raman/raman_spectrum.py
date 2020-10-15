@@ -58,7 +58,7 @@ class RamanSpectrum(AbstractSpectrum):
         self.logger = logging.getLogger(
             'oceanoptics.spectrometer.raman.spectrum')
 
-        super().__init__(self.path, autosaving)
+        super().__init__(path, autosaving)
 
     def find_peaks_iteratively(self, limit=10, steps=100):
         """Finds all peaks iteratively moving the threshold
