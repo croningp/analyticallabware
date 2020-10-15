@@ -170,6 +170,14 @@ class HPLCController:
         """
         self.send("StartMethod")
 
+    def run_method(self, data_dir: str, expt_name: str):
+        """
+        Starts the currently selected method, storing data
+        under the <data_dir>/<expt_name>.D folder.
+        Device must be ready. (status="PRERUN")
+        """
+        self.send(f'RunMethod "{data_dir}",,"{expt_name}"')
+
     def abort_run(self):
         """
         Stops the run. 
