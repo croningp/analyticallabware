@@ -45,16 +45,16 @@ class HPLCController:
         with open(self.cmd_file, "w", encoding="utf8") as cmd_file:
             cmd_file.write(f"{cmd_no} {cmd}")
         
-        # wait one second to make sure it command it processed by hplc
+        # wait one second to make sure command is processed by hplc
         time.sleep(1)
 
         self.logger.info(f"Send command No. {cmd_no}: {cmd}.")
 
-    def _receive(self, cmd_no: int) -> str:
+    def _receive(self, cmd_no: int, num_retries=20)-> str:
         """
         Low-level execution primitive.
         """
-        while True:
+        for _ in range(num_retries):
             with open(self.reply_file, "r", encoding="utf_16") as reply_file:
                 response = reply_file.read()
 
@@ -69,6 +69,7 @@ class HPLCController:
                         return response
 
             time.sleep(0.25)
+        raise IOError(f"Failed to read response to cmd_no {cmd_no}.")
 
     def send(self, cmd: str):
         if self.cmd_no == MAX_CMD_NO:
@@ -96,7 +97,7 @@ class HPLCController:
 
     def standby(self):
         """
-        Switches all modules in standby mode. 
+        Switches all modules in standby mode.
         All lamps and pumps are switched off.
         """
         self.send(f"Standby")
@@ -104,7 +105,7 @@ class HPLCController:
 
     def preprun(self):
         """
-        Prepares all modules for run. 
+        Prepares all modules for run.
         All lamps and pumps are switched on.
         """
         self.send(f"PrepRun")
@@ -112,7 +113,7 @@ class HPLCController:
 
     def status(self):
         """
-        Returns a list with the device status. It can be: 
+        Returns a list with the device status. It can be:
         INITIALIZING    Set during initialization
         NOMODULE        No module configured
         OFFLINE         Currently in offline mode
