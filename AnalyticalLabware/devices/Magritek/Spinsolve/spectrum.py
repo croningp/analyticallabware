@@ -23,6 +23,10 @@ TIME_FORMAT = r'%Y-%m-%dT%H:%M:%S.%f'
 JCAMP_DX_SPECTRUM = 'nmr_fid.dx'
 CSV_SPECTRUM = 'spectrum.csv'
 
+# filename for shimming parameters
+SHIMMING_PARAMETERS = 'shim.par'
+SHIMMING_FID = 'sample_fid.1d'
+SHIMMING_SPECTRUM = 'spectrum.1d'
 
 class SpinsolveNMRSpectrum(AbstractSpectrum):
     """Class for NMR spectrum loading and handling."""
@@ -60,6 +64,10 @@ class SpinsolveNMRSpectrum(AbstractSpectrum):
         # placeholder, will be updated
         self._uc = None
 
+        # placeholder to store shimming parameters in the current session
+        self.last_shimming_time = None
+        self.last_shimming_results = None
+
     def load_spectrum(self, data_path, start_time=None, preprocessed=True):
         """Loads the spectra from the given folder.
 
@@ -90,7 +98,32 @@ class SpinsolveNMRSpectrum(AbstractSpectrum):
         fid_path = os.path.join(data_path, FID_DATA)
 
         # loading parameters
-        self.parameters = self.extract_parameters(param_path)
+        try:
+            self.parameters = self.extract_parameters(param_path)
+        except FileNotFoundError:
+            # this happens only if shimming was performed
+            shim_path = os.path.join(data_path, SHIMMING_PARAMETERS)
+            self.parameters = self.extract_parameters(shim_path)
+
+            # updating placeholders
+            self.last_shimming_results = {
+                parameter: self.parameters[parameter]
+                for parameter in self.parameters
+                if parameter.startswith('shim')
+            }
+
+            # updating last shimming time
+            self.last_shimming_time = time.strptime(
+                self.parameters['CurrentTime'],
+                TIME_FORMAT
+            )
+
+            # updating file names for the shimming
+            processed_path = os.path.join(data_path, SHIMMING_SPECTRUM)
+
+            # forcing preprocessed to deal with frequency domain not raw FID
+            preprocessed = True
+
         self.data_path = data_path
 
         # extracting the time from acquisition parameters
