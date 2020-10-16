@@ -71,7 +71,7 @@ class ReplyParser:
         # Main message element
         msg_element = msg_root[0]
 
-        # Invocing specific methods for specific responds
+        # Invoking specific methods for specific responds
         if msg_element.tag == self.HARDWARE_RESPONSE_TAG:
             return self.hardware_processing(msg_element)
         elif msg_element.tag == self.AVAILABLE_PROTOCOL_OPTIONS_RESPONSE_TAG:
@@ -132,7 +132,7 @@ class ReplyParser:
             True if shimming was successfull
 
         Raises:
-            ShimmingError: If the shimming process falied
+            ShimmingError: If the shimming process failed
         """
 
         self.logger.debug("Parsing message with <%s> tag", element.tag)
@@ -141,8 +141,13 @@ class ReplyParser:
 
         error_text = element.get("error")
         if error_text:
-            self.logger.error("ShimmingError: check the log for the full message")
-            raise ShimmingError(f"Shimming error: {error_text}")
+            self.logger.error("ShimmingError: check the error message below\
+\n%s", error_text)
+            if self.shimming_base_width_threshold == 40 and\
+                self.shimming_line_width_threshold == 1:
+                # only raise error if default line widths were used as the
+                # reference point
+                raise ShimmingError(f"Shimming error: {error_text}")
 
         for child in element:
             self.logger.info("%s - %s", child.tag, child.text)
@@ -154,9 +159,9 @@ class ReplyParser:
 
         # Checking shimming criteria
         if line_width > self.shimming_line_width_threshold:
-            self.logger.critical("Shimming line width <%s> is above requested threshold <%s>, consider running another shimming method", line_width, self.shimming_line_width_threshold)
+            self.logger.critical("Shimming line width <%.2f> is above requested threshold <%.2f>, consider running another shimming method", line_width, self.shimming_line_width_threshold)
         if base_width > self.shimming_base_width_threshold:
-            self.logger.critical("Shimming line width <%s> is above requested threshold <%s>, consider running another shimming method", line_width, self.shimming_line_width_threshold)
+            self.logger.critical("Shimming line width <%.2f> is above requested threshold <%.2f>, consider running another shimming method", line_width, self.shimming_line_width_threshold)
         if system_ready != "true":
             self.logger.critical("System is not ready after shimming, consider running another shimming method")
             return False
@@ -202,9 +207,9 @@ class ReplyParser:
 
         # Logging the data
         if state_tag == "State":
-            # Resetting the event to False to block the incomming msg
+            # Resetting the event to False to block the incoming msg
             if status_attrib == "Running":
-                self.logger.debug("Device in operation, blocking the incomming messages")
+                self.logger.debug("Device in operation, blocking the incoming messages")
             self.device_ready_flag.clear()
             self.logger.info("%s the <%s> protocol", status_attrib, protocol_attrib)
             if status_attrib == "Ready":
@@ -252,7 +257,7 @@ class SpinsolveConnection:
         """
         Args:
             HOST (str, optional): TCP/IP address of the local host
-            PORT (int, optional): TCP/IP listening port for Spinsolve software, 13000 by defualt
+            PORT (int, optional): TCP/IP listening port for Spinsolve software, 13000 by default
                 must be changed in the software if necessary
         """
 
@@ -369,7 +374,7 @@ see below:\n%s', unprocessed)
         if self._connection is not None:
             self._connection.shutdown(socket.SHUT_RDWR)
             self._connection.close()
-            self._connection = None # To avaiable subsequent calls to open_connection after connection was once closed
+            self._connection = None # To available subsequent calls to open_connection after connection was once closed
             self._connection_close_requested.clear()
             self.logger.info("Socket connection closed")
         else:
@@ -451,7 +456,7 @@ class SpinsolveNMR:
         self.logger.debug("Message sent")
 
     def receive_reply(self, parse=True):
-        """Receives the reply from the intrument and parses it if necessary"""
+        """Receives the reply from the instrument and parses it if necessary"""
 
         while True:
             self.logger.debug("Reply requested from the connection")
@@ -486,14 +491,24 @@ class SpinsolveNMR:
         self.cmd.reload_commands(reply)
         self.logger.info("Commands updated, see available protocols \n <%s>", list(self.cmd._protocols.keys())) # pylint: disable=protected-access
 
-    def shim(self, option="CheckShimRequest"):
+    def shim(
+            self,
+            option="CheckShimRequest",
+            *,
+            line_width_threshold=1,
+            base_width_threshold=40,
+        ):
         """Initialise shimming protocol
 
         Consider checking <Spinsolve>.cmd.get_protocol(<Spinsolve>.cmd.SHIM_PROTOCOL) for available options
 
         Args:
-            option (str, optinal): A name of the instrument shimming method
+            option (str, optional): A name of the instrument shimming method
         """
+
+        # updating default values
+        self._parser.shimming_line_width_threshold = line_width_threshold
+        self._parser.shimming_base_width_threshold = base_width_threshold
 
         cmd = self.req_cmd.request_shim(option)
         self.send_message(cmd)
@@ -506,10 +521,10 @@ class SpinsolveNMR:
 
         Args:
             reference_peak (float): A reference peak to shim and calibrate on
-            option (str, optinla): A name of the instrument shimming method
-            line_width_threshold (int, optional): Spectrum line width at 50%, should be below 1
+            option (str, optional): A name of the instrument shimming method
+            line_width_threshold (float, optional): Spectrum line width at 50%, should be below 1
                 for good quality spectrums
-            base_width_threshold (int, optional): Spectrum line width at 0.55%, should be below 40
+            base_width_threshold (float, optional): Spectrum line width at 0.55%, should be below 40
                 for good quality spectrums
         """
 
@@ -524,7 +539,7 @@ class SpinsolveNMR:
 
         Args:
             data_folder_path (str): Valid path to save the spectral data
-            data_folder_method (str, optinal): One of three methods according to the manual:
+            data_folder_method (str, optional): One of three methods according to the manual:
                 'UserFolder' - Data is saved directly in the provided path
                 'TimeStamp' (default) - Data is saved in newly created folder in format
                     yyyymmddhhmmss in the provided path
