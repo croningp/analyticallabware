@@ -93,15 +93,24 @@ class SimChemputerIDEX(IDEXMXIIValve, ChemputerDevice):
     def wait_until_ready(self):
         pass
 
-    def sample(self):
+    def sample(self, time):
         self.logger.info("Valving sampling!")
 
+# Generator to simulate change of HPLC status
+def alternate():
+    while True:
+        yield ["PRERUN"]
+        yield ["NOTREADY"]
+
 class SimHPLCController(HPLCController, ChemputerDevice):
+
+    alternator = alternate()
     
     def __init__(self, name):
         ChemputerDevice.__init__(self, name)
+        self.spectrum = _SimulatedSpectrum()
 
-    def switch_method(self):
+    def switch_method(self, name):
         pass
 
     def send(self):
@@ -119,5 +128,8 @@ class SimHPLCController(HPLCController, ChemputerDevice):
     def sleep(self):
         pass
 
-    def status(self):
-        pass
+    def status(self, alternator=alternator):
+        return next(alternator)
+
+    def get_spectrum(self, *args, **kwargs):
+        self.spectrum.load_spectrum()
