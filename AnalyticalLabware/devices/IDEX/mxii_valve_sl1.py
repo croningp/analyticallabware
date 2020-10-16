@@ -8,6 +8,8 @@ from SerialLabware import IKARCTDigital
 class IDEXMXIIValve(SerialDevice):
     """Two-position IDEX MX Series II HPLC valve."""
     def __init__(self, *params, **kwargs):
+        self.baudrate = 19200
+        self.command_termination = '\r'
         super().__init__(*params, **kwargs)
         self.cmd = {
             "MOVE_TO_1":    "P01\r",
