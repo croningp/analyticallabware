@@ -361,6 +361,9 @@ supplied directory <{data_path}>')
         if self.udic[0]['freq']:
             self.AXIS_MAPPING.update(x='ppm')
 
+        elif self.udic[0]['time']:
+            self.AXIS_MAPPING.update(x='time')
+
     def smooth_spectrum(self, in_place=True, routine='ng', **params):
         """ Smoothes the spectrum.
 
@@ -558,6 +561,10 @@ skipped')
 
             # extending x axis
             self.x = np.linspace(self.x[0], self.x[-1]*2**n, self.y.shape[0])
+
+            # updating udic and uc
+            self.udic[0].update(size=self.x.size)
+            self._uc = ng.fileio.fileiobase.uc_from_udic(self.udic)
             return
 
         return ng.process.proc_base.zf_double(self.y, n)
