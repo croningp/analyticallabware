@@ -78,7 +78,7 @@ class DrDaqPHModule:
         y = np.array([4., 7., 10.], dtype=np.float64)
         fit = np.polyfit(x, y, 1)
 
-        return float(value) * (sum(fit))
+        return float(value) * fit[0] + fit[1]
 
     def measure_analog_values(self) -> Tuple[float]:
         """Obtains the analog readings from the pH driver
