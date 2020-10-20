@@ -5,10 +5,12 @@ import logging
 import time
 
 import numpy as np
+import scipy
 import nmrglue as ng
 import matplotlib.pyplot as plt
 
 from ....analysis import AbstractSpectrum
+from ....analysis.spec_utils import *
 
 # standard filenames for spectral data
 FID_DATA = 'data.1d'
@@ -601,3 +603,138 @@ skipped')
             return
 
         return ng.process.proc_base.zf_double(self.y, n)
+
+    def generate_peak_regions(
+            self,
+            magnitude=True,
+            derivative=True,
+            smoothed=True,
+            d_merge=0.056,
+            d_expand=0.0,
+    ):
+        """ Generate regions if interest potentially containing compound peaks
+            from the spectral data.
+
+        Args:
+            d_merge (float, Optional): arbitrary interval (in ppm!) to merge
+                several regions, if the distance between is lower.
+            d_expand (float, Optional): arbitrary value (in ppm!) to expand the
+                regions after automatic assigning and filtering.
+
+        Returns:
+            :obj:np.array: 2D Mx2 array with peak regions indexes (rows) as left
+                and right borders (columns).
+        """
+
+        # check if fft was performed
+        if self.AXIS_MAPPING['x'] != 'ppm':
+            self.logger.warning('Please perform FFT first.')
+            return np.array([[]])
+
+        # placeholder
+        peak_map = np.full_like(self.x, False)
+
+        if magnitude:
+            # looking for peaks in magnitude mode
+            magnitude_spectrum = np.sqrt(self.y.real**2 + self.y.imag**2)
+            # mapping
+            peak_map = np.logical_or(create_binary_peak_map(magnitude_spectrum),
+                peak_map)
+        else:
+            peak_map = np.logical_or(create_binary_peak_map(self.y), peak_map)
+
+        # additionally in the derivative
+        if derivative:
+            try:
+                derivative_map = create_binary_peak_map(
+                    np.gradient(magnitude_spectrum))
+            except NameError:
+                derivative_map = create_binary_peak_map(np.gradient(self.y))
+            # combining
+            peak_map = np.logical_or(derivative_map, peak_map)
+
+        # and in the smoothed version
+        if smoothed:
+            try:
+                smoothed = scipy.ndimage.gaussian_filter1d(
+                    magnitude_spectrum, 3)
+            except NameError:
+                # smoothing only supported on non-complex data
+                smoothed = scipy.ndimage.gaussian_filter1d(self.y.real, 3)
+            # combining
+            peak_map = np.logical_or(create_binary_peak_map(smoothed), peak_map)
+
+        # extracting the regions from the full map
+        regions = combine_map_to_regions(peak_map)
+
+        # filtering, merging, expanding
+        regions = filter_regions(self.x, regions)
+        regions = filter_noisy_regions(self.y, regions)
+        if d_merge:
+            regions = merge_regions(self.x, regions, d_merge=d_merge)
+        if d_expand:
+            regions = expand_regions(self.x, regions, d_expand=d_expand)
+
+        return regions
+
+    def default_processing(self):
+        """ Default processing.
+
+        Performs several processing methods with attributes chosen
+        experimentally to achieve best results for the purpose of "fast",
+        "reliable" and "reproducible" NMR analysis.
+        """
+        # TODO add processing for various nucleus
+        if self.parameters['rxChannel'] == '19F':
+            self.apodization(function='gm', g1=1.2, g2=4.5)
+            self.zero_fill()
+            self.fft()
+            self.correct_baseline()
+            self.autophase()
+            self.correct_baseline()
+
+    def integrate_area(self, area, rule='trapz'):
+        """ Integrate the spectrum within given area.
+
+        Redefined from ancestor method to discard imaginary part of the
+        resulting integral.
+
+        Args:
+            area (Tuple[float, float]): Tuple with left and right border (X axis
+                obviously) for the desired area.
+            rule (str, optional): Method for integration, "trapz" - trapezoidal
+                rule (default), "simps" - Simpson's rule.
+        Returns:
+            float: Definite integral within given area as approximated by given
+                method.
+        """
+
+        result = super().integrate_area(area, rule)
+
+        # discarding imaginary part and returning the absolute value
+        # due to "NMR-order" of the x axis
+        return abs(result.real)
+
+    def integrate_regions(self, regions):
+        """ Integrate the given regions using nmrglue integration method.
+
+        Check the corresponding documentation for details.
+
+        Args:
+            regions (:obj:np.array): 2D Mx2 array, containing left and right
+                borders for the regions of interest, potentially containing
+                peak areas (as found by self.generate_peak_regions method).
+
+        Return:
+            result (:obj:np.array): 1D M-size array contaning integration for
+                each region of interest.
+        """
+
+        result = ng.analysis.integration.integrate(
+            data=self.y,
+            unit_conv=self._uc,
+            limits=self.x[regions], # directly get the ppm values
+        )
+
+        # discarding imaginary part
+        return np.abs(np.real(result))
