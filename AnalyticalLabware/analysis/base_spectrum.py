@@ -171,10 +171,10 @@ class AbstractSpectrum(ABC):
         """Trims the spectrum data within specific X region
 
         Args:
-            xmin(int): Minimum position on the X axis to start from.
-            xmax(int): Maximum position on the X axis to end to.
-            in_place(bool): If trimming happens in place, else returns new array
-                as trimmed copy.
+            xmin (int): Minimum position on the X axis to start from.
+            xmax (int): Maximum position on the X axis to end to.
+            in_place (bool): If trimming happens in place, else returns new
+                array as trimmed copy.
 
         Returns:
             (bool): True if trimmed in place.
@@ -197,32 +197,58 @@ class AbstractSpectrum(ABC):
         else:
             return (self.x.copy()[full_mask], self.y.copy()[full_mask])
 
-    def show_spectrum(self, filename=None):
-        """Plots the spectral data using matplotlib.pyplot module
+    def show_spectrum(
+            self,
+            filename=None,
+            title=None,
+            label=None,
+    ):
+        """ Plots the spectral data using matplotlib.pyplot module.
 
         Args:
-            filename (str): Filename for the current plot. If omitted, file is
-                not saved.
+            filename (str, optional): Filename for the current plot. If omitted,
+                file is not saved.
+            title (str, optional): Title for the spectrum plot. If omitted, no
+                title is set.
+            label (str, optional): Label for the spectrum plot. If omitted, uses
+                the spectrum timestamp.
         """
+        if label is None:
+            label = f'{self.timestamp}'
 
-        plt.plot(self.x, self.y, color='black', label=f'{self.timestamp}')
-        plt.xlabel(self.AXIS_MAPPING['x'])
-        plt.ylabel(self.AXIS_MAPPING['y'])
+        fig, ax = plt.subplots(figsize=(12, 8))
+
+        ax.plot(
+            self.x,
+            self.y,
+            color='xkcd:navy blue',
+            label=label,
+        )
+
+        ax.set_xlabel(self.AXIS_MAPPING['x'])
+        ax.set_ylabel(self.AXIS_MAPPING['y'])
+
+        if title is not None:
+            ax.set_title(title)
 
         # plotting peaks if found
         if self.peaks is not None:
             plt.scatter(
                 self.peaks[:, 1],
                 self.peaks[:, 2],
-                label='found peaks'
+                label='found peaks',
+                color='xkcd:tangerine',
             )
 
+        ax.legend()
+
         if filename is None:
-            plt.legend()
-            plt.show()
+            fig.show()
 
         else:
-            plt.savefig(f'{filename}.png')
+            path = os.path.join(self.path, 'images')
+            os.makedirs(path, exist_ok=True)
+            fig.savefig(os.path.join(path, f'{filename}.png'), dpi=150)
 
     def find_peaks(self, threshold=0.1, min_width=2, min_dist=None, area=None):
         """Finds all peaks above the threshold with at least min_width width.

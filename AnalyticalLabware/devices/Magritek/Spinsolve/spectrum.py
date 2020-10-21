@@ -260,33 +260,64 @@ supplied directory <{data_path}>')
 
         return spec_params
 
-    def show_spectrum(self, filename=None):
-        # redefined to support axis inverting
-        fig, ax = plt.subplots()
+    def show_spectrum(
+            self,
+            filename=None,
+            title=None,
+            label=None,
+    ):
+        """ Plots the spectral data using matplotlib.pyplot module.
 
-        # removing imaginary part
-        y = ng.proc_base.di(self.y)
-        ax.plot(self.x, y, color='black', label=f'{self.timestamp}')
+        Redefined from ancestor class to support axis inverting.
+
+        Args:
+            filename (str, optional): Filename for the current plot. If omitted,
+                file is not saved.
+            title (str, optional): Title for the spectrum plot. If omitted, no
+                title is set.
+            label (str, optional): Label for the spectrum plot. If omitted, uses
+                the spectrum timestamp.
+        """
+        if label is None:
+            label = f'{self.timestamp}'
+
+        fig, ax = plt.subplots(figsize=(12, 8))
+
+        ax.plot(
+            self.x,
+            self.y,
+            color='xkcd:navy blue',
+            label=label,
+        )
+
         ax.set_xlabel(self.AXIS_MAPPING['x'])
         ax.set_ylabel(self.AXIS_MAPPING['y'])
 
+        if title is not None:
+            ax.set_title(title)
+
+        # plotting peaks if found
         if self.peaks is not None:
             plt.scatter(
                 self.peaks[:, 1],
                 self.peaks[:, 2],
-                label='found peaks'
+                label='found peaks',
+                color='xkcd:tangerine',
             )
 
-        # inverting axis if ppm scale needed
+        ax.legend()
+
+        # inverting if ppm scale
         if self.AXIS_MAPPING['x'] == 'ppm':
             ax.invert_xaxis()
 
         if filename is None:
-            ax.legend()
             fig.show()
 
         else:
-            fig.savefig(os.path.join(self.path, f'{filename}.png'))
+            path = os.path.join(self.path, 'images')
+            os.makedirs(path, exist_ok=True)
+            fig.savefig(os.path.join(path, f'{filename}.png'), dpi=150)
 
     def fft(self, in_place=True):
         """ Fourier transformation, NMR ordering of the results.
@@ -324,15 +355,15 @@ supplied directory <{data_path}>')
         function. Please refer to original function documentation for details.
 
         Args:
-            in_place(bool, optional): If True (default), self.y is updated;
+            in_place (bool, optional): If True (default), self.y is updated;
                 returns new array if False.
-            function(Union[str, Callable], optional): Algorithm to use for phase
-                scoring. Builtin functions can be specified by one of the
+            function (Union[str, Callable], optional): Algorithm to use for
+                phase scoring. Builtin functions can be specified by one of the
                 following strings: "acme" or "peak_minima". This refers to
                 nmrglue.process.proc_autophase.autops function, "peak_minima"
                 (default) was found to perform best.
-            p0(float, optional): Initial zero order phase in degrees.
-            p1(float, optional): Initial first order phase in degrees.
+            p0 (float, optional): Initial zero order phase in degrees.
+            p1 (float, optional): Initial first order phase in degrees.
 
         Returns:
             Union[:np.array:, None]: If in_place is True, will return new array
