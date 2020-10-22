@@ -41,10 +41,15 @@ class HPLCController:
         Low-level execution primitive. Sends a command string to HPLC
         """
         # override cmd_no if explicitly given
+        while True:
+            try:
+                with open(self.cmd_file, "w", encoding="utf8") as cmd_file:
+                    cmd_file.write(f"{cmd_no} {cmd}")
+            except PermissionError:
+                self.logger.warning("Failed sending command, trying again...")
+                continue
+            break
 
-        with open(self.cmd_file, "w", encoding="utf8") as cmd_file:
-            cmd_file.write(f"{cmd_no} {cmd}")
-        
         # wait one second to make sure command is processed by hplc
         time.sleep(1)
 
@@ -68,7 +73,7 @@ class HPLCController:
                         self.logger.info(f"Reply: \n{response}")
                         return response
 
-            time.sleep(0.25)
+            time.sleep(0.5)
         raise IOError(f"Failed to read response to cmd_no {cmd_no}.")
 
     def send(self, cmd: str):
@@ -129,8 +134,12 @@ class HPLCController:
         BREAK           Injection paused
         """
         self.send("response$ = AcqStatus$")
-        time.sleep(0.25)
-        parsed_response = self.receive().splitlines()[1].split()[1:]
+        time.sleep(0.5)
+        try:
+            parsed_response = self.receive().splitlines()[1].split()[1:]
+        except IOError:
+            return ["IOERROR"]
+
         return parsed_response
 
     def stop_macro(self):
@@ -146,7 +155,7 @@ class HPLCController:
         self.send(f'LoadMethod "C:\\Chem32\\1\\Methods\\", "{name}.M"')
         time.sleep(1)
         self.send("response$ = _MethFile$")
-        time.sleep(0.25)
+        time.sleep(0.5)
         # check that method switched
         parsed_response = self.receive().splitlines()[1].split()[1:][0]
         assert parsed_response == f"{name}.M", "Switching Methods failed."
