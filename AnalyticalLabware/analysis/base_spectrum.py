@@ -467,3 +467,41 @@ rules are supported!')
         """
 
         return self.x, self.y, self.timestamp
+
+    @classmethod
+    def from_data(cls, data):
+        """ Class method to instantiate the class from the saved data file.
+
+        Args:
+            data (str): Path to spectral data file (as pickle).
+
+        Returns:
+            New instance with all data inside.
+        """
+
+        if 'pickle' not in data:
+            raise AttributeError('Only .pickle files are supported')
+
+        path = os.path.abspath(os.path.dirname(data))
+
+        spec = cls(path)
+        spec.load_data(data)
+
+        return spec
+
+    def copy(self):
+        """ Dummy class to return a new instance with the same data as the
+        current.
+
+        Returns:
+            (:obj:SpinsolveNMRSpectrum): New object with the same data.
+        """
+
+        # creating new instance
+        spec = self.__class__(self.path, self.autosaving)
+
+        # loading attributes
+        for prop in self.PUBLIC_PROPERTIES.union(self.INTERNAL_PROPERTIES):
+            setattr(spec, prop, getattr(self, prop))
+
+        return spec

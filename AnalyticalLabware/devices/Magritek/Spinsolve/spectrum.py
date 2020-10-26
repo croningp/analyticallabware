@@ -41,6 +41,7 @@ class SpinsolveNMRSpectrum(AbstractSpectrum):
     INTERNAL_PROPERTIES = {
         'baseline',
         'data_path',
+        '_uc',
     }
 
     def __init__(self, path=None, autosaving=False):
@@ -61,10 +62,6 @@ class SpinsolveNMRSpectrum(AbstractSpectrum):
         # universal dictionary for the acquisition parameters
         # placeholder, will be updated when spectral data is loaded
         self.udic = ng.fileio.fileiobase.create_blank_udic(1) # 1D spectrum
-
-        # unit converter from nmrglue library
-        # placeholder, will be updated
-        self._uc = None
 
         # placeholder to store shimming parameters in the current session
         self.last_shimming_time = None
