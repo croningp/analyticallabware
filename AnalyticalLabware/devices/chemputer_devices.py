@@ -12,12 +12,13 @@ from ..analysis.base_spectrum import AbstractSpectrum
 ### Physical devices ###
 
 class ChemputerIDEX(IDEXMXIIValve, ChemputerDevice):
-    def __init__(self, name, address, mode="ethernet", port=5000):
+    def __init__(self, name, address, port, mode="serial"):
         ChemputerDevice.__init__(self, name)
         IDEXMXIIValve.__init__(
             self,
             mode=mode,
             address=address,
+            port=port,
             connect_on_instantiation=True,
         )
 
