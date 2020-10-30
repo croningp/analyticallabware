@@ -50,6 +50,21 @@ class HPLCController:
                 continue
             break
 
+        cmd_file = None
+
+        # Crude way of resolving conflicts where the command file is
+        # held by the other side.
+        while cmd_file is None:
+            try:
+                cmd_file = open(self.cmd_file, "w", encoding="utf8")
+            except PermissionError:
+                self.logger.warning("Failed to open command file for writing - trying again.")
+                time.sleep(0.5)
+                continue
+
+        with cmd_file:
+            cmd_file.write(f"{cmd_no} {cmd}")
+        
         # wait one second to make sure command is processed by hplc
         time.sleep(1)
 
@@ -132,14 +147,17 @@ class HPLCController:
         NOTREADY        Run cannot be started
         ERROR           Error occurred
         BREAK           Injection paused
+        NORESPONSE
+        MALFORMED
         """
         self.send("response$ = AcqStatus$")
-        time.sleep(0.5)
+        time.sleep(0.25)
         try:
             parsed_response = self.receive().splitlines()[1].split()[1:]
         except IOError:
-            return ["IOERROR"]
-
+            return ["NORESPONSE"]
+        except IndexError:
+            return ["MALFORMED"]
         return parsed_response
 
     def stop_macro(self):

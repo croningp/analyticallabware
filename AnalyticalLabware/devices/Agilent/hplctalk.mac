@@ -79,5 +79,3 @@ EndMacro
 Name HPLCTalk_Stop
     CpTerminate HPLCTalk_Cp
 EndMacro
-
-HPLCTalk_Run
