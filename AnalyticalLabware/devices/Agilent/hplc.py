@@ -2,17 +2,25 @@ import time
 import os
 import logging
 
+from .chromatogram import AgilentHPLCChromatogram
 
 MAX_CMD_NO = 255
 
 
 class HPLCController:
     def __init__(
-        self, dir: str, cmd_file: str = "cmd", reply_file: str = "reply", logger=None
+        self, 
+        dir: str,
+        data_path: str = None,
+        cmd_file: str = "cmd", 
+        reply_file: str = "reply", 
+        logger=None
     ):
         """
         Initialize HPLC controller.  
-        dir: Name of directory
+        dir: Name of directory for communication
+        data_path: path to where chemstation will save the data. 
+                    If None, data will be saved in default folder Chem32\\1\\Data
         cmd_file: name of command file
         reply_file: name of reply file
         The macro must be loaded in the Chemstation software.
@@ -21,6 +29,14 @@ class HPLCController:
         self.cmd_file = os.path.join(dir, cmd_file)
         self.reply_file = os.path.join(dir, reply_file)
         self.cmd_no = 0
+        self.spectra = {
+            'channel_A': AgilentHPLCChromatogram(data_path, channel='A'),
+            'channel_B': AgilentHPLCChromatogram(data_path, channel='B'),
+            'channel_C': AgilentHPLCChromatogram(data_path, channel='C'),
+            'channel_D': AgilentHPLCChromatogram(data_path, channel='D'),
+        }
+        self.spectrum = AgilentHPLCChromatogram(data_path)
+        self.data_files = []
 
         # Create files if needed
         open(self.cmd_file, "a").close()
@@ -186,6 +202,8 @@ class HPLCController:
         Device must be ready. (status="PRERUN")
         """
         self.send(f'RunMethod "{data_dir}",,"{expt_name}"')
+        folder_name = f"{expt_name}.D"
+        self.data_files.append(os.path.join(data_dir, folder_name))
 
     def abort_run(self):
         """
@@ -194,6 +212,10 @@ class HPLCController:
         """
         self.send("StopMethod")
 
+    def get_spectrum(self):
+        # will block if spectrum is measuring
+        last_file = self.data_files[-1]
+        self.spectrum.load_spectrum(last_file)
 
 if __name__ == "__main__":
     import sys

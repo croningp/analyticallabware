@@ -8,7 +8,7 @@ import time
 from . import chemstation
 import numpy as np
 
-from AnalyticalLabware import AbstractSpectrum
+from ...analysis import AbstractSpectrum
 
 # Chemstation data path
 DATA_DIR = r"C:\Chem32\1\Data"
@@ -40,7 +40,7 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
         'data_path',
     ]
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, channel='A'):
 
         if path is not None:
             os.makedirs(path, exist_ok=True)
@@ -53,6 +53,7 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
             'AgilentHPLCChromatogram')
 
         super().__init__(self.path)
+        self.channel = channel
 
     def load_spectrum(self, data_path, start_time=None):
         """Loads the spectra from the given folder.
@@ -67,7 +68,7 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
             self._dump()
 
         # TODO handle the different channels
-        x, y = self.extract_rawdata(data_path, channel="A")
+        x, y = self.extract_rawdata(data_path)
 
         # get timestamp
         tstr = data_path.split(".")[0].split("_")[-1] 
@@ -78,8 +79,8 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
 
     ### PUBLIC METHODS TO LOAD RAW DATA ###
 
-    def extract_rawdata(self, experiment_dir: str, channel: str = "A"):
-        filename = os.path.join(experiment_dir, f"DAD1{channel}")
+    def extract_rawdata(self, experiment_dir: str):
+        filename = os.path.join(experiment_dir, f"DAD1{self.channel}")
         npz_file = filename + ".npz"
 
         if os.path.exists(npz_file):
@@ -93,7 +94,7 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
             np.savez_compressed(npz_file, times=data.times, values=data.values)
             return np.array(data.times), np.array(data.values)
 
-    def extract_peakarea(self, experiment_dir: str, channel: str = "A"):
+    def extract_peakarea(self, experiment_dir: str):
         # filename = os.path.join(experiment_dir, f"REPORT{CHANNELS[channel]}.csv")
         # TODO parse file properly
         # data = np.genfromtxt(filename, delimiter=',')
