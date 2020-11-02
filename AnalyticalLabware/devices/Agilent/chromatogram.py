@@ -34,11 +34,20 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
         'y': 'mAu'
     }
 
-    INTERNAL_PROPERTIES = [
+    INTERNAL_PROPERTIES = {
         'baseline',
         'parameters',
         'data_path',
-    ]
+    }
+
+    # set of properties to be saved
+    PUBLIC_PROPERTIES = {
+        'x',
+        'y',
+        'peaks',
+        'timestamp',
+        'channel'
+    }
 
     def __init__(self, path=None, channel='A'):
 
@@ -67,7 +76,7 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
             self.save_data()
             self._dump()
 
-        # TODO handle the different channels
+        # get raw data
         x, y = self.extract_rawdata(data_path)
 
         # get timestamp

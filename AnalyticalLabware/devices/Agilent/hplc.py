@@ -222,6 +222,7 @@ class HPLCController:
         self.send(f'RunMethod "{data_dir}",,"{expt_name}"')
         folder_name = f"{expt_name}.D"
         self.data_files.append(os.path.join(data_dir, folder_name))
+        self.logger.info(f"Started HPLC run {expt_name}.")
 
     def abort_run(self):
         """
@@ -231,9 +232,15 @@ class HPLCController:
         self.send("StopMethod")
 
     def get_spectrum(self):
+        """
+        Load last chromatogram for any channel in spectra dictionary.
+        """
         # will block if spectrum is measuring
         last_file = self.data_files[-1]
-        self.spectrum.load_spectrum(last_file)
+
+        for channel, spec in self.spectra.items():
+            spec.load_spectrum(last_file)
+            self.logger.info(f"{channel} chromatogram loaded.")
 
 if __name__ == "__main__":
     import sys
