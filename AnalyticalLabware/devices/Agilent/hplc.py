@@ -5,13 +5,14 @@ import logging
 from .chromatogram import AgilentHPLCChromatogram
 
 MAX_CMD_NO = 255
+DEFAULT_DATA_DIR = r"C:\Chem32\1\Data"
 
 
 class HPLCController:
     def __init__(
         self, 
         dir: str,
-        data_path: str = None,
+        data_dir: str = None,
         cmd_file: str = "cmd", 
         reply_file: str = "reply", 
         logger=None
@@ -29,13 +30,22 @@ class HPLCController:
         self.cmd_file = os.path.join(dir, cmd_file)
         self.reply_file = os.path.join(dir, reply_file)
         self.cmd_no = 0
+
+        if data_dir is None:
+            if os.path.isdir(DEFAULT_DATA_DIR):
+                self.data_dir = DEFAULT_DATA_DIR
+            else:
+                raise FileNotFoundError(f"Default data_dir {DEFAULT_DATA_DIR} not found.")
+        else:
+            self.data_dir = data_dir
+
         self.spectra = {
-            'channel_A': AgilentHPLCChromatogram(data_path, channel='A'),
-            'channel_B': AgilentHPLCChromatogram(data_path, channel='B'),
-            'channel_C': AgilentHPLCChromatogram(data_path, channel='C'),
-            'channel_D': AgilentHPLCChromatogram(data_path, channel='D'),
+            'channel_A': AgilentHPLCChromatogram(self.data_dir, channel='A'),
+            'channel_B': AgilentHPLCChromatogram(self.data_dir, channel='B'),
+            'channel_C': AgilentHPLCChromatogram(self.data_dir, channel='C'),
+            'channel_D': AgilentHPLCChromatogram(self.data_dir, channel='D'),
         }
-        self.spectrum = AgilentHPLCChromatogram(data_path)
+
         self.data_files = []
 
         # Create files if needed
@@ -189,9 +199,13 @@ class HPLCController:
         self.send(f'LoadMethod "C:\\Chem32\\1\\Methods\\", "{name}.M"')
         time.sleep(1)
         self.send("response$ = _MethFile$")
-        time.sleep(0.5)
+        time.sleep(1)
         # check that method switched
-        parsed_response = self.receive().splitlines()[1].split()[1:][0]
+        try:
+            parsed_response = self.receive().splitlines()[1].split()[1:][0]
+        except :
+            raise IndexError("Switching Methods failed.")
+
         assert parsed_response == f"{name}.M", "Switching Methods failed."
 
     def lamp_on(self):
