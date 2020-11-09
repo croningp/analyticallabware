@@ -1,12 +1,12 @@
 """Module for HPLC chromatogram data loading and manipulating"""
 
-import struct
 import os
 import logging
 import time
 
-from . import chemstation
 import numpy as np
+
+from .chemstation import CHFile
 
 from ...analysis import AbstractSpectrum
 
@@ -97,9 +97,9 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
             data = np.load(npz_file)
             return data["times"], data["values"]
         else:
-            self.logger.debug(f"Not found {npz_file}")
+            self.logger.debug("NPZ file not found. First time loading data.")
             ch_file = filename + ".ch"
-            data = chemstation.CHFile(ch_file)
+            data = CHFile(ch_file)
             np.savez_compressed(npz_file, times=data.times, values=data.values)
             return np.array(data.times), np.array(data.values)
 
