@@ -4,6 +4,8 @@ Module to provide API for the remote control of the Agilent HPLC systems.
 HPLCController sends commands to Chemstation software via a command file.
 Answers are received via reply file. On the Chemstation side, a custom 
 Macro monitors the command file, executes commands and writes to the reply file.
+Each command is given a number (cmd_no) to keep track of which commands have 
+been processed.
 
 .. moduleauthor:: Alexander Hammer, Hessam Mehr
 """
@@ -14,21 +16,29 @@ import logging
 
 from .chromatogram import AgilentHPLCChromatogram
 
+# maximum command number
 MAX_CMD_NO = 255
+
+# Default Chemstation data directory
 DEFAULT_DATA_DIR = r"C:\Chem32\1\Data"
+
+# Default Chemstation methods directory
 DEFAULT_METHOD_DIR = r"C:\\Chem32\\1\\Methods\\"
+
+# Commands sent to the Chemstation Macro
+# See https://www.agilent.com/cs/library/usermanuals/Public/MACROS.PDF
 RESET_COUNTER_CMD = "last_cmd_no = 0"
 GET_STATUS_CMD = "response$ = AcqStatus$"
-SLEEP_CMD = "Sleep "
+SLEEP_CMD = "Sleep {seconds}"
 STANDBY_CMD = "Standby"
-PREPRUN_CMD = "PrepRun"
 STOP_MACRO_CMD = "Stop"
-GET_METHOD_CMD = "response$ = _MethFile$"
-SWITCH_METHOD_CMD = 'LoadMethod "{method_dir}", "{method_name}.M"'
+PREPRUN_CMD = "PrepRun"
 LAMP_ON_CMD = "LampAll ON"
 LAMP_OFF_CMD = "LampAll OFF"
 PUMP_ON_CMD = "PumpAll ON"
 PUMP_OFF_CMD = "PumpAll OFF"
+GET_METHOD_CMD = "response$ = _MethFile$"
+SWITCH_METHOD_CMD = 'LoadMethod "{method_dir}", "{method_name}.M"'
 START_METHOD_CMD = "StartMethod"
 RUN_METHOD_CMD = 'RunMethod "{data_dir}",,"{experiment_name}"'
 STOP_METHOD_CMD = "StopMethod"
@@ -170,7 +180,10 @@ class HPLCController:
         return self._receive(self.cmd_no)
 
     def reset_cmd_counter(self):
-        self._send("last_cmd_no = 0", cmd_no=MAX_CMD_NO + 1)
+        """
+        Resets the command counter.
+        """
+        self._send(RESET_COUNTER_CMD, cmd_no=MAX_CMD_NO + 1)
         self._receive(cmd_no=MAX_CMD_NO + 1)
         self.cmd_no = 0
 
@@ -178,12 +191,12 @@ class HPLCController:
 
     def sleep(self, seconds: int):
         """
-        Tells the HPLC to wait for specified amount of seconds.
+        Tells the HPLC to wait for a specified number of seconds.
 
         Args:
             seconds: number of seconds to wait
         """
-        self.send(f"SLEEP {seconds}")
+        self.send(SLEEP_CMD.format(seconds=seconds))
         self.logger.debug("Sleep command sent.")
 
     def standby(self):
@@ -191,7 +204,7 @@ class HPLCController:
         Switches all modules in standby mode.
         All lamps and pumps are switched off.
         """
-        self.send(f"Standby")
+        self.send(STANDBY_CMD)
         self.logger.debug("Standby command sent.")
 
     def preprun(self):
@@ -199,7 +212,7 @@ class HPLCController:
         Prepares all modules for run.
         All lamps and pumps are switched on.
         """
-        self.send(f"PrepRun")
+        self.send(PREPRUN_CMD)
         self.logger.debug("PrepRun command sent.")
 
     def status(self):
@@ -221,8 +234,9 @@ class HPLCController:
         NORESPONSE
         MALFORMED
         """
-        self.send("response$ = AcqStatus$")
-        time.sleep(0.25)
+        self.send(GET_STATUS_CMD)
+        time.sleep(1)
+        
         try:
             parsed_response = self.receive().splitlines()[1].split()[1:]
         except IOError:
@@ -235,7 +249,7 @@ class HPLCController:
         """
         Stops Macro execution. Connection will be lost.
         """
-        self.send("Stop")
+        self.send(STOP_MACRO_CMD)
 
     def switch_method(self, method_name: str = "AH_default"):
         """
@@ -248,9 +262,14 @@ class HPLCController:
             IndexError: Response did not have expected format. Try again.
             AssertionError: The desired method is not selected. Try again.
         """
-        self.send(f'LoadMethod "C:\\Chem32\\1\\Methods\\", "{method_name}.M"')
+        self.send(
+            SWITCH_METHOD_CMD.format(
+                method_dir=DEFAULT_METHOD_DIR, method_name=method_name
+            )
+        )
+
         time.sleep(1)
-        self.send("response$ = _MethFile$")
+        self.send(GET_METHOD_CMD)
         time.sleep(1)
         # check that method switched
         try:
@@ -264,32 +283,32 @@ class HPLCController:
         """
         Turns the UV lamp on.
         """
-        self.send("LampAll ON")
+        self.send(LAMP_ON_CMD)
 
     def lamp_off(self):
         """
         Turns the UV lamp off.
         """
-        self.send("LampAll OFF")
+        self.send(LAMP_OFF_CMD)
 
     def pump_on(self):
         """
         Turns on the pump on.
         """
-        self.send("PumpAll ON")
+        self.send(PUMP_ON_CMD)
 
     def pump_off(self):
         """
         Turns the pump off.
         """
-        self.send("PumpAll OFF")
+        self.send(PUMP_OFF_CMD)
 
     def start_method(self):
         """
         Starts and executes a method to run according to Run Time Checklist.
         Device must be ready. (status="PRERUN")
         """
-        self.send("StartMethod")
+        self.send(START_METHOD_CMD)
 
     def run_method(self, data_dir: str, experiment_name: str):
         """
@@ -302,7 +321,12 @@ class HPLCController:
             data_dir: Directory where to save the data   
             experiment_name: Name of the experiment
         """
-        self.send(f'RunMethod "{data_dir}",,"{experiment_name}"')
+        self.send(
+            RUN_METHOD_CMD.format(
+                data_dir=data_dir, experiment_name=experiment_name
+            )
+        )
+
         folder_name = f"{experiment_name}.D"
         self.data_files.append(os.path.join(data_dir, folder_name))
         self.logger.info("Started HPLC run %s.", experiment_name)
@@ -312,7 +336,7 @@ class HPLCController:
         Stops the run. 
         A dialog window will pop up and manual intervention may be required.
         """
-        self.send("StopMethod")
+        self.send(STOP_METHOD_CMD)
 
     def get_spectrum(self):
         """
