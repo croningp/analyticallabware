@@ -5,11 +5,29 @@ import numpy as np
 
 from ChemputerAPI import ChemputerDevice
 
-from .Magritek.Spinsolve.spinsolve import SpinsolveNMR
-from .OceanOptics.Raman.raman_control import OceanOpticsRaman
+from AnalyticalLabware import IDEXMXIIValve, SpinsolveNMR, OceanOpticsRaman, HPLCController
+
 from ..analysis.base_spectrum import AbstractSpectrum
 
 ### Physical devices ###
+
+class ChemputerIDEX(IDEXMXIIValve, ChemputerDevice):
+    def __init__(self, name, address, port, mode="serial"):
+        ChemputerDevice.__init__(self, name)
+        IDEXMXIIValve.__init__(
+            self,
+            mode=mode,
+            address=address,
+            port=port,
+            connect_on_instantiation=True,
+        )
+
+    @property
+    def capabilities(self):
+        return [("sink", 0)]
+    
+    def wait_until_ready(self):
+        pass
 
 class ChemputerNMR(SpinsolveNMR, ChemputerDevice):
     def __init__(self, name):
@@ -35,6 +53,9 @@ class _SimulatedSpectrum(AbstractSpectrum):
     def save_data(self, *args, **kwargs):
         pass
 
+    def default_processing(self, *args, **kwargs):
+        return self.x, self.y, 42.0
+
 class SimChemputerNMR(ChemputerDevice):
     def __init__(self, name):
         ChemputerDevice.__init__(self, name)
@@ -58,3 +79,58 @@ class SimOceanOpticsRaman():
 
     def obtain_reference_spectrum(self):
         pass
+
+class SimChemputerIDEX(IDEXMXIIValve, ChemputerDevice):
+    def __init__(self, name, address, port=5000):
+        ChemputerDevice.__init__(self, name)
+
+    @property
+    def capabilities(self):
+        return [("sink", 0)]
+
+    def open_connection(self):
+        self.logger.info("Opening connection!")
+
+    def wait_until_ready(self):
+        pass
+
+    def sample(self, time):
+        self.logger.info("Valving sampling!")
+
+# Generator to simulate change of HPLC status
+def alternate():
+    while True:
+        yield ["PRERUN"]
+        yield ["NOTREADY"]
+
+class SimHPLCController(HPLCController, ChemputerDevice):
+
+    alternator = alternate()
+    
+    def __init__(self, name):
+        ChemputerDevice.__init__(self, name)
+        self.spectrum = _SimulatedSpectrum()
+
+    def switch_method(self, name):
+        pass
+
+    def send(self):
+        pass
+    
+    def receive(self):
+        pass
+
+    def standby(self):
+        pass
+
+    def preprun(self):
+        pass
+
+    def sleep(self):
+        pass
+
+    def status(self, alternator=alternator):
+        return next(alternator)
+
+    def get_spectrum(self, *args, **kwargs):
+        self.spectrum.load_spectrum()
