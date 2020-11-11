@@ -65,4 +65,17 @@ Name HandleError
     Close #4
 EndMacro    
 
-MonitorFile "C:\Users\group\Code\analyticallabware\AnalyticalLabware\test\cmd", "C:\Users\group\Code\analyticallabware\AnalyticalLabware\test\reply"
+Name HPLCTalk_Loop
+    MonitorFile "C:\Users\group\Code\analyticallabware\AnalyticalLabware\test\cmd", "C:\Users\group\Code\analyticallabware\AnalyticalLabware\test\reply"
+EndMacro
+
+Name HPLCTalk_Run
+    If CPExists(HPLCTalk_Cp) = 0 Then
+        CpStart HPLCTalk_Cp
+    EndIf
+    CpRequest HPLCTalk_Cp, HPLCTalk_Loop
+EndMacro
+
+Name HPLCTalk_Stop
+    CpTerminate HPLCTalk_Cp
+EndMacro

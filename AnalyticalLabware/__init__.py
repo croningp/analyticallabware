@@ -13,3 +13,4 @@ from .devices.chemputer_devices import *
 # classes for spectra processing
 from .devices.OceanOptics.Raman.raman_spectrum import RamanSpectrum
 from .devices.Magritek.Spinsolve.spectrum import SpinsolveNMRSpectrum
+from .devices.Agilent.chromatogram import AgilentHPLCChromatogram
