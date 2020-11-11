@@ -2,9 +2,9 @@
 Module to provide API for the remote control of the Agilent HPLC systems.
 
 HPLCController sends commands to Chemstation software via a command file.
-Answers are received via reply file. On the Chemstation side, a custom 
+Answers are received via reply file. On the Chemstation side, a custom
 Macro monitors the command file, executes commands and writes to the reply file.
-Each command is given a number (cmd_no) to keep track of which commands have 
+Each command is given a number (cmd_no) to keep track of which commands have
 been processed.
 
 .. moduleauthor:: Alexander Hammer, Hessam Mehr
@@ -14,7 +14,7 @@ import time
 import os
 import logging
 
-from .chromatogram import AgilentHPLCChromatogram
+from .chromatogram import AgilentHPLCChromatogram, TIME_FORMAT
 
 # maximum command number
 MAX_CMD_NO = 255
@@ -23,7 +23,7 @@ MAX_CMD_NO = 255
 DEFAULT_DATA_DIR = r"C:\Chem32\1\Data"
 
 # Default Chemstation methods directory
-DEFAULT_METHOD_DIR = r"C:\\Chem32\\1\\Methods\\"
+DEFAULT_METHOD_DIR = 'C:\\Chem32\\1\\Methods\\'
 
 # Commands sent to the Chemstation Macro
 # See https://www.agilent.com/cs/library/usermanuals/Public/MACROS.PDF
@@ -40,30 +40,30 @@ PUMP_OFF_CMD = "PumpAll OFF"
 GET_METHOD_CMD = "response$ = _MethFile$"
 SWITCH_METHOD_CMD = 'LoadMethod "{method_dir}", "{method_name}.M"'
 START_METHOD_CMD = "StartMethod"
-RUN_METHOD_CMD = 'RunMethod "{data_dir}",,"{experiment_name}"'
+RUN_METHOD_CMD = 'RunMethod "{data_dir}",,"{experiment_name}_{timestamp}"'
 STOP_METHOD_CMD = "StopMethod"
 
 class HPLCController:
     def __init__(
-            self, 
+            self,
             comm_dir: str,
             data_dir: str = None,
-            cmd_file: str = "cmd", 
-            reply_file: str = "reply", 
+            cmd_file: str = "cmd",
+            reply_file: str = "reply",
             logger=None
             ):
         """
-        Initialize HPLC controller.  
+        Initialize HPLC controller.
         comm_dir: Name of directory for communication.
-        data_dir: path to where chemstation will save the data. 
+        data_dir: path to where chemstation will save the data.
                     If None, data will be saved in default folder Chem32\\1\\Data
         cmd_file: name of command file
         reply_file: name of reply file
         The macro must be loaded in the Chemstation software.
         dir and filenames must match those specified in the Macro.
         """
-        self.cmd_file = os.path.join(dir, cmd_file)
-        self.reply_file = os.path.join(dir, reply_file)
+        self.cmd_file = os.path.join(comm_dir, cmd_file)
+        self.reply_file = os.path.join(comm_dir, reply_file)
         self.cmd_no = 0
 
         if data_dir is None:
@@ -129,7 +129,7 @@ class HPLCController:
 
         with cmd_file:
             cmd_file.write(f"{cmd_no} {cmd}")
-        
+
         # wait one second to make sure command is processed by hplc
         time.sleep(1)
 
@@ -236,7 +236,7 @@ class HPLCController:
         """
         self.send(GET_STATUS_CMD)
         time.sleep(1)
-        
+
         try:
             parsed_response = self.receive().splitlines()[1].split()[1:]
         except IOError:
@@ -277,7 +277,7 @@ class HPLCController:
         except:
             raise IndexError("Switching Methods failed.")
 
-        assert parsed_response == f"{name}.M", "Switching Methods failed."
+        assert parsed_response == f"{method_name}.M", "Switching Methods failed."
 
     def lamp_on(self):
         """
@@ -314,26 +314,31 @@ class HPLCController:
         """
         This is the preferred method to trigger a run.
         Starts the currently selected method, storing data
-        under the <data_dir>/<expt_name>.D folder.
+        under the <data_dir>/<experiment_name>.D folder.
+        The should <experiment_name> end with a timestamp in the '%Y-%m-%d-%H-%M' format.
         Device must be ready. (status="PRERUN")
 
         Args:
-            data_dir: Directory where to save the data   
+            data_dir: Directory where to save the data
             experiment_name: Name of the experiment
         """
+        timestamp = time.strftime(TIME_FORMAT)
+
         self.send(
             RUN_METHOD_CMD.format(
-                data_dir=data_dir, experiment_name=experiment_name
+                data_dir=data_dir,
+                experiment_name=experiment_name,
+                timestamp=timestamp
             )
         )
 
-        folder_name = f"{experiment_name}.D"
+        folder_name = f"{experiment_name}_{timestamp}.D"
         self.data_files.append(os.path.join(data_dir, folder_name))
-        self.logger.info("Started HPLC run %s.", experiment_name)
+        self.logger.info("Started HPLC run:  %s.", folder_name)
 
     def stop_method(self):
         """
-        Stops the run. 
+        Stops the run.
         A dialog window will pop up and manual intervention may be required.
         """
         self.send(STOP_METHOD_CMD)

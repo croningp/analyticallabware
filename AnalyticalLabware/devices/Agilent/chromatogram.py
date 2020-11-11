@@ -64,7 +64,7 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
         super().__init__(self.path)
         self.channel = channel
 
-    def load_spectrum(self, data_path, start_time=None):
+    def load_spectrum(self, data_path):
         """Loads the spectra from the given folder.
 
         Args:
@@ -80,8 +80,8 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
         x, y = self.extract_rawdata(data_path)
 
         # get timestamp
-        tstr = data_path.split(".")[0].split("_")[-1] 
-        timestamp = time.mktime(time.strptime(tstr, TIME_FORMAT)) 
+        tstr = data_path.split(".")[0].split("_")[-1]
+        timestamp = time.mktime(time.strptime(tstr, TIME_FORMAT))
 
         # loading all data
         super().load_spectrum(x, y, timestamp)
