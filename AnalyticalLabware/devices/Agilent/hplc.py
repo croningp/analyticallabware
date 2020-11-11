@@ -44,6 +44,9 @@ RUN_METHOD_CMD = 'RunMethod "{data_dir}",,"{experiment_name}_{timestamp}"'
 STOP_METHOD_CMD = "StopMethod"
 
 class HPLCController:
+    """
+    Class to control Agilent HPLC systems via Chemstation Macros.
+    """
     def __init__(
             self,
             comm_dir: str,
@@ -51,7 +54,7 @@ class HPLCController:
             cmd_file: str = "cmd",
             reply_file: str = "reply",
             logger=None
-            ):
+        ):
         """
         Initialize HPLC controller.
         comm_dir: Name of directory for communication.
@@ -177,6 +180,9 @@ class HPLCController:
         self._send(cmd, self.cmd_no)
 
     def receive(self) -> str:
+        """
+        Returns messages received in reply file.
+        """
         return self._receive(self.cmd_no)
 
     def reset_cmd_counter(self):
