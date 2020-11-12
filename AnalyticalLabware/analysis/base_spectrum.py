@@ -45,13 +45,13 @@ class AbstractSpectrum(ABC):
         'baseline',
     }
 
-    def __init__(self, save_path=None, autosaving=True):
+    def __init__(self, path=None, autosaving=True):
         """Default constructor, loads properties into instance namespace.
 
         Can be redefined in ancestor classes.
 
         Args:
-            save_path (Union[str, bool], optional): Valid path to save data to.
+            path (Union[str, bool], optional): Valid path to save data to.
                 If omitted, uses ".//spectrum". If False - no folder created.
             autosaving (bool, optional): If the True (default) will save the
                 spectrum when the new one is loaded. Will drop otherwise.
@@ -68,14 +68,14 @@ class AbstractSpectrum(ABC):
             setattr(self, prop, None)
 
         # creating data path
-        if save_path is None:
+        if path is None:
             self.path = os.path.join('.', 'spectrum')
             os.makedirs(self.path, exist_ok=True)
         else:
             try:
-                os.makedirs(save_path, exist_ok=True)
-                self.path = save_path
-            except TypeError: # type(save_path) -> bool
+                os.makedirs(path, exist_ok=True)
+                self.path = path
+            except TypeError: # type(path) -> bool
                 self.path = '.'
 
         # creating logger
@@ -86,7 +86,7 @@ class AbstractSpectrum(ABC):
         """Dummy method to dump all spectral data. Used before loading new data.
         """
 
-        self.__init__(self.path, self.autosaving)
+        self.__init__(path=self.path, autosaving=self.autosaving)
 
     @abstractmethod
     def load_spectrum(self, x, y, timestamp):
