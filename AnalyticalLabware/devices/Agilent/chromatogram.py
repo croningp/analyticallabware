@@ -49,7 +49,7 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
         'channel'
     }
 
-    def __init__(self, path=None, channel='A'):
+    def __init__(self, path=None, autosaving=False, channel='A'):
 
         if path is not None:
             os.makedirs(path, exist_ok=True)
@@ -61,7 +61,7 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
         self.logger = logging.getLogger(
             'AgilentHPLCChromatogram')
 
-        super().__init__(self.path)
+        super().__init__(path=path, autosaving=autosaving)
         self.channel = channel
 
     def load_spectrum(self, data_path):
