@@ -78,10 +78,10 @@ class HPLCController:
             self.data_dir = data_dir
 
         self.spectra = {
-            'channel_A': AgilentHPLCChromatogram(self.data_dir, channel='A'),
-            'channel_B': AgilentHPLCChromatogram(self.data_dir, channel='B'),
-            'channel_C': AgilentHPLCChromatogram(self.data_dir, channel='C'),
-            'channel_D': AgilentHPLCChromatogram(self.data_dir, channel='D'),
+            'A': AgilentHPLCChromatogram(self.data_dir),
+            'B': AgilentHPLCChromatogram(self.data_dir),
+            'C': AgilentHPLCChromatogram(self.data_dir),
+            'D': AgilentHPLCChromatogram(self.data_dir),
         }
 
         self.data_files = []
@@ -357,7 +357,7 @@ class HPLCController:
         last_file = self.data_files[-1]
 
         for channel, spec in self.spectra.items():
-            spec.load_spectrum(last_file)
+            spec.load_spectrum(data_path=last_file, channel=channel)
             self.logger.info("%s chromatogram loaded.", channel)
 
 if __name__ == "__main__":
