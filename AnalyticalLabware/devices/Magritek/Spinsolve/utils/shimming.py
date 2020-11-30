@@ -29,7 +29,7 @@ def shimming(f):
         # appending path
         spinsolve_instance.last_shimming_results.update(path=params_path)
 
-        # loading timestamp
+        # loading and saving timestamp
         shimming_time = time.strptime(
             spinsolve_instance.last_shimming_results['CurrentTime'],
             TIME_FORMAT

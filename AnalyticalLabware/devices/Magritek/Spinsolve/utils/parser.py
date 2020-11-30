@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 
 from .exceptions import RequestError, HardwareError, ShimmingError, NMRError
+from .constants import CURRENT_SPINSOLVE_VERSION
 
 
 class ReplyParser:
@@ -105,7 +106,7 @@ class ReplyParser:
         spinsolve_tag = element.find(".//SpinsolveType").text
 
         self.logger.info("The %s NMR instrument is successfully connected \nRunning under %s Spinsolve software version", spinsolve_tag, software_tag)
-        if software_tag[:4] != "1.15":
+        if software_tag[:6] != CURRENT_SPINSOLVE_VERSION:
             self.logger.warning("The current software version <%s> was not tested, please update or use at your own risk", software_tag)
 
         # If the instrument is connected, setting the ready flag
