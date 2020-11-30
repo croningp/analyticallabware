@@ -7,7 +7,7 @@ from io import BytesIO
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 
-from .exceptions import ProtocolError, ProtocolOptionsError, RequestError
+from .utils.exceptions import ProtocolError, ProtocolOptionsError, RequestError
 
 def load_commands_from_file(protocols_path=None):
     """Loads NMR protocol commands and options from XML file.

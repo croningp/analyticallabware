@@ -1,4 +1,6 @@
 """Module containts general SpinSolve errors"""
+
+
 class HardwareError(Exception):
     """Generic error in hardware operation"""
 
@@ -16,4 +18,3 @@ class ShimmingError(HardwareError):
 
 class RequestError(KeyError):
     """Specific error in case of wrong request type"""
-    

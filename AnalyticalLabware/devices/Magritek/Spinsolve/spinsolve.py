@@ -1,401 +1,28 @@
-"""Module provide API for the remote control of the Magritek SpinSolve NMR"""
-import logging
+"""
+Module provide API for the remote control of the Magritek SpinSolve NMR
+"""
 import queue
-import socket
 import threading
 import warnings
 import os
+import json
 import time
 
-import xml.etree.ElementTree as ET
-from xml.etree.ElementTree import ParseError
-
-from .exceptions import NMRError, ShimmingError, HardwareError, RequestError
+from .utils import ReplyParser, SpinsolveConnection, get_logger
+from .utils.exceptions import HardwareError
+from .utils.shimming import shimming
 from .commands import ProtocolCommands, RequestCommands
 from .spectrum import SpinsolveNMRSpectrum
-from .spinsolve_logging import get_logger
 
-class ReplyParser:
-    """Parses usefull information from the xml reply"""
 
-    ### Response tags for easier handling ###
-    HARDWARE_RESPONSE_TAG = "HardwareResponse"
-    AVAILABLE_PROTOCOL_OPTIONS_RESPONSE_TAG = "AvailableProtocolOptionsResponse"
-    STATUS_TAG = "StatusNotification"
-    ESTIMATE_DURATION_RESPONSE_TAG = "EstimateDurationResponse"
-    CHECK_SHIM_RESPONSE_TAG = "CheckShimResponse"
-    QUICK_SHIM_RESPONSE_TAG = "QuickShimResponse"
-    POWER_SHIM_RESPONSE_TAG = "PowerShimResponse"
-    COMPLETED_NOTIFICATION_TAG = "CompletedNotificationType"
+# shimming parameters are stored here
+# after shimming operation has been performed
+SHIMMING_PATH = os.path.join(
+    os.path.dirname(__file__),
+    'utils',
+    'shimming.json'
+)
 
-    def __init__(self, device_ready_flag, data_folder_queue):
-        """
-        Args:
-            device_ready_flag (:obj: "threading.Event"): The threading event indicating
-                that the instrument is ready for the next commands
-            data_folder_queue (:obj: "queue.Queue"): A queue object to store the data folder information
-                for subsequent access with Spectrum class
-        """
-
-        self.device_ready_flag = device_ready_flag
-        self.data_folder_queue = data_folder_queue
-        self.connected_tag = None # String to indicate if the instrument is connected, updated with HardwareRequest
-
-        self.logger = logging.getLogger("spinsolve.parser")
-
-        # For shimming validation
-        self.shimming_line_width_threshold = 1
-        self.shimming_base_width_threshold = 40
-
-    def parse(self, message):
-        """Parses the message into valuable XML element
-
-        Depending on the element tag, invokes various parsing methods
-
-        Args:
-            message (bytes): The message received from the instrument
-        """
-
-        self.logger.debug("Obtained the message: \n%s", message)
-
-        # Checking the obtained message
-        try:
-            msg_root = ET.fromstring(message)
-        except ParseError:
-            self.logger.error("ParseError: invalid XML message received, check the full message \n <%s>", message.decode())
-            raise ParseError("Invalid XML message received from the instrument, please check the log for the full message") from None
-        if msg_root.tag != "Message" or len(msg_root) > 1:
-            self.logger.error("ParseError: incorrect message received, check the full message \n <%s>", message.decode())
-            raise ParseError("Incorrect message received from the instrument, please check the log for the full message")
-
-        # Main message element
-        msg_element = msg_root[0]
-
-        # Invoking specific methods for specific responds
-        if msg_element.tag == self.HARDWARE_RESPONSE_TAG:
-            return self.hardware_processing(msg_element)
-        elif msg_element.tag == self.AVAILABLE_PROTOCOL_OPTIONS_RESPONSE_TAG:
-            return message
-        elif msg_element.tag in [self.CHECK_SHIM_RESPONSE_TAG, self.QUICK_SHIM_RESPONSE_TAG, self.POWER_SHIM_RESPONSE_TAG]:
-            return self.shimming_processing(msg_element)
-        elif msg_element.tag == self.STATUS_TAG or msg_element.tag == self.COMPLETED_NOTIFICATION_TAG:
-            return self.status_processing(msg_element)
-        elif msg_element.tag == self.ESTIMATE_DURATION_RESPONSE_TAG:
-            return self.estimate_duration_processing(msg_element)
-        else:
-            self.logger.info("No specific parser requested, returning full decoded message")
-            return message.decode()
-
-    def hardware_processing(self, element):
-        """Process the message if the Hardware tag is present
-
-        Args:
-            element (:obj: xml.etree.ElementTree.Element): An element containing all
-                usefull information regarding Hardware response from the instrument
-
-        Returns:
-            dict: Dictionary with usefull hardware information
-
-        Raises:
-            HardwareError: In case the instrument is not connected
-        """
-
-        # Checking if the instrument is physically connected
-        self.logger.debug("Parsing message with <%s> tag", element.tag)
-        self.connected_tag = element.find(".//ConnectedToHardware").text
-        if self.connected_tag == "false":
-            raise HardwareError("The instrument is not connected!")
-
-        software_tag = element.find(".//SpinsolveSoftware").text
-
-        spinsolve_tag = element.find(".//SpinsolveType").text
-
-        self.logger.info("The %s NMR instrument is successfully connected \nRunning under %s Spinsolve software version", spinsolve_tag, software_tag)
-        if software_tag[:4] != "1.15":
-            self.logger.warning("The current software version <%s> was not tested, please update or use at your own risk", software_tag)
-
-        # If the instrument is connected, setting the ready flag
-        self.device_ready_flag.set()
-
-        usefull_information_dict = {"Connected": f"{self.connected_tag}", "SoftwareVersion": f"{software_tag}", "InstrumentType": f"{spinsolve_tag}"}
-
-        return usefull_information_dict
-
-    def shimming_processing(self, element):
-        """Process the message if the Shim tag is present
-
-        Args:
-            element (:obj: xml.etree.ElementTree.Element): An element containing all
-                usefull information regarding shimming response from the instrument
-
-        Returns:
-            True if shimming was successfull
-
-        Raises:
-            ShimmingError: If the shimming process failed
-        """
-
-        self.logger.debug("Parsing message with <%s> tag", element.tag)
-
-        self.device_ready_flag.set()
-
-        error_text = element.get("error")
-        if error_text:
-            self.logger.error("ShimmingError: check the error message below\
-\n%s", error_text)
-            if self.shimming_base_width_threshold == 40 and\
-                self.shimming_line_width_threshold == 1:
-                # only raise error if default line widths were used as the
-                # reference point
-                raise ShimmingError(f"Shimming error: {error_text}")
-
-        for child in element:
-            self.logger.info("%s - %s", child.tag, child.text)
-
-        # Obtaining shimming parameters
-        line_width = round(float(element.find(".//LineWidth").text), 2)
-        base_width = round(float(element.find(".//BaseWidth").text), 2)
-        system_ready = element.find(".//SystemIsReady").text
-
-        # Checking shimming criteria
-        if line_width > self.shimming_line_width_threshold:
-            self.logger.critical("Shimming line width <%.2f> is above requested threshold <%.2f>, consider running another shimming method", line_width, self.shimming_line_width_threshold)
-        if base_width > self.shimming_base_width_threshold:
-            self.logger.critical("Shimming line width <%.2f> is above requested threshold <%.2f>, consider running another shimming method", line_width, self.shimming_line_width_threshold)
-        if system_ready != "true":
-            self.logger.critical("System is not ready after shimming, consider running another shimming method")
-            return False
-        else:
-            return True
-
-    def status_processing(self, element):
-        """Process the message if the Status tag is present
-
-        Logs the incoming messages and manages device_ready_flag
-
-        Args:
-            element (:obj: xml.etree.ElementTree.Element): An element containing all
-                usefull information regarding status response from the instrument
-
-        Returns:
-            str: String containing the path to the saved NMR data
-
-        Raises:
-            NMRError: in case of the protocol errors
-        """
-
-        self.logger.debug("Parsing message with <%s> tag", element.tag)
-
-        # Valuable data from the message
-        state_tag = element[0].tag
-        state_elem = element[0]
-        protocol_attrib = state_elem.get("protocol")
-
-        # Checking for errors first
-        error_attrib = state_elem.get("error")
-
-        # Workaround for shimming protocol is required, since the instrument
-        # Continues with protocol execution even if an error was returned
-        # In such case the ShimmingError is raised when <shimmingmethod>ShimResponse message is received
-        if error_attrib and "SHIM" not in protocol_attrib:
-            self.logger.error("NMRError: <%s>, check the log for the full message", error_attrib)
-            raise NMRError(f"Error running the protocol <{protocol_attrib}>: {error_attrib}")
-
-        status_attrib = state_elem.get("status")
-        percentage_attrib = state_elem.get("percentage")
-        seconds_remaining_attrib = state_elem.get("secondsRemaining")
-
-        # Logging the data
-        if state_tag == "State":
-            # Resetting the event to False to block the incoming msg
-            if status_attrib == "Running":
-                self.logger.debug("Device in operation, blocking the incoming messages")
-            self.device_ready_flag.clear()
-            self.logger.info("%s the <%s> protocol", status_attrib, protocol_attrib)
-            if status_attrib == "Ready":
-                # When device is ready, setting the event to True for the next protocol to be executed
-                # Delay the flag setting for the SHIM protocol
-                if protocol_attrib != "SHIM":
-                    self.device_ready_flag.set()
-                data_folder = state_elem.get("dataFolder")
-                self.logger.info("The protocol <%s> is complete, the NMR data is saved in <%s>", protocol_attrib, data_folder)
-                self.data_folder_queue.put(data_folder)
-                return data_folder
-
-        if state_tag == "Progress":
-            self.logger.info("The protocol <%s> is performing, %s%% completed, %s seconds remain", protocol_attrib, percentage_attrib, seconds_remaining_attrib)
-
-    def estimate_duration_processing(self, element):
-        """Process the message if protocol duration was requested
-
-        Args:
-            element (:obj: xml.etree.ElementTree.Element): An element containing all
-                usefull information regarding duration estimation from the instrument
-
-        Returns:
-            int: Estimated duration for the requested protocol in seconds
-
-        Raises:
-            RequestError: In case the instrument returns an error attribute
-        """
-
-        self.logger.debug("Parsing message with <%s> tag", element.tag)
-
-        error_text = element.get("error")
-        if error_text:
-            self.logger.error("RequestError: check the log for the full message")
-            raise RequestError(f"Duration request error: {error_text}")
-
-        duration_in_seconds = element.get("durationInSeconds")
-
-        return int(duration_in_seconds)
-
-class SpinsolveConnection:
-    """Provides API for the socket connection to the Spinsolve NMR instrument"""
-
-    def __init__(self, HOST=None, PORT=13000):
-        """
-        Args:
-            HOST (str, optional): TCP/IP address of the local host
-            PORT (int, optional): TCP/IP listening port for Spinsolve software, 13000 by default
-                must be changed in the software if necessary
-        """
-
-        # Getting the localhost IP address if not provided by instantiation
-        # refer to socket module manual for details
-        try:
-            CURR_HOST = socket.gethostbyname(socket.getfqdn())
-        except socket.gaierror:
-            CURR_HOST = socket.gethostbyname(socket.gethostname())
-
-        # Connection parameters
-        if HOST is not None:
-            self.HOST = HOST
-        else:
-            self.HOST = CURR_HOST
-        self.PORT = PORT
-
-        # The buffer size is so big for the only large message sent by the instrument - whole list of
-        # Protocol options. One day will be reduced with addition of non-blocking parser/connection
-        # TODO
-        self.BUFSIZE = 65536
-
-        # Connection object, thread, lock and disconnection request tag
-        self._listener = None
-        self._connection = None
-        self._connection_close_requested = threading.Event()
-
-        # Response queue for inter threading commincation
-        self.response_queue = queue.Queue()
-
-        self.logger = logging.getLogger("spinsolve.connection")
-
-    def open_connection(self):
-        """Open a socket connection to the Spinsolve software"""
-
-        if self._connection is not None:
-            self.logger.warning("You are trying to open connection that is already open")
-            return
-
-        # Creating socket
-        self._connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._connection.settimeout(None)
-
-        # Connecting and spawning listening thread
-        try:
-            self._connection.connect((self.HOST, self.PORT))
-        except ConnectionRefusedError:
-            self._connection = None # Resetting the internal attribute
-            raise ConnectionRefusedError('Please run Spinsolve software and enable remote control!')
-        self.logger.debug("Connection at %s:%s is opened", self.HOST, self.PORT)
-        self._listener = threading.Thread(target=self.connection_listener, name="{}_listener".format(__name__), daemon=False)
-        self._listener.start()
-        self.logger.info("Connection created")
-
-    def connection_listener(self):
-        """Checks for the new data and output it into receive buffer"""
-
-        self.logger.info("Connection listener thread is starting")
-
-        while True:
-            try:
-                # Receiving data
-                chunk = self._connection.recv(self.BUFSIZE)
-                self.logger.debug("New chunk %s", chunk.decode())
-                self.response_queue.put(chunk)
-                self.logger.debug("Message added to the response queue")
-            except ConnectionAbortedError:
-                self.logger.warning("Connection aborted")
-                break
-            except ConnectionResetError:
-                self.logger.warning("Spinsolve app is closed")
-                break
-            except OSError:
-                self.logger.warning("Connection error")
-                break
-        self.logger.info("Exiting listening thread")
-
-    def transmit(self, msg):
-        """Sends the message to the socket
-
-        Args:
-            msg (bytes): encoded message to be sent to the instrument
-        """
-
-        self.logger.debug("Sending the message")
-        # This is necessary due to a random bug in the Spinsolve software with
-        # wrong order of the messages sent.
-        # See details in AnalyticalLabware/issues/22
-        while True:
-            try:
-                unprocessed = self.response_queue.get_nowait()
-                self.logger.error('Unprocessed message obtained from the response queue, \
-see below:\n%s', unprocessed)
-            except queue.Empty:
-                break
-        self._connection.send(msg)
-        self.logger.debug("Message sent")
-
-    def receive(self):
-        """Grabs the message from receive buffer"""
-
-        self.logger.debug("Receiving the message from the responce queue")
-        reply = self.response_queue.get()
-        self.response_queue.task_done()
-        self.logger.debug("Message obtained from the queue")
-
-        return reply
-
-    def close_connection(self):
-        """Closes connection"""
-
-        self.logger.debug("Socket connection closure requested")
-        self._connection_close_requested.set()
-        if self._connection is not None:
-            self._connection.shutdown(socket.SHUT_RDWR)
-            self._connection.close()
-            self._connection = None # To available subsequent calls to open_connection after connection was once closed
-            self._connection_close_requested.clear()
-            self.logger.info("Socket connection closed")
-        else:
-            self.logger.warning("You are trying to close nonexistent connection")
-        if self._listener is not None and self._listener.is_alive():
-            self._listener.join(timeout=3)
-
-    def _flush_the_queue(self):
-        while True:
-            try:
-                data = self.response_queue.get_nowait()
-                if data:
-                    self.logger.warning("Response queue flushed, something inside %s", data)
-                self.response_queue.task_done()
-            except queue.Empty:
-                break
-
-    def is_connection_open(self):
-        """Checks if the connection to the instrument is still alive"""
-        # TODO
-        raise NotImplementedError
 
 class SpinsolveNMR:
     """ Python class to handle Magritek Spinsolve NMR instrument """
@@ -430,6 +57,25 @@ class SpinsolveNMR:
         if auto_connect:
             self.connect()
             self.initialise()
+
+        # placeholders to store shimming parameters
+        self.last_shimming_results = {}
+
+    def check_last_shimming(self):
+        """ Checks last shimming. """
+        if not self.last_shimming_results:
+            try:
+                with open(SHIMMING_PATH) as fobj:
+                    self.last_shimming_results = json.load(fobj)
+            except FileNotFoundError:
+                self.logger.warning('Last shimming was not recorded, please run\
+ any shimming protocol to update!')
+        else:
+            now = time.time()
+            # if the last shimming was performed more than 24 hours ago
+            if now - self.last_shimming_results['timestamp'] > 24*3600:
+                self.logger.critical('Last shimming was performed more than \
+24 hours ago, please perform CheckShim to check spectrometer performance!')
 
     def connect(self):
         """Connects to the instrument"""
@@ -491,6 +137,7 @@ class SpinsolveNMR:
         self.cmd.reload_commands(reply)
         self.logger.info("Commands updated, see available protocols \n <%s>", list(self.cmd._protocols.keys())) # pylint: disable=protected-access
 
+    @shimming
     def shim(
             self,
             option="CheckShimRequest",
@@ -514,6 +161,7 @@ class SpinsolveNMR:
         self.send_message(cmd)
         return self.receive_reply()
 
+    @shimming
     def shim_on_sample(self, reference_peak, option="LockAndCalibrateOnly", *, line_width_threshold=1, base_width_threshold=40):
         """Initialise shimming on sample protocol
 
