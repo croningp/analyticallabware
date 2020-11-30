@@ -25,7 +25,7 @@ class ChemputerIDEX(IDEXMXIIValve, ChemputerDevice):
     @property
     def capabilities(self):
         return [("sink", 0)]
-    
+
     def wait_until_ready(self):
         pass
 
@@ -43,7 +43,7 @@ class ChemputerNMR(SpinsolveNMR, ChemputerDevice):
 class _SimulatedSpectrum(AbstractSpectrum):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(save_path=False)
+        super().__init__(path=False)
 
     def load_spectrum(self, *args, **kwargs):
         x = np.linspace(-100, 100, 1000)
@@ -106,7 +106,7 @@ def alternate():
 class SimHPLCController(HPLCController, ChemputerDevice):
 
     alternator = alternate()
-    
+
     def __init__(self, name):
         ChemputerDevice.__init__(self, name)
         self.spectrum = _SimulatedSpectrum()
@@ -116,7 +116,7 @@ class SimHPLCController(HPLCController, ChemputerDevice):
 
     def send(self):
         pass
-    
+
     def receive(self):
         pass
 
