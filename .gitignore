@@ -5,3 +5,4 @@ __pycache__
 test/163122-1D PROTON-Unknown
 *.log
 /test/nmr_data
+**/shimming.json
