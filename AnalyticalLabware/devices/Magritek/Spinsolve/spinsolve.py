@@ -62,7 +62,11 @@ class SpinsolveNMR:
         self.last_shimming_results = {}
 
     def check_last_shimming(self):
-        """ Checks last shimming. """
+        """ Checks last shimming.
+
+        Returns:
+            bool: False if shimming procedure is required, True otherwise.
+        """
         if not self.last_shimming_results:
             try:
                 with open(SHIMMING_PATH) as fobj:
@@ -70,12 +74,14 @@ class SpinsolveNMR:
             except FileNotFoundError:
                 self.logger.warning('Last shimming was not recorded, please run\
  any shimming protocol to update!')
-        else:
-            now = time.time()
-            # if the last shimming was performed more than 24 hours ago
-            if now - self.last_shimming_results['timestamp'] > 24*3600:
-                self.logger.critical('Last shimming was performed more than \
-24 hours ago, please perform CheckShim to check spectrometer performance!')
+                return False
+        now = time.time()
+        # if the last shimming was performed more than 24 hours ago
+        if now - self.last_shimming_results['timestamp'] > 24*3600:
+            self.logger.critical('Last shimming was performed more than 24 \
+hours ago, please perform CheckShim to check spectrometer performance!')
+            return False
+        return True
 
     def connect(self):
         """Connects to the instrument"""
