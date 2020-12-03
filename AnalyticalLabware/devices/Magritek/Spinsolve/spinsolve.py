@@ -58,8 +58,13 @@ class SpinsolveNMR:
             self.connect()
             self.initialise()
 
-        # placeholders to store shimming parameters
+        # placeholder to store shimming parameters
         self.last_shimming_results = {}
+
+        # placeholders for experiment data
+        self._user_data = {}
+        self._solvent = None
+        self._sample = None
 
     def check_last_shimming(self):
         """ Checks last shimming.
@@ -188,7 +193,7 @@ hours ago, please perform CheckShim to check spectrometer performance!')
         self.send_message(cmd)
         return self.receive_reply()
 
-    def user_folder(self, data_path, data_folder_method="TimeStamp"):
+    def set_user_folder(self, data_path, data_folder_method="TimeStamp"):
         """Indicate the path and the method for saving NMR data
 
         Args:
@@ -208,32 +213,90 @@ hours ago, please perform CheckShim to check spectrometer performance!')
         self.send_message(cmd)
         return True
 
-    def user_data(self, data=None, *, solvent, sample):
-        """Loads the user data to be saved with the NMR data.
+    @property
+    def user_data(self):
+        """ Dictionary with user specific data. """
+        if not self._user_data:
+            user_data_req = self.req_cmd.get_user_data()
+            self.send_message(user_data_req)
+            self._user_data = self.receive_reply()
+
+        return self._user_data
+
+    @user_data.setter
+    def user_data(self, user_data):
+        """ Sets the user data.
 
         Args:
-            data (dict, optional): Any user data that needs to be saved with the
-                spectral data in form of {'key': 'value'}.
-            solvent (str): Name of the solvent to be saved with the spectral
-                data.
-            sample (str): Sample name to be saved with the spectral data.
-
-        Returns:
-            bool: True if successfull.
+            user_data (Dict): Dictionary with user data.
         """
+        # updating placeholder
+        self._user_data.update(user_data)
+        # sending command
+        user_data_cmd = self.req_cmd.set_user_data(user_data)
+        self.send_message(user_data_cmd)
 
-        if data is not None:
-            user_data_cmd = self.req_cmd.set_user_data(data)
-            self.send_message(user_data_cmd)
+    @user_data.deleter
+    def user_data(self):
+        """ Removes previously stored user data. """
 
-        # setting solvent and sample separately
+        # generating command to reset the data in spinsolve
+        empty_user_data_command = self.req_cmd.set_user_data(
+            {key: '' for key in self._user_data}
+        )
+        self.send_message(empty_user_data_command)
+
+        # updating placeholder
+        self._user_data = {}
+
+    @property
+    def solvent(self):
+        """ Solvent record to be stored with spectrum acquisition params. """
+        if self._solvent is None:
+            solvent_req = self.req_cmd.get_solvent()
+            self.send_message(solvent_req)
+            self._solvent = self.receive_reply()
+        return self._solvent
+
+    @solvent.setter
+    def solvent(self, solvent):
+        """ Sets the solvent record for the current experiment. """
+        self._solvent = solvent
         solvent_data_cmd = self.req_cmd.set_solvent_data(solvent)
         self.send_message(solvent_data_cmd)
 
+    @solvent.deleter
+    def solvent(self):
+        """ Removes the solvent record for the current experiment. """
+        self._solvent = None
+        empty_solvent_data_cmd = self.req_cmd.set_solvent_data('')
+        self.send_message(empty_solvent_data_cmd)
+
+    @property
+    def sample(self):
+        """ Sample record to be stored with spectrum acquisition params. """
+        if self._sample is None:
+            sample_req = self.req_cmd.get_sample()
+            self.send_message(sample_req)
+            self._sample = self.receive_reply()
+        return self._sample
+
+    @sample.setter
+    def sample(self, sample):
+        """ Sets the sample record for the current experiment.
+
+        Also sets the folder to save the spectrum, so avoid special characters.
+        """
+        self._sample = sample
         sample_data_cmd = self.req_cmd.set_sample_data(sample)
         self.send_message(sample_data_cmd)
 
-        return True
+    @sample.deleter
+    def sample(self):
+        """ Removes the sample record for the current experiment. """
+        self._sample = None
+        empty_sample_data_cmd = self.req_cmd.set_sample_data('')
+        self.send_message(empty_sample_data_cmd)
 
     def get_duration(self, protocol, options):
         """Requests for an approximate duration of a specific protocol

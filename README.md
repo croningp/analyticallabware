@@ -31,6 +31,11 @@ s = SpinsolveNMR()
 # create a data folder to save spectra to
 s.user_folder('path_to_folder') # check available saving options in method doc
 
+# set experiment specific data
+s.solvent = 'methanol'
+s.sample = 'TEST-1'
+s.user_data = {'comment': 'test experiment 1'}
+
 s.protocols_list() # yields list of all available protocols
 
 # get available protocol options
