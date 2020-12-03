@@ -7,7 +7,10 @@ import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 
 from .exceptions import RequestError, HardwareError, ShimmingError, NMRError
-from .constants import CURRENT_SPINSOLVE_VERSION
+from .constants import (
+    CURRENT_SPINSOLVE_VERSION,
+    USER_DATA_TAG,
+)
 
 
 class ReplyParser:
@@ -22,6 +25,7 @@ class ReplyParser:
     QUICK_SHIM_RESPONSE_TAG = "QuickShimResponse"
     POWER_SHIM_RESPONSE_TAG = "PowerShimResponse"
     COMPLETED_NOTIFICATION_TAG = "CompletedNotificationType"
+    GET_RESPONSE_TAG = "GetResponse"
 
     def __init__(self, device_ready_flag, data_folder_queue):
         """
@@ -77,6 +81,8 @@ class ReplyParser:
             return self.status_processing(msg_element)
         elif msg_element.tag == self.ESTIMATE_DURATION_RESPONSE_TAG:
             return self.estimate_duration_processing(msg_element)
+        elif msg_element.tag == self.GET_RESPONSE_TAG:
+            return self.data_response_processing(msg_element)
         else:
             self.logger.info("No specific parser requested, returning full decoded message")
             return message.decode()
@@ -115,6 +121,36 @@ class ReplyParser:
         usefull_information_dict = {"Connected": f"{self.connected_tag}", "SoftwareVersion": f"{software_tag}", "InstrumentType": f"{spinsolve_tag}"}
 
         return usefull_information_dict
+
+    def data_response_processing(self, element):
+        """ Process the message if the user parameters response is present.
+
+        Args:
+            element (:obj: xml.etree.ElementTree.Element): An element containing
+                all usefull information regarding Hardware response from the
+                instrument.
+
+        Returns:
+            Dict: Dictionary with user/experiment specific parameter, e.g.
+                userdata, solvent or sample.
+        """
+
+        self.logger.debug("Parsing message with <%s> tag", element.tag)
+        # messages with GetResponse have only one child
+        if len(element) > 1:
+            raise RequestError('Returned response for user data is incorrect, \
+check log files for details!')
+
+        chelement = element[0]
+
+        # special case for user data
+        if chelement.tag == USER_DATA_TAG:
+            return {
+                subel.attrib['key']: subel.attrib['value']
+                for subel in chelement # iterating over subelements
+            }
+
+        return chelement.text
 
     def shimming_processing(self, element):
         """Process the message if the Shim tag is present

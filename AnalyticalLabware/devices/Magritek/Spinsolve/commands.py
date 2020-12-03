@@ -8,6 +8,11 @@ import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 
 from .utils.exceptions import ProtocolError, ProtocolOptionsError, RequestError
+from .utils.constants import (
+    SAMPLE_TAG,
+    SOLVENT_TAG,
+    USER_DATA_TAG,
+)
 
 def load_commands_from_file(protocols_path=None):
     """Loads NMR protocol commands and options from XML file.
@@ -19,7 +24,7 @@ def load_commands_from_file(protocols_path=None):
             for Spinsolve NMR. Usually 'ProtocolOptions.xml'
 
     Returns:
-        dict: A dictionary containg protocol name as a key and XML element as a value
+        dict: A dictionary containing protocol name as a key and XML element as a value
             For example:
 
             {'1D PROTON': <Element 'Protocol'>, '1D CARBON': <Element 'Protocol'>}
@@ -56,7 +61,7 @@ def load_commands_from_device(device_message):
             protocols and their options
 
     Returns:
-        dict: A dictionary containg protocol name as a key and XML element as a value
+        dict: A dictionary containing protocol name as a key and XML element as a value
             For example:
 
             {'1D PROTON': <Element 'Protocol'>, '1D CARBON': <Element 'Protocol'>}
@@ -188,7 +193,7 @@ class ProtocolCommands:
             protocol_name (str): Valid protocol name
 
         Returns:
-            tuple: Containg protocol name and protocol options with all possible
+            tuple: Containing protocol name and protocol options with all possible
                 values packed as dictionary, as required by generate_command method
 
         Raises:
@@ -286,11 +291,8 @@ class RequestCommands:
 
     # Tags for setting user specific information
     SET_TAG = "Set"
-    SAMPLE_TAG = "Sample"
-    SOLVENT_TAG = "Solvent"
     DATA_FOLDER_TAG = "DataFolder"
     DATA_FOLDER_METHODS = ["UserFolder", "TimeStamp", "TimeStampTree"]
-    USER_DATA_TAG = "UserData"
 
     def __init__(self):
 
@@ -321,13 +323,13 @@ class RequestCommands:
         # with attributes as "command_option_key"="command_option_value"
         msg_root_element = ET.SubElement(msg_root, f"{tag}")
         # Special case - UserData
-        if options is not None and self.USER_DATA_TAG in options:
+        if options is not None and USER_DATA_TAG in options:
             # Removing the appended key
-            options.pop(self.USER_DATA_TAG)
+            options.pop(USER_DATA_TAG)
             # Creating new subelement
             user_data_subelement = ET.SubElement(
                 msg_root_element,
-                self.USER_DATA_TAG
+                USER_DATA_TAG
             )
             for key, value in options.items():
                 subelem = ET.SubElement(
@@ -375,7 +377,7 @@ class RequestCommands:
 
         return self.generate_request(
             self.SET_TAG,
-            {self.SOLVENT_TAG: f"{solvent}"}
+            {SOLVENT_TAG: f"{solvent}"}
         )
 
     def set_sample_data(self, sample):
@@ -387,7 +389,7 @@ class RequestCommands:
 
         return self.generate_request(
             self.SET_TAG,
-            {self.SAMPLE_TAG: f"{sample}"}
+            {SAMPLE_TAG: f"{sample}"}
         )
 
     def set_data_folder(self, data_folder_path, data_folder_method):
@@ -416,10 +418,31 @@ class RequestCommands:
                 in the "acq.par" file together with spectral data
         """
         # appending "UserData" key to allow custom message creation
-        user_data.update({self.USER_DATA_TAG: ''})
+        user_data.update({USER_DATA_TAG: ''})
         return self.generate_request(self.SET_TAG, user_data)
 
     def abort(self):
         """Returns the message to abort the current operation"""
 
         return self.generate_request(self.ABORT_REQUEST)
+
+    def get_user_data(self):
+        """
+        Returns the message for querying the user data from the instrument.
+        """
+
+        return self.generate_request(self.GET_REQUEST, {USER_DATA_TAG: ''})
+
+    def get_solvent(self):
+        """
+        Returns the message for querying the solvent data from the instrument.
+        """
+
+        return self.generate_request(self.GET_REQUEST, {SOLVENT_TAG: ''})
+
+    def get_sample(self):
+        """
+        Returns the message for querying the sample data from the instrument.
+        """
+
+        return self.generate_request(self.GET_REQUEST, {SAMPLE_TAG: ''})
