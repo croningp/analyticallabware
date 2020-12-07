@@ -225,12 +225,15 @@ check log files for details!')
         # Checking for errors first
         error_attrib = state_elem.get("error")
 
-        # Workaround for shimming protocol is required, since the instrument
+        # No error is actually raised, since the instrument
         # Continues with protocol execution even if an error was returned
-        # In such case the ShimmingError is raised when <shimmingmethod>ShimResponse message is received
-        if error_attrib and "SHIM" not in protocol_attrib:
-            self.logger.error("NMRError: <%s>, check the log for the full message", error_attrib)
-            raise NMRError(f"Error running the protocol <{protocol_attrib}>: {error_attrib}")
+        # TODO add an option to handle the error and stop the execution
+        if error_attrib:
+            self.logger.error(
+                "NMRError: <%s>, check the log for the full message",
+                error_attrib
+            )
+            # raise NMRError(f"Error running the protocol <{protocol_attrib}>: {error_attrib}")
 
         status_attrib = state_elem.get("status")
         percentage_attrib = state_elem.get("percentage")
