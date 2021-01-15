@@ -150,21 +150,25 @@ class HPLCController:
             IOError: Could not read reply file.
         """
         for _ in range(num_retries):
-            with open(self.reply_file, "r", encoding="utf_16") as reply_file:
-                response = reply_file.read()
+            try:
+                with open(self.reply_file, "r", encoding="utf_16") as reply_file:
+                    response = reply_file.read()
 
-                if response:
+                    if response:
 
-                    first_line = response.splitlines()[0]
-                    response_no = int(first_line.split()[0])
+                        first_line = response.splitlines()[0]
+                        response_no = int(first_line.split()[0])
 
-                    # check that response corresponds to sent command
-                    if response_no == cmd_no:
-                        self.logger.info("Reply: \n%s", response)
-                        return response
+                        # check that response corresponds to sent command
+                        if response_no == cmd_no:
+                            self.logger.info("Reply: \n%s", response)
+                            return response
 
-            time.sleep(0.5)
-        raise IOError(f"Failed to read response to cmd_no {cmd_no}.")
+                    time.sleep(0.5)
+            except IOError:
+                self.logger.debug("IOError. Trying again.")
+                time.sleep(0.5)
+                continue
 
     def send(self, cmd: str):
         """
@@ -274,14 +278,17 @@ class HPLCController:
             )
         )
 
-        time.sleep(1)
+        time.sleep(2)
         self.send(GET_METHOD_CMD)
-        time.sleep(1)
+        time.sleep(2)
         # check that method switched
-        try:
-            parsed_response = self.receive().splitlines()[1].split()[1:][0]
-        except:
-            raise IndexError("Switching Methods failed.")
+        for _ in range(10):
+            try:
+                parsed_response = self.receive().splitlines()[1].split()[1:][0]
+                break
+            except IndexError:
+                self.logger.debug("Malformed response. Trying again.")
+                continue
 
         assert parsed_response == f"{method_name}.M", "Switching Methods failed."
 
