@@ -23,7 +23,7 @@ MAX_CMD_NO = 255
 DEFAULT_DATA_DIR = "C:\\Chem32\\1\\Data"
 
 # Default Chemstation methods directory
-DEFAULT_METHOD_DIR = "C:\\Chem32\\1\\Methods\\"
+DEFAULT_METHOD_DIR = ""
 
 # Commands sent to the Chemstation Macro
 # See https://www.agilent.com/cs/library/usermanuals/Public/MACROS.PDF
@@ -266,7 +266,7 @@ class HPLCController:
         """
         self.send(STOP_MACRO_CMD)
 
-    def switch_method(self, method_name: str = "AH_default"):
+    def switch_method(self, method_name: str, method_dir = DEFAULT_METHOD_DIR):
         """
         Allows the user to switch between pre-programmed methods.
 
@@ -279,7 +279,7 @@ class HPLCController:
         """
         self.send(
             SWITCH_METHOD_CMD.format(
-                method_dir=DEFAULT_METHOD_DIR, method_name=method_name
+                method_dir=method_dir, method_name=method_name
             )
         )
 
