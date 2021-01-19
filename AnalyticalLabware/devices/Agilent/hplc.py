@@ -104,45 +104,34 @@ class HPLCController:
 
         self.logger.info("HPLC Controller initialized.")
 
-    def _send(self, cmd: str, cmd_no: int):
+    def _send(self, cmd: str, cmd_no: int, num_attempts=5):
         """
         Low-level execution primitive. Sends a command string to HPLC.
 
         Args:
             cmd: Command string to be sent
             cmd_no: Command number
+
+        Raises:
+            IOError: Could not write to command file.
         """
-        # override cmd_no if explicitly given
-        while True:
+        err = None
+        for _ in range(num_attempts):
+            time.sleep(1)
             try:
                 with open(self.cmd_file, "w", encoding="utf8") as cmd_file:
                     cmd_file.write(f"{cmd_no} {cmd}")
-            except PermissionError:
-                self.logger.warning("Failed sending command, trying again...")
+            except IOError as e:
+                err = e
+                self.logger.warning("Failed to send command; trying again.")
                 continue
-            break
+            else:
+                self.logger.info("Sent command #%d: %s.", cmd_no, cmd)
+                return
+        else:
+            raise IOError(f"Failed to send command #{cmd_no}: {cmd}.") from err
 
-        cmd_file = None
-
-        # Crude way of resolving conflicts where the command file is
-        # held by the other side.
-        while cmd_file is None:
-            try:
-                cmd_file = open(self.cmd_file, "w", encoding="utf8")
-            except PermissionError:
-                self.logger.warning("Failed to open command file for writing - trying again.")
-                time.sleep(0.5)
-                continue
-
-        with cmd_file:
-            cmd_file.write(f"{cmd_no} {cmd}")
-
-        # wait one second to make sure command is processed by hplc
-        time.sleep(1)
-
-        self.logger.info("Send command No. %d: %s.", cmd_no, cmd)
-
-    def _receive(self, cmd_no: int, num_retries=20)-> str:
+    def _receive(self, cmd_no: int, num_attempts=5) -> str:
         """
         Low-level execution primitive.
 
@@ -153,26 +142,38 @@ class HPLCController:
         Raises:
             IOError: Could not read reply file.
         """
-        for _ in range(num_retries):
+        err = None
+        for _ in range(num_attempts):
+            time.sleep(1)
             try:
                 with open(self.reply_file, "r", encoding="utf_16") as reply_file:
                     response = reply_file.read()
-
-                    if response:
-
-                        first_line = response.splitlines()[0]
-                        response_no = int(first_line.split()[0])
-
-                        # check that response corresponds to sent command
-                        if response_no == cmd_no:
-                            self.logger.info("Reply: \n%s", response)
-                            return response
-
-                    time.sleep(0.5)
-            except IOError:
-                self.logger.debug("IOError. Trying again.")
-                time.sleep(0.5)
+            except OSError as e:
+                err = e
+                self.logger.warning("Failed to read from reply file; trying again.")
                 continue
+
+            try:
+                first_line = response.splitlines()[0]
+                response_no = int(first_line.split()[0])
+            except IndexError as e:
+                err = e
+                self.logger.warning("Malformed response %s; trying again.", response)
+                continue
+
+            # check that response corresponds to sent command
+            if response_no == cmd_no:
+                self.logger.info("Reply: \n%s", response)
+                return response
+            else:
+                self.logger.warning(
+                    "Response #: %d != command #: %d; trying again.",
+                    response_no,
+                    cmd_no,
+                )
+                continue
+        else:
+            raise IOError(f"Failed to receive reply to command #{cmd_no}.") from err
 
     def send(self, cmd: str):
         """
