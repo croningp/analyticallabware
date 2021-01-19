@@ -20,10 +20,10 @@ from .chromatogram import AgilentHPLCChromatogram, TIME_FORMAT
 MAX_CMD_NO = 255
 
 # Default Chemstation data directory
-DEFAULT_DATA_DIR = r"C:\Chem32\1\Data"
+DEFAULT_DATA_DIR = "C:\\Chem32\\1\\Data"
 
 # Default Chemstation methods directory
-DEFAULT_METHOD_DIR = 'C:\\Chem32\\1\\Methods\\'
+DEFAULT_METHOD_DIR = "C:\\Chem32\\1\\Methods\\"
 
 # Commands sent to the Chemstation Macro
 # See https://www.agilent.com/cs/library/usermanuals/Public/MACROS.PDF
@@ -43,18 +43,20 @@ START_METHOD_CMD = "StartMethod"
 RUN_METHOD_CMD = 'RunMethod "{data_dir}",,"{experiment_name}_{timestamp}"'
 STOP_METHOD_CMD = "StopMethod"
 
+
 class HPLCController:
     """
     Class to control Agilent HPLC systems via Chemstation Macros.
     """
+
     def __init__(
-            self,
-            comm_dir: str,
-            data_dir: str = None,
-            cmd_file: str = "cmd",
-            reply_file: str = "reply",
-            logger=None
-        ):
+        self,
+        comm_dir: str,
+        data_dir: str = None,
+        cmd_file: str = "cmd",
+        reply_file: str = "reply",
+        logger=None,
+    ):
         """
         Initialize HPLC controller.
         comm_dir: Name of directory for communication.
@@ -73,15 +75,17 @@ class HPLCController:
             if os.path.isdir(DEFAULT_DATA_DIR):
                 self.data_dir = DEFAULT_DATA_DIR
             else:
-                raise FileNotFoundError(f"Default data_dir {DEFAULT_DATA_DIR} not found.")
+                raise FileNotFoundError(
+                    f"Default data_dir {DEFAULT_DATA_DIR} not found."
+                )
         else:
             self.data_dir = data_dir
 
         self.spectra = {
-            'A': AgilentHPLCChromatogram(self.data_dir),
-            'B': AgilentHPLCChromatogram(self.data_dir),
-            'C': AgilentHPLCChromatogram(self.data_dir),
-            'D': AgilentHPLCChromatogram(self.data_dir),
+            "A": AgilentHPLCChromatogram(self.data_dir),
+            "B": AgilentHPLCChromatogram(self.data_dir),
+            "C": AgilentHPLCChromatogram(self.data_dir),
+            "D": AgilentHPLCChromatogram(self.data_dir),
         }
 
         self.data_files = []
@@ -339,9 +343,7 @@ class HPLCController:
 
         self.send(
             RUN_METHOD_CMD.format(
-                data_dir=data_dir,
-                experiment_name=experiment_name,
-                timestamp=timestamp
+                data_dir=data_dir, experiment_name=experiment_name, timestamp=timestamp
             )
         )
 
@@ -366,6 +368,7 @@ class HPLCController:
         for channel, spec in self.spectra.items():
             spec.load_spectrum(data_path=last_file, channel=channel)
             self.logger.info("%s chromatogram loaded.", channel)
+
 
 if __name__ == "__main__":
     import sys
