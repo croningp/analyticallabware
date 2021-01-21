@@ -1,18 +1,15 @@
-import time
+from os import path
+from time import sleep
 from typing import Union
 
-import pytest
 from AnalyticalLabware.devices.Advion import enums
 from AnalyticalLabware.devices.Advion.advion_cms import (
+    AcquisitionManager,
     InstrumentController,
     SimulatedInstrument,
     USBInstrument,
 )
 from AnalyticalLabware.devices.Advion.errors import AdvionCMSError
-
-
-def pause():
-    time.sleep(1.0)
 
 
 def test_binary_readback(instrument: Union[SimulatedInstrument, USBInstrument]):
@@ -68,11 +65,11 @@ def test_operation_mode(controller: InstrumentController):
 
 
 def test_vent_pump(started_controller: InstrumentController):
-    assert started_controller.can_vent
-    assert started_controller.vent() is None
-    pause()
-    assert started_controller.can_pump_down
-    assert started_controller.pump_down() is None
+    if started_controller.can_vent:
+        assert started_controller.vent() is None
+        sleep(1.0)
+    if started_controller.can_pump_down:
+        assert started_controller.pump_down() is None
 
 
 def test_tune_parameters(controller: InstrumentController):
@@ -90,18 +87,43 @@ def test_ion_source_optimization(controller: InstrumentController):
     assert ion_source_optimization == controller.ion_source_optimization
 
 
-def test_operate(started_controller: InstrumentController):
-    try:
-        started_controller.operate()
-    except AdvionCMSError:
-        if started_controller.can_operate:
-            raise
+# def test_operate(started_controller: InstrumentController):
+#     try:
+#         started_controller.operate()
+#     except AdvionCMSError:
+#         if started_controller.can_operate:
+#             raise
+
+# def test_standby(started_controller: InstrumentController):
+#     try:
+#         started_controller.standby()
+#     except AdvionCMSError:
+#         print(started_controller.can_standby)
+#         if started_controller.can_standby:
+#             raise
 
 
-def test_standby(started_controller: InstrumentController):
-    try:
-        started_controller.standby()
-    except AdvionCMSError:
-        print(started_controller.can_standby)
-        if started_controller.can_standby:
-            raise
+def test_acquisition_control(manager: AcquisitionManager):
+    assert manager.state == enums.AcquisitionState.Ready
+    manager.start()
+    sleep(1.0)
+    assert manager.state == enums.AcquisitionState.Underway
+    manager.pause(False)
+    sleep(1.0)
+    assert manager.state == enums.AcquisitionState.Paused
+    manager.resume()
+    sleep(1.0)
+    assert manager.state == enums.AcquisitionState.Underway
+    manager.extend(2)
+
+
+def test_acquisition_folder(manager: AcquisitionManager):
+    assert path.exists(manager.current_folder)
+
+
+def test_last_spectrum(manager: AcquisitionManager):
+    masses, intensities = manager.last_spectrum
+    assert len(masses) == len(intensities)
+    assert masses.dtype == intensities.dtype
+    assert masses.max() > 0.0
+    assert intensities.max() > 0.0
