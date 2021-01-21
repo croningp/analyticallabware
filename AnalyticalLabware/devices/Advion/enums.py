@@ -139,8 +139,8 @@ class NumberReadback(IntEnum):
     CapillaryTemperatureRB = 2  # Capillary temperature, in degrees C.
     SourceGasTemperatureRB = 3  # Ion source gas temperature, in degrees C.
     TransferLineTemperatureRB = (
-        4
-    )  # Ion source transfer line temperature, in degrees C, for vAPCI source.
+        4  # Ion source transfer line temperature, in degrees C, for vAPCI source.
+    )
     CapillaryVoltageRB = 5  # Capillary voltage, in V.
     SourceVoltageRB = 6  # Ion source voltage, in V.
     ExtractionElectrodeRB = 7  # Extraction electrode voltage, in V.
@@ -156,8 +156,8 @@ class NumberReadback(IntEnum):
     DC2RB = 17  # DC 2 voltage, in V.
 
     NumNumberReadbacks = (
-        18
-    )  # Utility definition - number of real number read-backs for CMS.
+        18  # Utility definition - number of real number read-backs for CMS.
+    )
 
 
 class BinaryReadback(IntEnum):
@@ -185,8 +185,8 @@ class BinaryReadback(IntEnum):
     CapillaryHeaterRB = 15  # Capillary heater is on.
     SourceGasHeaterRB = 16  # Ion source gas heater is on.
     TransferLineHeaterRB = (
-        17
-    )  # Ion source transfer line heater is on, for vAPCI source.
+        17  # Ion source transfer line heater is on, for vAPCI source.
+    )
     PositiveCalibrantRB = 18  # Positive (left) calibrant vial is flowing.
     NegativeCalibrantRB = 19  # Negative (right) calibrant vial is flowing.
     UsingHeliumRB = 20  # Source gas is helium.

@@ -1,7 +1,8 @@
 import sys
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import clr
+import numpy as np
 
 from .config import API_PATH
 from .enums import (AcquisitionState, BinaryReadback, InstrumentState,
@@ -49,6 +50,7 @@ class SimulatedInstrument(_AbstractInstrument):
 class USBInstrument(_AbstractInstrument):
     def __init__(self):
         self._ptr = cms.USBInstrument()
+
 
 class InstrumentController:
     def __init__(self, instrument: Union[USBInstrument, SimulatedInstrument]):
@@ -117,3 +119,96 @@ class InstrumentController:
 
     def standby(self):
         check_return(cms.InstrumentController.standby())
+
+
+class AcquisitionManager:
+    def __init__(
+        self,
+        method_xml_file: str,
+        ion_source_xml_files: List[str],
+        tune_xml_files: List[str],
+        name: str,
+        folder: str = "",
+    ):
+        self.method_xml = open(method_xml_file).read()
+        self.ion_source_xml = [
+            open(ion_source_xml_file).read()
+            for ion_source_xml_file in ion_source_xml_files
+        ]
+        self.tune_xml = [open(tune_xml_file).read() for tune_xml_file in tune_xml_files]
+        self.name = name
+        self.folder = folder
+
+    def pause(self):
+        check_return(cms.AcquisitionManager.pause())
+
+    def extend(self, seconds: int) -> int:
+        return cms.AcquisitionManager.extend(seconds)
+
+    def resume(self):
+        check_return(cms.AcquisitionManager.resume())
+
+    def start(self):
+        if len(self.ion_source_xml) == 2 and len(self.tune_xml) == 2:
+            ion_source_xml1, ion_source_xml2 = self.ion_source_xml
+            tune_xml1, tune_xml2 = self.tune_xml
+            ret = cms.AcquisitionManager.startWithSwitching(
+                self.method_xml,
+                ion_source_xml1,
+                ion_source_xml2,
+                tune_xml1,
+                tune_xml2,
+                self.name,
+                self.folder,
+            )
+        elif len(self.ion_source_xml) == 1 and len(self.tune_xml) == 1:
+            ret = cms.AcquisitionManager.start(
+                self.method_xml,
+                self.ion_source_xml[0],
+                self.tune_xml[0],
+                self.name,
+                self.folder,
+            )
+        else:
+            raise ValueError("Must specify 1 or 2 ion source/tune files.")
+        check_return(ret)
+
+    def stop(self):
+        check_return(cms.AcquisitionManager.stop())
+
+    @property
+    def state(self) -> AcquisitionState:
+        return AcquisitionState(cms.AcquistionManager.getState())
+
+    @property
+    def current_folder(self) -> str:
+        return cms.AcquistionManager.getCurrentFolder()
+
+    @property
+    def acquisition_bins_per_amu(self) -> int:
+        return cms.AcquistionManager.getAcquisitionBinsPerAMU()
+
+    @acquisition_bins_per_amu.setter
+    def acquisition_bins_per_amu(self, value: int):
+        check_return(cms.AcquistionManager.setAcquisitionBinsPerAMU(value))
+
+    @property
+    def max_num_masses(self) -> int:
+        return cms.AcquistionManager.getMaxNumMasses()
+
+    @property
+    def last_num_masses(self) -> int:
+        return cms.AcquistionManager.getLastNumMasses()
+
+    @property
+    def last_tic(self) -> float:
+        return cms.AcquistionManager.getLastTIC()
+
+    @property
+    def last_spectrum(self) -> Tuple[np.ndarray, np.ndarray]:
+        num_peaks = self.last_num_masses
+        masses = np.ndarray(num_peaks, dtype=c_double)
+        intensities = np.ndarray(num_peaks, dtype=c_double)
+        cms.AcquisitionManager.getLastSpectrumMasses(masses)
+        cms.AcquisitionManager.getLastSpectrumIntensitieis(intensities)
+        return masses, intensities
