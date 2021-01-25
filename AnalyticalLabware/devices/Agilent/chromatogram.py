@@ -15,37 +15,31 @@ DATA_DIR = r"C:\Chem32\1\Data"
 
 
 # standard filenames for spectral data
-CHANNELS = {
-    "A":"01",
-    "B":"02",
-    "C":"03",
-    "D":"04"}
+CHANNELS = {"A": "01", "B": "02", "C": "03", "D": "04"}
 
-ACQUISITION_PARAMETERS = 'acq.txt'
+ACQUISITION_PARAMETERS = "acq.txt"
 
 # format used in acquisition parameters
-TIME_FORMAT = '%Y-%m-%d-%H-%M'
+TIME_FORMAT = "%Y-%m-%d-%H-%M"
+
 
 class AgilentHPLCChromatogram(AbstractSpectrum):
     """Class for HPLC spectrum (chromatogram) loading and handling."""
 
-    AXIS_MAPPING = {
-        'x': 'min',
-        'y': 'mAu'
-    }
+    AXIS_MAPPING = {"x": "min", "y": "mAu"}
 
     INTERNAL_PROPERTIES = {
-        'baseline',
-        'parameters',
-        'data_path',
+        "baseline",
+        "parameters",
+        "data_path",
     }
 
     # set of properties to be saved
     PUBLIC_PROPERTIES = {
-        'x',
-        'y',
-        'peaks',
-        'timestamp',
+        "x",
+        "y",
+        "peaks",
+        "timestamp",
     }
 
     def __init__(self, path=None, autosaving=False):
@@ -54,15 +48,14 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
             os.makedirs(path, exist_ok=True)
             self.path = path
         else:
-            self.path = os.path.join('.', 'hplc_data')
+            self.path = os.path.join(".", "hplc_data")
             os.makedirs(self.path, exist_ok=True)
 
-        self.logger = logging.getLogger(
-            'AgilentHPLCChromatogram')
+        self.logger = logging.getLogger("AgilentHPLCChromatogram")
 
         super().__init__(path=path, autosaving=autosaving)
 
-    def load_spectrum(self, data_path, channel='A'):
+    def load_spectrum(self, data_path, channel="A"):
         """Loads the spectra from the given folder.
 
         Args:
