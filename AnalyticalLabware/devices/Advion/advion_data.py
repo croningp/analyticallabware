@@ -1,31 +1,22 @@
 """Python adapter for C wrapper around AdvionData.dll."""
 
 from ctypes import CDLL, POINTER, c_bool, c_char_p, c_double, c_int, c_void_p, c_float
-from os import chdir
-from os.path import abspath, dirname
-from typing import Union, List
+import clr
+from .config import API_PATH
 
 
-from .enums import (
-    AcquisitionState,
-    InstrumentState,
-    InstrumentSwitch,
-    OperationMode,
-    SourceType,
-    NumberReadback,
-    BinaryReadback,
-)
 from .errors import check_return
+sys.path.append(API_PATH)
+
+clr.AddReference("AdvionData_NET")
+import AdvionData_NET as adata
 
 
 class AdvionData:
     def __init__(
         self, path: str, debug_output: bool = False, decode_spectra: bool = False
     ):
-        self._handle = dll.make_reader(path.encode(), debug_output, decode_spectra)
-
-    def __del__(self):
-        dll.free_reader(self._handle)
+        self._handle = adata.DataReader(path.encode(), debug_output, decode_spectra)
 
     def num_spectra(self) -> int:
         return dll.num_spectra(self._handle)
