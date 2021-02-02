@@ -12,6 +12,7 @@ been processed.
 
 import time
 import os
+import glob
 import logging
 
 from .chromatogram import AgilentHPLCChromatogram, TIME_FORMAT
@@ -55,6 +56,7 @@ class HPLCController:
         data_dir: str = None,
         cmd_file: str = "cmd",
         reply_file: str = "reply",
+        client_id: str = None,
         logger=None,
     ):
         """
@@ -64,12 +66,19 @@ class HPLCController:
                     If None, data will be saved in default folder Chem32\\1\\Data
         cmd_file: name of command file
         reply_file: name of reply file
+        client_id: name of client, relevant when HPLC is a shared resource.
         The macro must be loaded in the Chemstation software.
         dir and filenames must match those specified in the Macro.
+        When HPLC is used as a shared resource, the comm_dir must be identical.
         """
+        self.comm_dir = comm_dir
         self.cmd_file = os.path.join(comm_dir, cmd_file)
         self.reply_file = os.path.join(comm_dir, reply_file)
         self.cmd_no = 0
+
+        if client_id is not None:
+            self.lock_file = os.path.join(comm_dir, client_id, ".lock")
+            self.is_locked = False
 
         if data_dir is None:
             if os.path.isdir(DEFAULT_DATA_DIR):
@@ -370,6 +379,25 @@ class HPLCController:
             spec.load_spectrum(data_path=last_file, channel=channel)
             self.logger.info("%s chromatogram loaded.", channel)
 
+    def acquire_lock(self):
+        """Sets lock as soon as intrument is free"""
+
+        if not self.is_locked:
+            # wait until instrument is free
+            while True:
+                if glob.glob(os.path.join(self.comm_dir, "*.lock")):
+                    time.sleep(1)
+                    continue
+                break
+        
+            # write lock file
+            open(self.lock_file, "a").close()
+            self.is_locked = True
+
+    def release_lock(self):
+        """Deletes lock file"""
+        os.remove(self.lock_file)
+        self.is_locked = False
 
 if __name__ == "__main__":
     import sys
