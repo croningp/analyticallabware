@@ -387,7 +387,7 @@ class HPLCController:
 
         if not self.is_locked:
 
-            self.logger.debug("Trying to acquire lock.")
+            self.logger.debug("Client %s trying to acquire lock.", self.client_id)
             # wait until instrument is free
             while True:
                 if glob.glob(self.lock_wildcard):
@@ -402,22 +402,19 @@ class HPLCController:
                 if len(glob.glob(self.lock_wildcard)) > 1:
                     self.logger.debug("Multiple locks set. Trying again.")
                     self.release_lock()
+                    continue
 
                 break
 
             self.is_locked = True
 
-        self.logger.info("Acquired lock.")
+        self.logger.info("Client %s Acquired lock.", self.client_id)
 
     def release_lock(self):
         """Deletes lock file"""
-        try:
-            os.remove(self.lock_file)
-        except FileNotFoundError:
-            self.logger.debug("Lock file was not found. Continue operation.")
-
-        self.is_locked = False
-        self.logger.info("Released lock.")
+        os.remove(self.lock_file)
+        self.has_lock = False
+        self.logger.debug("Released lock.")
 
 if __name__ == "__main__":
     import sys
