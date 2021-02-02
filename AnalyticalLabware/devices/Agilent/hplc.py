@@ -15,6 +15,8 @@ import os
 import glob
 import logging
 
+from contextlib import contextmanager
+
 from .chromatogram import AgilentHPLCChromatogram, TIME_FORMAT
 
 # maximum command number
@@ -417,6 +419,14 @@ class HPLCController:
         os.remove(self.lock_file)
         self.has_lock = False
         self.logger.debug("Client %s released lock.", self.client_id)
+
+    @contextmanager
+    def lock(self):
+        self.acquire_lock()
+        try:
+            yield
+        finally:
+            self.release_lock()
 
 if __name__ == "__main__":
     import sys
