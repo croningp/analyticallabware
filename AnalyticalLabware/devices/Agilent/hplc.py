@@ -71,13 +71,13 @@ class HPLCController:
         dir and filenames must match those specified in the Macro.
         When HPLC is used as a shared resource, the comm_dir must be identical.
         """
-        self.comm_dir = comm_dir
         self.cmd_file = os.path.join(comm_dir, cmd_file)
         self.reply_file = os.path.join(comm_dir, reply_file)
         self.cmd_no = 0
 
         if client_id is not None:
             self.lock_file = os.path.join(comm_dir, client_id + ".lock")
+            self.lock_wildcard = os.path.join(comm_dir, "*.lock")
             self.is_locked = False
 
         if data_dir is None:
@@ -386,16 +386,28 @@ class HPLCController:
         """
 
         if not self.is_locked:
+
+            self.logger.debug("Trying to acquire lock.")
             # wait until instrument is free
             while True:
-                if glob.glob(os.path.join(self.comm_dir, "*.lock")):
+                if glob.glob(self.lock_wildcard):
                     time.sleep(1)
                     continue
+
+                # write lock file
+                open(self.lock_file, "a").close()
+                time.sleep(1)
+
+                # ensure no other client set a lock
+                if len(glob.glob(self.lock_wildcard)) > 1:
+                    self.logger.debug("Multiple locks set. Trying again.")
+                    self.release_lock()
+
                 break
 
-            # write lock file
-            open(self.lock_file, "a").close()
             self.is_locked = True
+
+        self.logger.info("Acquired lock.")
 
     def release_lock(self):
         """Deletes lock file"""
@@ -405,6 +417,7 @@ class HPLCController:
             self.logger.debug("Lock file was not found. Continue operation.")
 
         self.is_locked = False
+        self.logger.info("Released lock.")
 
 if __name__ == "__main__":
     import sys
