@@ -76,9 +76,10 @@ class HPLCController:
         self.cmd_no = 0
 
         if client_id is not None:
+            self.client_id = client_id
             self.lock_file = os.path.join(comm_dir, client_id + ".lock")
             self.lock_wildcard = os.path.join(comm_dir, "*.lock")
-            self.is_locked = False
+            self.has_lock = False
 
         if data_dir is None:
             if os.path.isdir(DEFAULT_DATA_DIR):
@@ -385,9 +386,9 @@ class HPLCController:
         This method is intended for multiple clients with a common file system.
         """
 
-        if not self.is_locked:
+        if not self.has_lock:
 
-            self.logger.debug("Client %s trying to acquire lock.", self.client_id)
+            self.logger.debug("Client %s trying to set lock.", self.client_id)
             # wait until instrument is free
             while True:
                 if glob.glob(self.lock_wildcard):
@@ -400,21 +401,22 @@ class HPLCController:
 
                 # ensure no other client set a lock
                 if len(glob.glob(self.lock_wildcard)) > 1:
-                    self.logger.debug("Multiple locks set. Trying again.")
+                    self.logger.debug("Multiple locks detected. Trying again.")
                     self.release_lock()
                     continue
 
                 break
 
-            self.is_locked = True
+            self.has_lock = True
+            self.reset_cmd_counter()
 
-        self.logger.info("Client %s Acquired lock.", self.client_id)
+        self.logger.debug("Client %s acquired lock.", self.client_id)
 
     def release_lock(self):
         """Deletes lock file"""
         os.remove(self.lock_file)
         self.has_lock = False
-        self.logger.debug("Released lock.")
+        self.logger.debug("Client %s released lock.", self.client_id)
 
 if __name__ == "__main__":
     import sys
