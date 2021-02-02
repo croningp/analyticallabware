@@ -77,7 +77,7 @@ class HPLCController:
         self.cmd_no = 0
 
         if client_id is not None:
-            self.lock_file = os.path.join(comm_dir, client_id, ".lock")
+            self.lock_file = os.path.join(comm_dir, client_id + ".lock")
             self.is_locked = False
 
         if data_dir is None:
@@ -380,7 +380,10 @@ class HPLCController:
             self.logger.info("%s chromatogram loaded.", channel)
 
     def acquire_lock(self):
-        """Sets lock as soon as intrument is free"""
+        """
+        Sets lock as soon as instrument is free.
+        This method is intended for multiple clients with a common file system.
+        """
 
         if not self.is_locked:
             # wait until instrument is free
@@ -389,14 +392,18 @@ class HPLCController:
                     time.sleep(1)
                     continue
                 break
-        
+
             # write lock file
             open(self.lock_file, "a").close()
             self.is_locked = True
 
     def release_lock(self):
         """Deletes lock file"""
-        os.remove(self.lock_file)
+        try:
+            os.remove(self.lock_file)
+        except FileNotFoundError:
+            self.logger.debug("Lock file was not found. Continue operation.")
+
         self.is_locked = False
 
 if __name__ == "__main__":
