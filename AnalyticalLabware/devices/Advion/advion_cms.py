@@ -1,3 +1,5 @@
+"""Python adapter for CLR library AdvionCMS_NET."""
+
 import sys
 from typing import List, Tuple, Union
 
@@ -13,7 +15,6 @@ from .errors import check_return
 sys.path.append(API_PATH)
 
 clr.AddReference("AdvionCMS_NET")
-
 import AdvionCMS_NET as cms
 
 
