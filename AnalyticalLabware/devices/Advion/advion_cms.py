@@ -7,9 +7,15 @@ import clr
 import numpy as np
 
 from .config import API_PATH
-from .enums import (AcquisitionState, BinaryReadback, InstrumentState,
-                    InstrumentSwitch, NumberReadback, OperationMode,
-                    SourceType)
+from .enums import (
+    AcquisitionState,
+    BinaryReadback,
+    InstrumentState,
+    InstrumentSwitch,
+    NumberReadback,
+    OperationMode,
+    SourceType,
+)
 from .errors import check_return
 
 sys.path.append(API_PATH)
