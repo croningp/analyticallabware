@@ -19,37 +19,37 @@ import AdvionCMS_NET as cms
 
 class _AbstractInstrument:
     def __init__(self):
-        self._ptr = None
+        self._handle = None
 
     def switch(self, switch: InstrumentSwitch, value: bool):
-        self._ptr.setInstrumentSwitchOn(switch.value, value)
+        self._handle.setInstrumentSwitchOn(switch.value, value)
 
     def ignore_remaining_pumpdown_time(self):
-        self._ptr.ignoreRemainingPumpDownTime()
+        self._handle.ignoreRemainingPumpDownTime()
 
     @property
     def pumpdown_remaining_seconds(self):
-        return self._ptr.getPumpDownRemainingSeconds()
+        return self._handle.getPumpDownRemainingSeconds()
 
     @property
     def source_type(self):
-        return SourceType(self._ptr.getSourceType())
+        return SourceType(self._handle.getSourceType())
 
     def get_readback(self, readbacktype: Union[NumberReadback, BinaryReadback]):
         if isinstance(readbacktype, NumberReadback):
-            return self._ptr.getNumberReadback(readbacktype.value)
+            return self._handle.getNumberReadback(readbacktype.value)
         elif isinstance(readbacktype, BinaryReadback):
-            return self._ptr.getBinaryReadback(readbacktype.value)
+            return self._handle.getBinaryReadback(readbacktype.value)
 
 
 class SimulatedInstrument(_AbstractInstrument):
     def __init__(self, path: str):
-        self._ptr = cms.SimulatedInstrument(path)
+        self._handle = cms.SimulatedInstrument(path)
 
 
 class USBInstrument(_AbstractInstrument):
     def __init__(self):
-        self._ptr = cms.USBInstrument()
+        self._handle = cms.USBInstrument()
 
 
 class InstrumentController:
@@ -57,7 +57,7 @@ class InstrumentController:
         self.instrument = instrument
 
     def start_controller(self):
-        check_return(cms.InstrumentController.startController(self.instrument._ptr))
+        check_return(cms.InstrumentController.startController(self.instrument._handle))
 
     def stop_controller(self):
         check_return(cms.InstrumentController.stopController())
