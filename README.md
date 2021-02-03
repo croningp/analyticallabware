@@ -105,5 +105,49 @@ r.spectrum.integrate_peak(peak)
 r.spectrum.save_data(filename) # !filename without .pickle extension!
 ```
 
+### Advion CMS mass spectrometers
+1. You will need to do a one-time setup at the beginning.
+```python
+import time
+from AnalyticalLabware.devices.Advion import (
+    AdvionData, SimulatedInstrument, USBInstrument, InstrumentController, AcquisitionManager
+)
+
+instrument = USBInstrument() # SimulatedInstrument() if not connected to physical spectrometer
+controller = InstrumentController(instrument)
+
+controller.start_controller()
+controller.operate() # starts N2 flow
+```
+
+2. For each experiment, create an acquisition manager, which allows you to control the run.
+```python
+manager = AcquisitionManager(
+    MS_METHOD, # path to method XML
+    [MS_ION_SOURCE_P, MS_ION_SOURCE_N],
+    [MS_TUNE_P, MS_TUNE_N],
+    self.experiment_name,
+    self.experiment_dir,
+)
+
+# wait until manager ready before starting a run
+while manager.state != advion_wrapper.AcquisitionState.Ready:
+    time.sleep(2)
+manager.start()
+
+# wait until acquisition actually underway
+while manager.state != advion_wrapper.AcquisitionState.Underway:
+    time.sleep(2)
+
+# wait until done
+while manager.state != advion_wrapper.AcquisitionState.Ready:
+    time.sleep(2)
+
+# export output .datx files to npz/csv
+data = AdvionData("my_data.datx")
+data.write_npz("my_data.npz") # more space-efficient
+data.write_csv("my_data.csv")
+```
+
 ## Contribution
 If you wish to contribute, branch off master, use the general style of the device classes and your common sense. `AbstractSpectrum` class is there for you to provide &#0177;unified API for the spectral data, feel free to rewrite the parent processing methods and add your own. When done - submit a merge request.
