@@ -1,11 +1,13 @@
-"""Python adapter for C wrapper around AdvionData.dll."""
+"""Python adapter for CLR library AdvionData_NET."""
 
-from ctypes import CDLL, POINTER, c_bool, c_char_p, c_double, c_int, c_void_p, c_float
+from ctypes import c_double
+
 import clr
+import numpy as np
+
 from .config import API_PATH
-
-
 from .errors import check_return
+
 sys.path.append(API_PATH)
 
 clr.AddReference("AdvionData_NET")
@@ -18,28 +20,34 @@ class AdvionData:
     ):
         self._handle = adata.DataReader(path.encode(), debug_output, decode_spectra)
 
+    def num_masses(self) -> int:
+        return self._handle.getNumMasses()
+
     def num_spectra(self) -> int:
-        return dll.num_spectra(self._handle)
+        return self._handle.getNumSpectra()
 
-    def masses(self) -> np.array:
-        n = dll.num_masses(self._handle)
-        buff = (c_float * n)()
-        check_return(dll.get_masses(self._handle, buff), adviondata=True)
-        return np.array(buff)
+    def date() -> str:
+        return self._handle.getDate()
 
-    def retention_times(self) -> np.array:
-        n = dll.num_spectra(self._handle)
-        buff = (c_float * n)()
-        check_return(dll.retention_times(self._handle, buff), adviondata=True)
-        return np.array(buff)
+    def masses(self) -> np.ndarray:
+        n = self.num_masses()
+        buff = np.ndarray(n, dtype=c_double)
+        check_return(self._handle.getMasses(buff), adviondata=True)
+        return buff
 
-    def spectrum(self, index: int) -> np.array:
-        n = dll.num_masses(self._handle)
-        buff = (c_float * n)()
-        check_return(dll.get_spectrum(self._handle, index, buff), adviondata=True)
-        return np.array(buff)
+    def retention_times(self) -> np.ndarray:
+        n = self.num_spectra()
+        buff = np.ndarray(n, dtype=c_double)
+        check_return(self._handle.getRetentionTimes(buff), adviondata=True)
+        return buff
 
-    def spectra(self, as_list=False) -> np.array:
+    def spectrum(self, index: int) -> np.ndarray:
+        n = self.num_masses()
+        buff = np.ndarray(n, dtype=c_double)
+        check_return(self._handle.getSpectrum(index, buff), adviondata=True)
+        return buff
+
+    def spectra(self, as_list=False) -> np.ndarray:
         N = self.num_spectra()
         specs = [self.spectrum(i) for i in range(N)]
         if as_list:
@@ -48,7 +56,7 @@ class AdvionData:
             return np.stack(specs)
 
     def TIC(self, index: int) -> float:
-        return dll.get_TIC(self._handle, index)
+        return self._handle.getTIC(index)
 
     def write_csv(self, csv_filename: str):
         # use AdvionData to get the information out of the .datx file
@@ -71,6 +79,12 @@ class AdvionData:
             retention_times=self.retention_times(),
             masses=self.masses(),
         )
+
+    def experiment_log(self) -> str:
+        return self._handle.getExperimentLog()
+
+    def scan_mode(self) -> int:
+        return self._handle.getScanModeIndex()
 
 
 if __name__ == "__main__":
