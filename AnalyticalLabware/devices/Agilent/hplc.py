@@ -20,10 +20,10 @@ from .chromatogram import AgilentHPLCChromatogram, TIME_FORMAT
 MAX_CMD_NO = 255
 
 # Default Chemstation data directory
-DEFAULT_DATA_DIR = r"C:\Chem32\1\Data"
+DEFAULT_DATA_DIR = "C:\\Chem32\\1\\Data"
 
 # Default Chemstation methods directory
-DEFAULT_METHOD_DIR = 'C:\\Chem32\\1\\Methods\\'
+DEFAULT_METHOD_DIR = ""
 
 # Commands sent to the Chemstation Macro
 # See https://www.agilent.com/cs/library/usermanuals/Public/MACROS.PDF
@@ -43,18 +43,20 @@ START_METHOD_CMD = "StartMethod"
 RUN_METHOD_CMD = 'RunMethod "{data_dir}",,"{experiment_name}_{timestamp}"'
 STOP_METHOD_CMD = "StopMethod"
 
+
 class HPLCController:
     """
     Class to control Agilent HPLC systems via Chemstation Macros.
     """
+
     def __init__(
-            self,
-            comm_dir: str,
-            data_dir: str = None,
-            cmd_file: str = "cmd",
-            reply_file: str = "reply",
-            logger=None
-        ):
+        self,
+        comm_dir: str,
+        data_dir: str = None,
+        cmd_file: str = "cmd",
+        reply_file: str = "reply",
+        logger=None,
+    ):
         """
         Initialize HPLC controller.
         comm_dir: Name of directory for communication.
@@ -73,15 +75,17 @@ class HPLCController:
             if os.path.isdir(DEFAULT_DATA_DIR):
                 self.data_dir = DEFAULT_DATA_DIR
             else:
-                raise FileNotFoundError(f"Default data_dir {DEFAULT_DATA_DIR} not found.")
+                raise FileNotFoundError(
+                    f"Default data_dir {DEFAULT_DATA_DIR} not found."
+                )
         else:
             self.data_dir = data_dir
 
         self.spectra = {
-            'channel_A': AgilentHPLCChromatogram(self.data_dir, channel='A'),
-            'channel_B': AgilentHPLCChromatogram(self.data_dir, channel='B'),
-            'channel_C': AgilentHPLCChromatogram(self.data_dir, channel='C'),
-            'channel_D': AgilentHPLCChromatogram(self.data_dir, channel='D'),
+            "A": AgilentHPLCChromatogram(self.data_dir),
+            "B": AgilentHPLCChromatogram(self.data_dir),
+            "C": AgilentHPLCChromatogram(self.data_dir),
+            "D": AgilentHPLCChromatogram(self.data_dir),
         }
 
         self.data_files = []
@@ -100,45 +104,34 @@ class HPLCController:
 
         self.logger.info("HPLC Controller initialized.")
 
-    def _send(self, cmd: str, cmd_no: int):
+    def _send(self, cmd: str, cmd_no: int, num_attempts=5):
         """
         Low-level execution primitive. Sends a command string to HPLC.
 
         Args:
             cmd: Command string to be sent
             cmd_no: Command number
+
+        Raises:
+            IOError: Could not write to command file.
         """
-        # override cmd_no if explicitly given
-        while True:
+        err = None
+        for _ in range(num_attempts):
+            time.sleep(1)
             try:
                 with open(self.cmd_file, "w", encoding="utf8") as cmd_file:
                     cmd_file.write(f"{cmd_no} {cmd}")
-            except PermissionError:
-                self.logger.warning("Failed sending command, trying again...")
+            except IOError as e:
+                err = e
+                self.logger.warning("Failed to send command; trying again.")
                 continue
-            break
+            else:
+                self.logger.info("Sent command #%d: %s.", cmd_no, cmd)
+                return
+        else:
+            raise IOError(f"Failed to send command #{cmd_no}: {cmd}.") from err
 
-        cmd_file = None
-
-        # Crude way of resolving conflicts where the command file is
-        # held by the other side.
-        while cmd_file is None:
-            try:
-                cmd_file = open(self.cmd_file, "w", encoding="utf8")
-            except PermissionError:
-                self.logger.warning("Failed to open command file for writing - trying again.")
-                time.sleep(0.5)
-                continue
-
-        with cmd_file:
-            cmd_file.write(f"{cmd_no} {cmd}")
-
-        # wait one second to make sure command is processed by hplc
-        time.sleep(1)
-
-        self.logger.info("Send command No. %d: %s.", cmd_no, cmd)
-
-    def _receive(self, cmd_no: int, num_retries=20)-> str:
+    def _receive(self, cmd_no: int, num_attempts=5) -> str:
         """
         Low-level execution primitive.
 
@@ -149,22 +142,38 @@ class HPLCController:
         Raises:
             IOError: Could not read reply file.
         """
-        for _ in range(num_retries):
-            with open(self.reply_file, "r", encoding="utf_16") as reply_file:
-                response = reply_file.read()
+        err = None
+        for _ in range(num_attempts):
+            time.sleep(1)
+            try:
+                with open(self.reply_file, "r", encoding="utf_16") as reply_file:
+                    response = reply_file.read()
+            except OSError as e:
+                err = e
+                self.logger.warning("Failed to read from reply file; trying again.")
+                continue
 
-                if response:
+            try:
+                first_line = response.splitlines()[0]
+                response_no = int(first_line.split()[0])
+            except IndexError as e:
+                err = e
+                self.logger.warning("Malformed response %s; trying again.", response)
+                continue
 
-                    first_line = response.splitlines()[0]
-                    response_no = int(first_line.split()[0])
-
-                    # check that response corresponds to sent command
-                    if response_no == cmd_no:
-                        self.logger.info("Reply: \n%s", response)
-                        return response
-
-            time.sleep(0.5)
-        raise IOError(f"Failed to read response to cmd_no {cmd_no}.")
+            # check that response corresponds to sent command
+            if response_no == cmd_no:
+                self.logger.info("Reply: \n%s", response)
+                return response
+            else:
+                self.logger.warning(
+                    "Response #: %d != command #: %d; trying again.",
+                    response_no,
+                    cmd_no,
+                )
+                continue
+        else:
+            raise IOError(f"Failed to receive reply to command #{cmd_no}.") from err
 
     def send(self, cmd: str):
         """
@@ -257,7 +266,7 @@ class HPLCController:
         """
         self.send(STOP_MACRO_CMD)
 
-    def switch_method(self, method_name: str = "AH_default"):
+    def switch_method(self, method_name: str, method_dir = DEFAULT_METHOD_DIR):
         """
         Allows the user to switch between pre-programmed methods.
 
@@ -270,18 +279,21 @@ class HPLCController:
         """
         self.send(
             SWITCH_METHOD_CMD.format(
-                method_dir=DEFAULT_METHOD_DIR, method_name=method_name
+                method_dir=method_dir, method_name=method_name
             )
         )
 
-        time.sleep(1)
+        time.sleep(2)
         self.send(GET_METHOD_CMD)
-        time.sleep(1)
+        time.sleep(2)
         # check that method switched
-        try:
-            parsed_response = self.receive().splitlines()[1].split()[1:][0]
-        except:
-            raise IndexError("Switching Methods failed.")
+        for _ in range(10):
+            try:
+                parsed_response = self.receive().splitlines()[1].split()[1:][0]
+                break
+            except IndexError:
+                self.logger.debug("Malformed response. Trying again.")
+                continue
 
         assert parsed_response == f"{method_name}.M", "Switching Methods failed."
 
@@ -332,9 +344,7 @@ class HPLCController:
 
         self.send(
             RUN_METHOD_CMD.format(
-                data_dir=data_dir,
-                experiment_name=experiment_name,
-                timestamp=timestamp
+                data_dir=data_dir, experiment_name=experiment_name, timestamp=timestamp
             )
         )
 
@@ -357,8 +367,9 @@ class HPLCController:
         last_file = self.data_files[-1]
 
         for channel, spec in self.spectra.items():
-            spec.load_spectrum(last_file)
+            spec.load_spectrum(data_path=last_file, channel=channel)
             self.logger.info("%s chromatogram loaded.", channel)
+
 
 if __name__ == "__main__":
     import sys

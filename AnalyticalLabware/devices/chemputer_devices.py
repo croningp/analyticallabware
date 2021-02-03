@@ -109,7 +109,13 @@ class SimHPLCController(HPLCController, ChemputerDevice):
 
     def __init__(self, name):
         ChemputerDevice.__init__(self, name)
-        self.spectrum = _SimulatedSpectrum()
+        self.data_dir = "dummy_dir"
+        self.spectra = {
+            "A":_SimulatedSpectrum(),
+            "B":_SimulatedSpectrum(),
+            "C":_SimulatedSpectrum(),
+            "D":_SimulatedSpectrum()
+            }
 
     def switch_method(self, name):
         pass
@@ -130,7 +136,13 @@ class SimHPLCController(HPLCController, ChemputerDevice):
         pass
 
     def status(self, alternator=alternator):
-        return next(alternator)
+        # return next(alternator)
+        return ["PRERUN"]
+
+    def run_method(self, *args):
+        pass
 
     def get_spectrum(self, *args, **kwargs):
-        self.spectrum.load_spectrum()
+
+        for _, spec in self.spectra.items():
+            spec.load_spectrum()
