@@ -1,6 +1,7 @@
 """Python adapter for CLR library AdvionCMS_NET."""
 
 import sys
+from ctypes import c_double
 from typing import List, Tuple, Union
 
 import clr
@@ -146,8 +147,8 @@ class AcquisitionManager:
         self.name = name
         self.folder = folder
 
-    def pause(self):
-        check_return(cms.AcquisitionManager.pause())
+    def pause(self, resume_on_digital_input: bool):
+        check_return(cms.AcquisitionManager.pause(resume_on_digital_input))
 
     def extend(self, seconds: int) -> int:
         return cms.AcquisitionManager.extend(seconds)
@@ -185,31 +186,31 @@ class AcquisitionManager:
 
     @property
     def state(self) -> AcquisitionState:
-        return AcquisitionState(cms.AcquistionManager.getState())
+        return AcquisitionState(cms.AcquisitionManager.getState())
 
     @property
     def current_folder(self) -> str:
-        return cms.AcquistionManager.getCurrentFolder()
+        return cms.AcquisitionManager.getCurrentFolder()
 
     @property
     def acquisition_bins_per_amu(self) -> int:
-        return cms.AcquistionManager.getAcquisitionBinsPerAMU()
+        return cms.AcquisitionManager.getAcquisitionBinsPerAMU()
 
     @acquisition_bins_per_amu.setter
     def acquisition_bins_per_amu(self, value: int):
-        check_return(cms.AcquistionManager.setAcquisitionBinsPerAMU(value))
+        check_return(cms.AcquisitionManager.setAcquisitionBinsPerAMU(value))
 
     @property
     def max_num_masses(self) -> int:
-        return cms.AcquistionManager.getMaxNumMasses()
+        return cms.AcquisitionManager.getMaxNumMasses()
 
     @property
     def last_num_masses(self) -> int:
-        return cms.AcquistionManager.getLastNumMasses()
+        return cms.AcquisitionManager.getLastNumMasses()
 
     @property
     def last_tic(self) -> float:
-        return cms.AcquistionManager.getLastTIC()
+        return cms.AcquisitionManager.getLastTIC()
 
     @property
     def last_spectrum(self) -> Tuple[np.ndarray, np.ndarray]:
@@ -217,5 +218,5 @@ class AcquisitionManager:
         masses = np.ndarray(num_peaks, dtype=c_double)
         intensities = np.ndarray(num_peaks, dtype=c_double)
         cms.AcquisitionManager.getLastSpectrumMasses(masses)
-        cms.AcquisitionManager.getLastSpectrumIntensitieis(intensities)
+        cms.AcquisitionManager.getLastSpectrumIntensities(intensities)
         return masses, intensities

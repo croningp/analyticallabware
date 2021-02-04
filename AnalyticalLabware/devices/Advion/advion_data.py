@@ -1,5 +1,5 @@
 """Python adapter for CLR library AdvionData_NET."""
-
+import sys
 from ctypes import c_double
 
 import clr
