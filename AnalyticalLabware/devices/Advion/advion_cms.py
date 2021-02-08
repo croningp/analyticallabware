@@ -56,8 +56,8 @@ class SimulatedInstrument(_AbstractInstrument):
 
 
 class USBInstrument(_AbstractInstrument):
-    def __init__(self):
-        self._handle = cms.USBInstrument()
+    def __init__(self, override_safeties:bool=False, override_pump:bool=False):
+        self._handle = cms.USBInstrument(override_safeties, override_pump)
 
 
 class InstrumentController:
