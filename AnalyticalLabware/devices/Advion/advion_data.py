@@ -18,7 +18,7 @@ class AdvionData:
     def __init__(
         self, path: str, debug_output: bool = False, decode_spectra: bool = False
     ):
-        self._handle = adata.DataReader(path.encode(), debug_output, decode_spectra)
+        self._handle = adata.DataReader(path, debug_output, decode_spectra)
 
     def num_masses(self) -> int:
         return self._handle.getNumMasses()
