@@ -1,10 +1,10 @@
 """Python adapter for CLR library AdvionCMS_NET."""
 
 import sys
-from ctypes import c_double
 from typing import List, Tuple, Union
 
 import clr
+import System
 import numpy as np
 
 from .config import API_PATH
@@ -56,7 +56,7 @@ class SimulatedInstrument(_AbstractInstrument):
 
 
 class USBInstrument(_AbstractInstrument):
-    def __init__(self, override_safeties:bool=False, override_pump:bool=False):
+    def __init__(self, override_safeties: bool = False, override_pump: bool = False):
         self._handle = cms.USBInstrument(override_safeties, override_pump)
 
 
@@ -215,8 +215,8 @@ class AcquisitionManager:
     @property
     def last_spectrum(self) -> Tuple[np.ndarray, np.ndarray]:
         num_peaks = self.last_num_masses
-        masses = np.ndarray(num_peaks, dtype=c_double)
-        intensities = np.ndarray(num_peaks, dtype=c_double)
+        masses = System.Array.CreateInstance(System.Single, num_peaks)
+        intensities = System.Array.CreateInstance(System.Single, num_peaks)
         cms.AcquisitionManager.getLastSpectrumMasses(masses)
         cms.AcquisitionManager.getLastSpectrumIntensities(intensities)
-        return masses, intensities
+        return np.fromiter(masses), np.fromiter(intensities)

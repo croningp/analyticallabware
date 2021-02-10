@@ -1,8 +1,8 @@
 """Python adapter for CLR library AdvionData_NET."""
 import sys
-from ctypes import c_double
 
 import clr
+import System
 import numpy as np
 
 from .config import API_PATH
@@ -31,21 +31,21 @@ class AdvionData:
 
     def masses(self) -> np.ndarray:
         n = self.num_masses()
-        buff = np.ndarray(n, dtype=c_double)
+        buff = System.Array.CreateInstance(System.Single, n)
         check_return(self._handle.getMasses(buff), adviondata=True)
-        return buff
+        return np.fromiter(buff, dtype="float")
 
     def retention_times(self) -> np.ndarray:
         n = self.num_spectra()
-        buff = np.ndarray(n, dtype=c_double)
+        buff = System.Array.CreateInstance(System.Single, n)
         check_return(self._handle.getRetentionTimes(buff), adviondata=True)
-        return buff
+        return np.fromiter(buff, dtype="float")
 
     def spectrum(self, index: int) -> np.ndarray:
         n = self.num_masses()
-        buff = np.ndarray(n, dtype=c_double)
+        buff = System.Array.CreateInstance(System.Single, n)
         check_return(self._handle.getSpectrum(index, buff), adviondata=True)
-        return buff
+        return np.fromiter(buff, dtype="float")
 
     def spectra(self, as_list=False) -> np.ndarray:
         N = self.num_spectra()
