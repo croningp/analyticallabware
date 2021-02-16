@@ -3,6 +3,7 @@
 import os
 import logging
 import time
+from typing import Optional
 
 import numpy as np
 import scipy
@@ -667,7 +668,7 @@ skipped')
             magnitude_spectrum = np.sqrt(self.y.real**2 + self.y.imag**2)
             # mapping
             peak_map = np.logical_or(create_binary_peak_map(magnitude_spectrum),
-                peak_map)
+                                     peak_map)
         else:
             peak_map = np.logical_or(create_binary_peak_map(self.y), peak_map)
 
@@ -766,3 +767,32 @@ skipped')
 
         # discarding imaginary part
         return np.abs(np.real(result))
+
+    def reference_spectrum(
+            self,
+            new_position: float,
+            reference: Optional[float] = None,
+    ):
+        """ Shifts the spectrum x axis according to the new reference.
+
+        If old reference is omitted will shift the spectrum according to the
+        highest peak.
+
+        Args:
+            new_position (float): The position to shift the peak to.
+            reference (float, optional): The current position of the reference
+                peak. If omitted - will shift to the highest found peak.
+        """
+
+        # find reference if not given
+        if reference is None:
+            reference = self.x[np.argmax(self.y)]
+
+        diff = abs(new_position - reference)
+
+        # shifting the axis
+        self.x = self.x - diff
+
+        # if peaks are recorded, find new
+        if self.peaks is not None:
+            self.find_peaks()
