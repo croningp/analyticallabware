@@ -25,6 +25,12 @@ class OperationMode(IntEnum):
     Acquiring = 3
 
 
+class AcquisitionScanMode(IntEnum):
+    ASM_Unknown = 0
+    ASM_CMS_SIM = 1
+    ASM_CMS_Range = 2
+
+
 class SourceType(IntEnum):
     NO_SOURCE = 0
     ESI_SOURCE = 1
