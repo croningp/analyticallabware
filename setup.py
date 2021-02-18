@@ -16,7 +16,8 @@ setup(
         "seabreeze",
         "numpy",
         "nmrglue",
-        "pytest"
+        "pytest",
+        "pythonnet",
     ],
-    zip_safe=False
+    zip_safe=False,
 )
