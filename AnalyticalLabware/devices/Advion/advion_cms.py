@@ -18,6 +18,7 @@ from .enums import (
     SourceType,
 )
 from .errors import check_return
+from .interop import asNumpyArray
 
 sys.path.append(API_PATH)
 
@@ -219,4 +220,4 @@ class AcquisitionManager:
         intensities = System.Array.CreateInstance(System.Single, num_peaks)
         cms.AcquisitionManager.getLastSpectrumMasses(masses)
         cms.AcquisitionManager.getLastSpectrumIntensities(intensities)
-        return np.fromiter(masses), np.fromiter(intensities)
+        return asNumpyArray(masses), asNumpyArray(intensities)
