@@ -39,7 +39,7 @@ class InstrumentMode(IntEnum):
 class BrukerMSError(Exception):
     def __repr__(self) -> str:
         err_code, *_ = self.args
-        return f"{self.__class__.__name__}({err_code.name})"
+        return "{}({})".format(self.__class__.__name__, err_code.name)
 
 
 class GeneralError(IntEnum):

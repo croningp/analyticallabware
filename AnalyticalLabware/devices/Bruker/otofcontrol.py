@@ -1,7 +1,11 @@
 from ctypes import c_double, c_int, c_long, byref
 from comtypes import BSTR, CoInitialize, CoUninitialize
 from comtypes.client import CreateObject
-from .enums import AcquisitionStatus, BusyStatus, InstrumentMode, GeneralError
+
+try:
+    from .enums import AcquisitionStatus, BusyStatus, InstrumentMode, GeneralError
+except SystemError:
+    from enums import AcquisitionStatus, BusyStatus, InstrumentMode, GeneralError
 
 
 class BrukerMS:
