@@ -10,14 +10,12 @@ class BrukerMS:
         self.handle = CreateObject("BDal.OtofControl.RemoteCustom")
 
     def close(self):
-        self.handle.ExitMSConnection()
-        self.handle = None
-        CoUninitialize()
+        self.exit_ms_connection()
 
     def init_ms_connection(self):
         return GeneralError.check_return(self.handle.InitMSConnection(0))
 
-    def exit_ms_connnection(self):
+    def exit_ms_connection(self):
         return GeneralError.check_return(self.handle.ExitMSConnection(0))
 
     def show_application(self):
