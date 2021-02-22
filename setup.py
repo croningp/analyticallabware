@@ -16,6 +16,7 @@ setup(
         "seabreeze",
         "numpy",
         "nmrglue",
+        "comtypes",
     ],
     zip_safe=False
 )
