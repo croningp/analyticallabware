@@ -10,6 +10,18 @@ except SystemError:
 
 class BrukerMS:
     def __init__(self):
+        self.handle = _BrukerMS()
+
+    def __enter__(self):
+        self.handle.init_ms_connection()
+        return self.handle
+
+    def __exit__(self, type, value, traceback):
+        self.handle.close()
+
+
+class _BrukerMS:
+    def __init__(self):
         CoInitialize()
         self.handle = CreateObject("BDal.OtofControl.RemoteCustom")
 
