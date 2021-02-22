@@ -1,5 +1,5 @@
-from ctypes import c_buffer, c_double, c_int, c_long, pointer
-from comtypes import CoInitialize, CoUninitialize
+from ctypes import c_double, c_int, c_long, byref
+from comtypes import BSTR, CoInitialize, CoUninitialize
 from comtypes.client import CreateObject
 from .enums import AcquisitionStatus, BusyStatus, InstrumentMode, GeneralError
 
@@ -25,25 +25,23 @@ class BrukerMS:
 
     @property
     def busy_status(self) -> BusyStatus:
-        status = pointer(c_int())
-        GeneralError.check_return(self.handle.CheckBusyStatus(status))
-        return BusyStatus(status.contents.value)
+        status = c_int()
+        GeneralError.check_return(self.handle.CheckBusyStatus(byref(status)))
+        return BusyStatus(status.value)
 
     def get_last_error_code(self, clear_error_flag=False) -> int:
         return self.handle.GetLastErrorCode(c_long(clear_error_flag))
 
     def get_last_error_text(self, clear_error_flag=False) -> str:
-        buff = pointer(c_buffer(0, 128))
-        GeneralError.check_return(
-            self.handle.GetLastErrorText(c_long(clear_error_flag), buff)
-        )
-        return buff.contents.value.decode()
+        buff = BSTR()
+        self.handle.GetLastErrorText(c_long(clear_error_flag), byref(buff))
+        return buff.value
 
     @property
     def instrument_mode(self) -> InstrumentMode:
-        mode = pointer(c_int())
-        GeneralError.check_return(self.handle.GetInstrumentMode(mode))
-        return InstrumentMode(mode.contents.value)
+        mode = c_int()
+        GeneralError.check_return(self.handle.GetInstrumentMode(byref(mode)))
+        return InstrumentMode(mode.value)
 
     @instrument_mode.setter
     def instrument_mode(self, mode: InstrumentMode):
@@ -53,19 +51,19 @@ class BrukerMS:
         GeneralError.check_return(self.handle.ResetChromatogram(0))
 
     def load_method(self, method_path: str):
-        GeneralError.check_return(self.handle.LoadMethod(method_path.encode(), 0))
+        GeneralError.check_return(self.handle.LoadMethod(method_path, 0))
 
     def save_method(self, method_path: str):
-        GeneralError.check_return(self.handle.SaveMethod(method_path.encode(), 0))
+        GeneralError.check_return(self.handle.SaveMethod(method_path, 0))
 
     @property
     def acquisition_status(self) -> AcquisitionStatus:
-        status = pointer(c_int())
-        GeneralError.check_return(self.handle.GetAcquisitionStatus(status))
-        return AcquisitionStatus(status.contents.value)
+        status = c_int()
+        GeneralError.check_return(self.handle.GetAcquisitionStatus(byref(status)))
+        return AcquisitionStatus(status.value)
 
-    def prepare_acquisiton(self, data_path: str):
-        GeneralError.check_return(self.handle.PrepareAcquisiton(data_path.encode()))
+    def prepare_acquisition(self, data_path: str):
+        GeneralError.check_return(self.handle.PrepareAcquisition(data_path))
 
     def start_acquisition(self, delay_time: float):
         GeneralError.check_return(self.handle.StartAcquisition(0, c_double(delay_time)))
@@ -77,12 +75,10 @@ class BrukerMS:
         GeneralError.check_return(self.handle.StopAcquisition(0, c_double(delay_time)))
 
     def start_postprocessing(self, data_path: str):
-        GeneralError.check_return(self.handle.StartPostprocessing(data_path.encode()))
+        GeneralError.check_return(self.handle.StartPostprocessing(data_path))
 
     def load_calibration(self, analysis_path: str):
-        GeneralError.check_return(
-            self.handle.LoadCalibration(analysis_path.encode(), 0)
-        )
+        GeneralError.check_return(self.handle.LoadCalibration(analysis_path, 0))
 
 
 # TODO:
