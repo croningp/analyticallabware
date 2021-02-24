@@ -10,17 +10,20 @@ If you need to use Advion MS instrument, please contact @hessammehr for the inst
 - scipy
 - matplotlib
 - numpy
-- seabreeze (python wrapper for OceanOptics Seabreeze library, [git](https://github.com/ap--/python-seabreeze)/[docs](https://python-seabreeze.readthedocs.io/en/latest/index.html))
-- nmrglue (python library for nmr data processing, [git](https://github.com/jjhelmus/nmrglue)/[docs](https://nmrglue.readthedocs.io/en/latest/index.html))
+- seabreeze (python wrapper for OceanOptics Seabreeze library, [git][seabreeze-git]/[docs][seabreeze-docs])
+- nmrglue (python library for nmr data processing, [git][nmrglue-git]/[docs][nmrglue-docs])
+
+### Device specific
+- Advion bindings require .NET Framework 4.0 or later ([download link][dotnetfx]) and Advion API 6.4 (x64) or later.
 
 #### _Chemputer specific_
 - ChemputerAPI
 - SerialLabware
 
 
-## Usage guides
+# Usage guides
 
-### Spinsolve NMR
+## Spinsolve NMR
 ```python
 from AnalyticalLabware import SpinsolveNMR
 
@@ -62,7 +65,7 @@ s.get_spectrum()
 time_axis, fid_real, fid_imag = s.spectrum.extract_data(<path_to_fid_file>)
 ```
 
-### OceanOptics Raman spectrometer
+## OceanOptics Raman spectrometer
 ```python
 from AnalyticalLabware import OceanOpticsRaman
 
@@ -105,7 +108,8 @@ r.spectrum.integrate_peak(peak)
 r.spectrum.save_data(filename) # !filename without .pickle extension!
 ```
 
-### Advion CMS mass spectrometers
+## Advion CMS mass spectrometers
+Before 
 1. You will need to do a one-time setup at the beginning.
 ```python
 import time
@@ -149,5 +153,11 @@ data.write_npz("my_data.npz") # more space-efficient
 data.write_csv("my_data.csv")
 ```
 
-## Contribution
+# Contribution
 If you wish to contribute, branch off master, use the general style of the device classes and your common sense. `AbstractSpectrum` class is there for you to provide &#0177;unified API for the spectral data, feel free to rewrite the parent processing methods and add your own. When done - submit a merge request.
+
+[dotnetfx]: https://dotnet.microsoft.com/download/dotnet
+[nmrglue-docs]: https://nmrglue.readthedocs.io/en/latest/index.html
+[nmrglue-git]: https://github.com/jjhelmus/nmrglue
+[seabreeze-docs]: https://python-seabreeze.readthedocs.io/en/latest/index.html
+[seabreeze-git]: https://github.com/ap--/python-seabreeze
