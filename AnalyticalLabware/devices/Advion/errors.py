@@ -4,7 +4,7 @@ import ctypes
 from .enums import ErrorCode, DataErrorCode
 
 
-def check_return(return_code: ctypes.c_int, adviondata: bool = False):
+def check_return(return_code, adviondata: bool = False):
     if adviondata:
         # ErrorCode from AdvionData
         if return_code != DataErrorCode.ADVIONDATA_OK:
