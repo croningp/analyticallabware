@@ -1,9 +1,10 @@
 """Module for NMR spectral data loading and manipulating"""
 
+# pylint: disable=attribute-defined-outside-init
 import os
 import logging
 import time
-from typing import Optional
+from typing import Union
 
 import numpy as np
 import scipy
@@ -169,12 +170,16 @@ class SpinsolveNMRSpectrum(AbstractSpectrum):
         elif os.path.isfile(processed_path) and preprocessed:
             # loading frequency axis and real part of the complex spectrum data
             x_axis, spectrum_data, _ = self.extract_data(processed_path)
+            # reversing spectrum order to match default nmr order
+            # i.e. highest - left
+            x_axis = x_axis[::-1]
+            spectrum_data = spectrum_data[::-1]
             # updating axis mapping
             self.AXIS_MAPPING.update(x='ppm')
 
         else:
             self.logger.warning('Current version of SpinsolveNMRSpectrum does \
-not support raw FID data and now processed spectrum was found. Please change \
+not support raw FID data and no processed spectrum was found. Please change \
 settings of the Spinsolve Software to enable default processing')
             raise AttributeError(f'Processed spectrum was not found in the \
 supplied directory <{data_path}>')
@@ -771,8 +776,8 @@ skipped')
     def reference_spectrum(
             self,
             new_position: float,
-            reference: Optional[float] = None,
-    ):
+            reference: Union[float, str] = 'highest',
+    ) -> None:
         """ Shifts the spectrum x axis according to the new reference.
 
         If old reference is omitted will shift the spectrum according to the
@@ -780,18 +785,33 @@ skipped')
 
         Args:
             new_position (float): The position to shift the peak to.
-            reference (float, optional): The current position of the reference
-                peak. If omitted - will shift to the highest found peak.
+            reference (Union[float, str]): The current position of the reference
+                peak or it's indication for shifting: either "highest" (default)
+                or "closest" for selecting highest or closest to the new
+                reference peak for shifting.
         """
 
         # find reference if not given
-        if reference is None:
-            reference = self.x[np.argmax(self.y)]
+        if isinstance(reference, str):
+            if reference == 'highest':
+                # Looking for highest point
+                reference = self.x[np.argmax(self.y)]
+            elif reference == 'closest':
+                # Looking for closest peak among found across whole spectrum
+                # Specifying area not to update self.peaks
+                peaks = self.find_peaks(area=(self.x.min(), self.x.max()))
+                # x coordinate
+                peaks_xs = peaks[:, 1]
+                reference = peaks[np.argmin(peaks_xs - new_position)][1]
+            else:
+                self.logger.warning('Please use either "highest" or "closest"\
+reference, or give exact value.')
+                return
 
-        diff = abs(new_position - reference)
+        diff = (new_position - reference)
 
         # shifting the axis
-        self.x = self.x - diff
+        self.x = self.x + diff
 
         # if peaks are recorded, find new
         if self.peaks is not None:
