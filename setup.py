@@ -17,7 +17,6 @@ setup(
         "numpy",
         "nmrglue",
         "pytest",
-        "pythonnet",
     ],
     zip_safe=False,
 )
