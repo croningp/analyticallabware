@@ -4,13 +4,18 @@ from comtypes.client import CreateObject
 
 try:
     from .enums import AcquisitionStatus, BusyStatus, InstrumentMode, GeneralError
-except SystemError:
+except (ImportError, SystemError):
     from enums import AcquisitionStatus, BusyStatus, InstrumentMode, GeneralError
 
 
 class BrukerMS:
-    def __init__(self):
-        self.handle = _BrukerMS()
+    def __init__(self, rpc=False):
+        """
+        Args:
+            rpc (bool): Whether otofControl will be accessed using
+                a remote procedure call (RPC) system
+        """
+        self.handle = _BrukerMS(rpc)
 
     def __enter__(self):
         self.handle.init_ms_connection()
@@ -21,7 +26,8 @@ class BrukerMS:
 
 
 class _BrukerMS:
-    def __init__(self):
+    def __init__(self, rpc=False):
+        self.rpc = rpc
         CoInitialize()
         self.handle = CreateObject("BDal.OtofControl.RemoteCustom")
 
@@ -37,11 +43,10 @@ class _BrukerMS:
     def show_application(self):
         return GeneralError.check_return(self.handle.ShowApplication)
 
-    @property
-    def busy_status(self) -> BusyStatus:
+    def get_busy_status(self) -> BusyStatus:
         status = c_int()
         GeneralError.check_return(self.handle.CheckBusyStatus(byref(status)))
-        return BusyStatus(status.value)
+        return status.value if self.rpc else BusyStatus(status.value)
 
     def get_last_error_code(self, clear_error_flag=False) -> int:
         return self.handle.GetLastErrorCode(c_long(clear_error_flag))
@@ -51,15 +56,13 @@ class _BrukerMS:
         self.handle.GetLastErrorText(c_long(clear_error_flag), byref(buff))
         return buff.value
 
-    @property
-    def instrument_mode(self) -> InstrumentMode:
+    def get_instrument_mode(self) -> InstrumentMode:
         mode = c_int()
         GeneralError.check_return(self.handle.GetInstrumentMode(byref(mode)))
-        return InstrumentMode(mode.value)
+        return mode.value if self.rpc else InstrumentMode(mode.value)
 
-    @instrument_mode.setter
-    def instrument_mode(self, mode: InstrumentMode):
-        GeneralError.check_return(self.handle.SetInstrumentMode(mode.value))
+    def set_instrument_mode(self, mode: InstrumentMode):
+        GeneralError.check_return(self.handle.SetInstrumentMode(int(mode)))
 
     def reset_chromatogram(self):
         GeneralError.check_return(self.handle.ResetChromatogram(0))
@@ -70,11 +73,10 @@ class _BrukerMS:
     def save_method(self, method_path: str):
         GeneralError.check_return(self.handle.SaveMethod(method_path, 0))
 
-    @property
-    def acquisition_status(self) -> AcquisitionStatus:
+    def get_acquisition_status(self) -> AcquisitionStatus:
         status = c_int()
         GeneralError.check_return(self.handle.GetAcquisitionStatus(byref(status)))
-        return AcquisitionStatus(status.value)
+        return status.value if self.rpc else AcquisitionStatus(status.value)
 
     def prepare_acquisition(self, data_path: str):
         GeneralError.check_return(self.handle.PrepareAcquisition(data_path))
