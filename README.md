@@ -2,8 +2,20 @@
 This repository contains python interface for analytical instruments to be used exclusively with Chemputer or any other platform developed in Cronin Group.
 
 # Installation
-Clone the repo and install the package using `pip`, e.g. `pip install -e .`  
+```bash
+git clone git@gitlab.com:croningroup/chemputer/analyticallabware.git
+
+cd analyticallabware
+
+# install chemputer related packages unless installed already
+pip install -r requirements.txt
+
+# install analyticallabware
+pip install -e .
+```  
 If you need to use Advion MS instrument, please contact @hessammehr for the installation guidelines.
+## Note for python 3.9 users
+Since pythonnet is not supported in python 3.9 ([yet][pythonnet-python39-support]), users who want to use Advion instruments should use python 3.8 instead.
 
 ## Requirements
 ### Python libraries
@@ -109,7 +121,7 @@ r.spectrum.save_data(filename) # !filename without .pickle extension!
 ```
 
 ## Advion CMS mass spectrometers
-Before 
+Before
 1. You will need to do a one-time setup at the beginning.
 ```python
 import time
@@ -161,3 +173,4 @@ If you wish to contribute, branch off master, use the general style of the devic
 [nmrglue-git]: https://github.com/jjhelmus/nmrglue
 [seabreeze-docs]: https://python-seabreeze.readthedocs.io/en/latest/index.html
 [seabreeze-git]: https://github.com/ap--/python-seabreeze
+[pythonnet-python39-support]: https://github.com/pythonnet/pythonnet/issues/1389
