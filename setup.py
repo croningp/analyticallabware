@@ -9,15 +9,18 @@ setup(
     license="MIT",
     packages=find_packages(),
     install_requires=[
-        "SerialLabware @ git+ssh://git@gitlab.com/croningroup/chemputer/seriallabware.git",
-        "ChemputerAPI @ git+ssh://git@gitlab.com/croningroup/chemputer/chemputerapi.git",
         "scipy",
         "matplotlib",
         "seabreeze",
         "numpy",
         "nmrglue",
         "pytest",
-        "pythonnet",
+        # TODO - remove python requirement as soon as 3.9 is fully supported in pythonnet
+        # see issue #50 for details
+        "pythonnet ; python_version<'3.9'",
+        # Chemputer related
+        "SerialLabware",
+        "ChemputerAPI",
     ],
     zip_safe=False,
 )

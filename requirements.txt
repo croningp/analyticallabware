@@ -1,0 +1,2 @@
+SerialLabware @ git+ssh://git@gitlab.com/croningroup/chemputer/seriallabware.git
+ChemputerAPI @ git+ssh://git@gitlab.com/croningroup/chemputer/chemputerapi.git
