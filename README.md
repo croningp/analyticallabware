@@ -2,17 +2,30 @@
 This repository contains python interface for analytical instruments to be used exclusively with Chemputer or any other platform developed in Cronin Group.
 
 # Installation
+1) Clone the repo and change your working directory
 ```bash
 git clone git@gitlab.com:croningroup/chemputer/analyticallabware.git
 
 cd analyticallabware
-
-# install chemputer related packages unless installed already
+```
+2) Install chemputer related packages unless installed already
+```bash
 pip install -r requirements.txt
+```
+3) Install AnalyticalLabware with the extra dependencies needed for your instrument, i.e.
+```bash
+# For the Magritek Spinsolve NMR
+pip install -e .[spinsolve]
+# For the AdvionMS
+pip install -e .[advion]
+# For the Ocean Optics Spectrometers
+pip install -e .[oceanoptics]
+# For the Agilent HPLC
+pip install -e .[agilent]
 
-# install analyticallabware
-pip install -e .
-```  
+# Or install all dependencies with
+pip install -e .[all]
+```
 If you need to use Advion MS instrument, please contact @hessammehr for the installation guidelines.
 ## Note for python 3.9 users
 Since pythonnet is not supported in python 3.9 ([yet][pythonnet-python39-support]), users who want to use Advion instruments should use python 3.8 instead.

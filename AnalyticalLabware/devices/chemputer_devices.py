@@ -5,7 +5,7 @@ import numpy as np
 
 from ChemputerAPI import ChemputerDevice
 
-from AnalyticalLabware import IDEXMXIIValve, SpinsolveNMR, OceanOpticsRaman, HPLCController
+from . import IDEXMXIIValve, SpinsolveNMR, OceanOpticsRaman, HPLCController
 
 from ..analysis.base_spectrum import AbstractSpectrum
 
