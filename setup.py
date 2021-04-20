@@ -9,18 +9,38 @@ setup(
     license="MIT",
     packages=find_packages(),
     install_requires=[
+        # general "scientific"
         "scipy",
         "matplotlib",
-        "seabreeze",
         "numpy",
-        "nmrglue",
-        "pytest",
-        # TODO - remove python requirement as soon as 3.9 is fully supported in pythonnet
-        # see issue #50 for details
-        "pythonnet ; python_version<'3.9'",
         # Chemputer related
         "SerialLabware",
         "ChemputerAPI",
     ],
+    extras_require={
+        "advion": [
+            # TODO - remove python requirement as soon as 3.9 is fully supported
+            # in pythonnet, see issue #50 for details
+            "pythonnet ; python_version<'3.9'",
+            "AdvionAPI",
+        ],
+        "oceanoptics": [
+            "seabreeze",
+        ],
+        "spinsolve": [
+            "nmrglue",
+        ],
+        "agilent": [],
+        "all": [
+            "pythonnet ; python_version<'3.9'",
+            "AdvionAPI",
+            "seabreeze",
+            "nmrglue",
+            "pytest",
+        ],
+        "test": [
+            "pytest",
+        ]
+    },
     zip_safe=False,
 )
