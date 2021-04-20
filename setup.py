@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="AnalyticalLabware",
-    version="0.2.4",
+    version="0.2.5",
     description="Analytical instruments for the Chemputer",
     url="https://gitlab.com/croningroup/chemputer/analyticallabware",
     author="Hessam Mehr, Artem Leonov, Graham Keenan, Alex Hammer",

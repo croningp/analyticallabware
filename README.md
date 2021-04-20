@@ -35,11 +35,12 @@ Since pythonnet is not supported in python 3.9 ([yet][pythonnet-python39-support
 - scipy
 - matplotlib
 - numpy
-- seabreeze (python wrapper for OceanOptics Seabreeze library, [git][seabreeze-git]/[docs][seabreeze-docs])
 - nmrglue (python library for nmr data processing, [git][nmrglue-git]/[docs][nmrglue-docs])
 
 ### Device specific
 - Advion bindings require .NET Framework 4.0 or later ([download link][dotnetfx]) and Advion API 6.4 (x64) or later.
+- Ocean Optics spectrometers require a `seabreeze` library for a hardware control: [git][seabreeze-git]/[docs][seabreeze-docs]. *Note*: to build a seabreeze library for python 3.9 a Microsoft Visual Studio is required.
+- Magritek Spinsolve NMR spectrometer requires `nmrglue` library for processing of the nmr spectra: [git][nmrglue-git]/[docs][nmrglue-docs].
 
 #### _Chemputer specific_
 - ChemputerAPI
@@ -50,7 +51,7 @@ Since pythonnet is not supported in python 3.9 ([yet][pythonnet-python39-support
 
 ## Spinsolve NMR
 ```python
-from AnalyticalLabware import SpinsolveNMR
+from AnalyticalLabware.devices import SpinsolveNMR
 
 # Make sure that Spinsolve software is running and
 # the Remote Control option is turned on
@@ -92,7 +93,7 @@ time_axis, fid_real, fid_imag = s.spectrum.extract_data(<path_to_fid_file>)
 
 ## OceanOptics Raman spectrometer
 ```python
-from AnalyticalLabware import OceanOpticsRaman
+from AnalyticalLabware.devices import OceanOpticsRaman
 
 # make sure your instrument is connected and you've
 # installed all required hardware drivers
@@ -178,6 +179,43 @@ data.write_npz("my_data.npz") # more space-efficient
 data.write_csv("my_data.csv")
 ```
 
+## Chemputer specific
+AnalyticalLabware devices can be used in chempiler enironment if added to the corresponding graph with the correct set of parameters.
+
+Example of the Spinsolve NMR object on the graph:
+```json
+{
+    "id": "nmr",
+    "type": "custom",
+    "x": 240,
+    "y": 240,
+    "customProperties": {
+        "name": {
+            "name": "name",
+            "id": "name",
+            "units": "",
+            "type": "str"
+        }
+    },
+    "internalId": 24,
+    "label": "nmr",
+    "current_volume": 0,
+    "class": "ChemputerNMR",
+    "name": "nmr"
+}
+```
+To instantiate chempiler, simply import `chemputer_devices` module from `AnalyticalLabware` and supply as a `device_modules` argument during Chempiler instantiation, e.g.
+```python
+from AnalyticalLabware.devices import chemputer_devices
+from chempiler import Chempiler
+import ChemputerAPI
+
+c = Chempiler(
+    'procedure', 'graph.json', 'output',
+    simulation=True,
+    device_modules=[ChemputerAPI, chemputer_devices]
+)
+```
 # Contribution
 If you wish to contribute, branch off master, use the general style of the device classes and your common sense. `AbstractSpectrum` class is there for you to provide &#0177;unified API for the spectral data, feel free to rewrite the parent processing methods and add your own. When done - submit a merge request.
 
