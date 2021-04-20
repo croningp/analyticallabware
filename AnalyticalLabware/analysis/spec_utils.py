@@ -64,6 +64,10 @@ def combine_map_to_regions(mapping):
                 [3, 3]])
     """
 
+    # No peaks identified, i.e. mapping is all False
+    if not mapping.any():
+        return np.array([], dtype='int64')
+
     # region borders
     region_borders = np.diff(mapping)
 

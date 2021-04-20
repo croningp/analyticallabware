@@ -701,6 +701,10 @@ skipped')
         # extracting the regions from the full map
         regions = combine_map_to_regions(peak_map)
 
+        # Skip further steps if no peaks identified
+        if not regions.size > 0:
+            return regions
+
         # filtering, merging, expanding
         regions = filter_regions(self.x, regions)
         regions = filter_noisy_regions(self.y, regions)
