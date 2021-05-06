@@ -22,7 +22,6 @@ setup(
             # TODO - remove python requirement as soon as 3.9 is fully supported
             # in pythonnet, see issue #50 for details
             "pythonnet ; python_version<'3.9'",
-            "AdvionAPI",
         ],
         "oceanoptics": [
             "seabreeze",
@@ -33,7 +32,6 @@ setup(
         "agilent": [],
         "all": [
             "pythonnet ; python_version<'3.9'",
-            "AdvionAPI",
             "seabreeze",
             "nmrglue",
             "pytest",
