@@ -805,12 +805,16 @@ skipped')
                 # Specifying area not to update self.peaks
                 peaks = self.find_peaks(area=(self.x.min(), self.x.max()))
                 # x coordinate
-                peaks_xs = peaks[:, 1]
-                reference = peaks[np.argmin(peaks_xs - new_position)][1]
+                peaks_xs = peaks[:, 1].real
+                reference = peaks[
+                    np.argmin(np.abs(peaks_xs - new_position))
+                ][1].real
             else:
                 self.logger.warning('Please use either "highest" or "closest"\
 reference, or give exact value.')
                 return
+
+        new_position, _ = find_nearest_value_index(self.x, new_position)
 
         diff = (new_position - reference)
 
