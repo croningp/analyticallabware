@@ -131,7 +131,7 @@ class HPLCController:
         else:
             raise IOError(f"Failed to send command #{cmd_no}: {cmd}.") from err
 
-    def _receive(self, cmd_no: int, num_attempts=5) -> str:
+    def _receive(self, cmd_no: int, num_attempts=100) -> str:
         """
         Low-level execution primitive.
 
@@ -145,6 +145,7 @@ class HPLCController:
         err = None
         for _ in range(num_attempts):
             time.sleep(1)
+
             try:
                 with open(self.reply_file, "r", encoding="utf_16") as reply_file:
                     response = reply_file.read()
