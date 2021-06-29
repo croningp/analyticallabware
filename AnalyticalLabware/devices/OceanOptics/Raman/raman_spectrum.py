@@ -58,6 +58,8 @@ class RamanSpectrum(AbstractSpectrum):
         self.logger = logging.getLogger(
             'oceanoptics.spectrometer.raman.spectrum')
 
+        self.PUBLIC_PROPERTIES.add('start_time')
+
         super().__init__(path, autosaving)
 
     def find_peaks_iteratively(self, limit=10, steps=100):
@@ -115,10 +117,12 @@ diff - %s', i+1, n, diff)
                 stored as a reference (background)
         """
 
-        super().load_spectrum(spectrum[0], spectrum[1], timestamp)
-        self.original = spectrum[1]
         if reference:
             self.reference = spectrum[1]
+            return
+
+        super().load_spectrum(spectrum[0], spectrum[1], timestamp)
+        self.original = spectrum[1]
 
     def subtract_reference(self):
         """Subtracts reference spectrum and updates the current one"""
