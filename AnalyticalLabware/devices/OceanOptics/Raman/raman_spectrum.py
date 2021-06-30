@@ -133,7 +133,6 @@ diff - %s', i+1, n, diff)
 
     def default_processing(self):
         """Dummy method for quick processing. Returns spectral data!"""
-        self.substract_reference()
         self.correct_baseline()
         self.smooth_spectrum()
         self.find_peaks_iteratively()

@@ -15,13 +15,14 @@ class OceanOpticsRaman(OceanOpticsSpectrometer):
         OceanOpticsSpectrometer: Base Spectrometer class
     """
 
-    def __init__(self, name=None, path=None):
+    def __init__(self, name=None, path=None, integration_time=2.0):
         super().__init__('RAMAN', name)
         self.last_spectrum = None
         self.spectrum = RamanSpectrum(path)
         self.start_time = time.time()
         self.spectrum.start_time = self.start_time
         self.logger = logging.getLogger('oceanoptics.spectrometer.raman')
+        self.set_integration_time(integration_time)
 
     def get_spectrum(self):
         """Obtains spectrum and performs basic processing"""

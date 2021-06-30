@@ -114,7 +114,7 @@ class AbstractSpectrum(ABC):
         self.y = y
         self.timestamp = timestamp
 
-    def save_data(self, filename=None, verbose=False):
+    def save_data(self, filename=None, verbose=True):
         """Saves the data to given path using python pickle module.
 
         Args:
