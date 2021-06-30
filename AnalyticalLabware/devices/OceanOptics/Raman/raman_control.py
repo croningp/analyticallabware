@@ -27,7 +27,7 @@ class OceanOpticsRaman(OceanOpticsSpectrometer):
         """Obtains spectrum and performs basic processing"""
 
         spec = self.scan()
-        timestamp = round((time.time() - self.start_time), 2)
+        timestamp = round(time.time(), 2)
         self.logger.debug('Spectrum obtained at %s', timestamp)
         self.spectrum.load_spectrum(spec, timestamp, reference=False)
         # self.last_spectrum = self.spectrum.default_process()
@@ -43,4 +43,4 @@ class OceanOpticsRaman(OceanOpticsSpectrometer):
 
         spec = self.scan()
         self.start_time = time.time()
-        self.spectrum.load_spectrum(spec, 0, reference=True)
+        self.spectrum.load_spectrum(spec, self.start_time, reference=True)
