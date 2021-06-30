@@ -40,7 +40,7 @@ class RamanSpectrum(AbstractSpectrum):
     """
 
     AXIS_MAPPING = {
-        'x': 'wavelength',
+        'x': 'wavenumber',
         'y': 'intensities',
     }
 
@@ -116,13 +116,12 @@ diff - %s', i+1, n, diff)
             reference (bool, optional): True if the supplied spectra should be
                 stored as a reference (background)
         """
-
         if reference:
             self.reference = spectrum[1]
-            return
-
-        super().load_spectrum(spectrum[0], spectrum[1], timestamp)
-        self.original = spectrum[1]
+        else:
+            wave_nos = _convert_wavelength_to_wavenumber(spectrum[0].tolist())
+            super().load_spectrum(wave_nos, spectrum[1], timestamp)
+            self.original = spectrum[1]
 
     def subtract_reference(self):
         """Subtracts reference spectrum and updates the current one"""
@@ -134,7 +133,7 @@ diff - %s', i+1, n, diff)
 
     def default_processing(self):
         """Dummy method for quick processing. Returns spectral data!"""
-
+        self.substract_reference()
         self.correct_baseline()
         self.smooth_spectrum()
         self.find_peaks_iteratively()
