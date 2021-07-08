@@ -116,12 +116,24 @@ diff - %s', i+1, n, diff)
             reference (bool, optional): True if the supplied spectra should be
                 stored as a reference (background)
         """
+        # Preserving reference
+        if self.reference is not None and isinstance(self.reference, np.ndarray):
+            self.reference_ = self.reference.copy()
+
         if reference:
             self.reference = spectrum[1]
+
         else:
             wave_nos = _convert_wavelength_to_wavenumber(spectrum[0].tolist())
             super().load_spectrum(wave_nos, spectrum[1], timestamp)
             self.original = spectrum[1]
+            # Loading back the preserved reference
+            if hasattr(self, 'reference_'):
+                self.reference = self.reference_.copy()
+
+        # Removing preserved reference
+        if hasattr(self, 'reference_'):
+            delattr(self, 'reference_')
 
     def subtract_reference(self):
         """Subtracts reference spectrum and updates the current one"""
