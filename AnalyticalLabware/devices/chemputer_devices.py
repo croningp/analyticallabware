@@ -5,7 +5,13 @@ import numpy as np
 
 from ChemputerAPI import ChemputerDevice
 
-from . import IDEXMXIIValve, SpinsolveNMR, OceanOpticsRaman, HPLCController
+from . import (
+    IDEXMXIIValve,
+    SpinsolveNMR,
+    OceanOpticsRaman,
+    HPLCController,
+    SpinsolveNMRSpectrum
+)
 
 from ..analysis.base_spectrum import AbstractSpectrum
 
@@ -56,10 +62,51 @@ class _SimulatedSpectrum(AbstractSpectrum):
     def default_processing(self, *args, **kwargs):
         return self.x, self.y, 42.0
 
+class _SimulatedNMRSpectrum(SpinsolveNMRSpectrum):
+
+    def __init__(self, *args, **kwargs):
+        self.rng: np.random.Generator = np.random.default_rng(42)
+        super().__init__(path=False)
+
+    def load_spectrum(self, *args, **kwargs):
+        """Simulate spectrum with random number of peaks"""
+        n_peaks = kwargs.get('n_peaks', self.rng.integers(5, 15))
+        # Generating random spectrum
+        p = np.linspace(0, -10, 10000)
+        y = np.zeros_like(p)
+        for _ in range(n_peaks):
+            # Peak center, random within [-7.5, -2.5)
+            p0 = self.rng.random() * -5 - 2.5
+            # Peak FWHM, random within [0.01, 0.03)
+            w = self.rng.random() * 0.02 + 0.01
+            # Using Lorentzian line shape function
+            x = (p - p0) / (w / 2)
+            y += 1 / (1 + x**2)
+        # Adding some Gaussian noise
+        y += self.rng.normal(0, 0.01, y.size)
+        # Assigning
+        self.x = p[::-1]
+        self.y = y
+        # Changing axis mapping
+        self.AXIS_MAPPING['x'] = 'ppm'
+        # Channel used in analysis, so setting to ''
+        # TODO Add additional parameters if needed!
+        self.parameters = {'rxChannel': ''}
+
+    def default_processing(self):
+        pass
+
+    def save_data(self, *args, **kwargs):
+        pass
+
+    def integrate_regions(self, regions):
+        # Not working if no unit conversion attribute is set.
+        raise NotImplementedError
+
 class SimChemputerNMR(ChemputerDevice):
     def __init__(self, name):
         ChemputerDevice.__init__(self, name)
-        self.spectrum = _SimulatedSpectrum()
+        self.spectrum = _SimulatedNMRSpectrum()
 
     def get_spectrum(self, *args, **kwargs):
         self.spectrum.load_spectrum()
