@@ -178,10 +178,13 @@ def filter_noisy_regions(y_data, peaks_regions):
             noise_peaks_ratio.append(peaks.size/region.size)
 
     # compute average with weights equal to the region length
-    noise_peaks_ratio = np.average(
-        noise_peaks_ratio,
-        weights=[region.size for region in noise_data_regions]
-    )
+    try:
+        noise_peaks_ratio = np.average(
+            noise_peaks_ratio,
+            weights=[region.size for region in noise_data_regions]
+        )
+    except ZeroDivisionError:
+        noise_peaks_ratio = np.average(noise_peaks_ratio)
 
     # filtering!
     valid_regions_indexes = []

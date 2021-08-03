@@ -701,12 +701,14 @@ skipped')
         # extracting the regions from the full map
         regions = combine_map_to_regions(peak_map)
 
+        # Filter false positives, e.g. single-point "peaks"
+        regions = filter_regions(self.x, regions)
+
         # Skip further steps if no peaks identified
         if not regions.size > 0:
             return regions
 
-        # filtering, merging, expanding
-        regions = filter_regions(self.x, regions)
+        # Filtering, merging, expanding
         regions = filter_noisy_regions(self.y, regions)
         if d_merge:
             regions = merge_regions(self.x, regions, d_merge=d_merge)
