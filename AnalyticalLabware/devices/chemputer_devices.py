@@ -9,9 +9,10 @@ from . import (
     IDEXMXIIValve,
     SpinsolveNMR,
     OceanOpticsRaman,
-    HPLCController,
-    SpinsolveNMRSpectrum
+    HPLCController
 )
+
+from .Magritek.Spinsolve.spectrum import SpinsolveNMRSpectrum
 
 from ..analysis.base_spectrum import AbstractSpectrum
 
