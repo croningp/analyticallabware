@@ -27,12 +27,14 @@ setup(
             "seabreeze",
         ],
         "spinsolve": [
+            "scipy<1.8",
             "nmrglue",
         ],
         "agilent": [],
         "all": [
             "pythonnet ; python_version<'3.9'",
             "seabreeze",
+            "scipy<1.8",
             "nmrglue",
             "pytest",
         ],
