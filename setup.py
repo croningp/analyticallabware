@@ -10,7 +10,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         # general "scientific"
-        "scipy",
+        "scipy<1.8",
         "matplotlib",
         "numpy",
         # Chemputer related
@@ -27,14 +27,12 @@ setup(
             "seabreeze",
         ],
         "spinsolve": [
-            "scipy<1.8",
             "nmrglue",
         ],
         "agilent": [],
         "all": [
             "pythonnet ; python_version<'3.9'",
             "seabreeze",
-            "scipy<1.8",
             "nmrglue",
             "pytest",
         ],
