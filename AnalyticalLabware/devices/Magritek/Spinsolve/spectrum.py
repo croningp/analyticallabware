@@ -732,6 +732,11 @@ skipped')
             self.correct_baseline()
             self.autophase()
             self.correct_baseline()
+        
+        elif self.parameters['rxChannel'] == '1H':
+            self.apodization(function='em', lb=0.2)
+            self.fft()
+            self.autophase()
 
     def integrate_area(self, area, rule='trapz'):
         """ Integrate the spectrum within given area.
@@ -808,9 +813,14 @@ skipped')
                 peaks = self.find_peaks(area=(self.x.min(), self.x.max()))
                 # x coordinate
                 peaks_xs = peaks[:, 1].real
-                reference = peaks[
-                    np.argmin(np.abs(peaks_xs - new_position))
-                ][1].real
+                try:
+                    reference = peaks[
+                        np.argmin(np.abs(peaks_xs - new_position))
+                    ][1].real
+                except ValueError:
+                    # If no peaks found
+                    self.logger.warning('No peaks found to reference spectrum!')
+                    reference = new_position
             else:
                 self.logger.warning('Please use either "highest" or "closest"\
 reference, or give exact value.')
