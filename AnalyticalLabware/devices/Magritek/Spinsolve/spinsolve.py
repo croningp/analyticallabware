@@ -29,7 +29,13 @@ class SpinsolveNMR:
 
     DEFAULT_EXPERIMENT = ('1D PROTON', {'Scan': 'StandardScan'})
 
-    def __init__(self, spinsolve_options_path=None, address=None, port=13000, auto_connect=True):
+    def __init__(
+            self,
+            spinsolve_options_path=None,
+            address='localhost',
+            port=13000,
+            auto_connect=True
+        ):
         """
         Args:
             spinsolve_options_path (str, optional): Valid path to the ProtocolOptions.xml
@@ -391,7 +397,7 @@ hours ago, please perform CheckShim to check spectrometer performance!')
         # will block if spectrum is measuring
         data_folder = self.data_folder_queue.get()
 
-        self.spectrum.load_spectrum(data_folder)
+        self.spectrum.load_spectrum(data_folder, preprocessed=False)
 
         warning_message = 'Method "get_spectrum" will no longer return the \
 spectropic data. Please use .spectrum class to access the spectral data and \
