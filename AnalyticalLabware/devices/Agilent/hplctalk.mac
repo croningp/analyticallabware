@@ -1,22 +1,51 @@
+!* This file contains the macros necessary to operate Agilent HPLC system
+!* using remote communication through COMMAND/REPLY files. Once this file is
+!* loaded - the system will continuosly monitor for new commands in COMMAND
+!* file, read it and evaluate given command. The replys are saved as text
+!* string into REPLY file.
+!*
+!* The following convention is used for the commands:
+!* <CLIENTID> <COMMAND_NO> <COMMAND>
+!* where
+!*    - CLIENTID - 8 digits identifying client for multiclient operation.
+!*    - COMMAND_NO - command number to identify new incomming command from
+!*        client. Should always be 4-digits in XXXX format, prepended with 0 if
+!*        needed (e.g. 0004).
+!*    - COMMAND - actual command string, evaluated and executed by the
+!*        ChemStation command line.
+!*
+!*The following convention is used for the replys:
+!*<CLIENTID> <COMMAND_NO> <REPLY>
+!*where
+!*    - CLIENTID - 8 digits identifying client for multiclient operation.
+!*    - COMMAND_NO - command number to identify new incomming command from
+!*        client. Should always be 4-digits in XXXX format, prepended with 0 if
+!*        needed (e.g. 0004).
+!*    - REPLY - reply string, identifying the status of the command:
+!*        "ACK" - command received and acknowldged.
+!*        "DONE" - command executed.
+!*        "ERROR" - command returned an exception. The error message follows.
+
+
 Name MonitorFile
-    Parameter infile$, outfile$
+    Parameter commandfile$, replyfile$
     Local in$, cmd_no, cmd$, response$, sep_position, cmd_len, last_cmd_no
-    Print "infile: ", infile$, "outfile: ", outfile$
+    Print "commandfile: ", commandfile$, "replyfile: ", replyfile$
 
     ! Overwrite files
-    Open infile$ for output as #3
+    Open commandfile$ for output as #3
     Print #3, "0 Sleep 1"
     Close #3
-    Open outfile$ for output as #4
+    Open replyfile$ for output as #4
     Close #4
-    
+
     last_cmd_no = 0
 
     Repeat
         errorflag = 0
         Sleep 0.5
         result$ = ""
-        Open infile$ for input as #3
+        Open commandfile$ for input as #3
         Input #3, in$
         Close #3
         sep_position = InStr (in$, " ")
@@ -30,26 +59,26 @@ Name MonitorFile
             Print "Executing: ", in$
 
             ! Acknowledge reading command
-            Open outfile$ for output as #4
+            Open replyfile$ for output as #4
             Print #4, cmd_no, "ACK"
             Close #4
 
             If cmd$ = "Exit" Then
                 ! do nothing
-            Else 
+            Else
                 Evaluate cmd$
-                On Error HandleError cmd_no, cmd$, outfile$
+                On Error HandleError cmd_no, cmd$, replyfile$
             EndIf
 
             If errorflag = 0 Then
                 ! Write output
-                Open outfile$ for append as #4
+                Open replyfile$ for append as #4
                 Print #4, cmd_no, response$
                 Close #4
             EndIf
 
             ! Confirm command execution
-            Open outfile$ for append as #4
+            Open replyfile$ for append as #4
             Print #4, cmd_no, "DONE"
             Close #4
         EndIf
@@ -58,15 +87,15 @@ Name MonitorFile
 EndMacro
 
 Name HandleError
-    Parameter cmd_no, cmd$, outfile$
+    Parameter cmd_no, cmd$, replyfile$
     errorflag = 1
-    Open outfile$ for append as #4
+    Open replyfile$ for append as #4
     Print #4, "ERROR:", cmd_no, cmd$, "caused Error #", _Error
     Close #4
-EndMacro    
+EndMacro
 
 Name HPLCTalk_Loop
-    MonitorFile "C:\Users\group\Code\analyticallabware\AnalyticalLabware\test\cmd", "C:\Users\group\Code\analyticallabware\AnalyticalLabware\test\reply"
+    MonitorFile "C:\Users\group\cmd", "C:\Users\group\reply"
 EndMacro
 
 Name HPLCTalk_Run
