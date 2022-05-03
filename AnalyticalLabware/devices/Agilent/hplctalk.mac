@@ -90,7 +90,11 @@ Name MonitorFile
         ! Characters 15 to end
         command$ = input_$[15:Len(input_$)]
 
-        If command_no > last_command_no Then
+        ! Handling incoming commands
+        ! Either when new client is querying
+        ! or new command from the current client is comming
+        If ((command_no != last_command_no) or (clientid != currentclinetid)) Then
+
             ! Logging
             Open logfile$ for append as #5
             Print #5, Time$(), "New incomming command: ", input_$
@@ -102,7 +106,7 @@ Name MonitorFile
 
             ! Acknowledge reading command
             Open replyfile$ for output as #4
-            Print #4, clientid, command_no, "ACK"
+            Print #4, currentclinetid, command_no, "ACK"
             Close #4
 
             If command$ = "Exit" Then
@@ -110,19 +114,19 @@ Name MonitorFile
             Else
                 ! Evaluating
                 Evaluate command$
-                On Error HandleError clientid, command_no, command$, replyfile$
+                On Error HandleError currentclinetid, command_no, command$, replyfile$
             EndIf
 
             If errorflag = 0 Then
                 ! Write output
                 Open replyfile$ for append as #4
-                Print #4, clientid, command_no, "ACK", response$
+                Print #4, currentclinetid, command_no, "ACK", response$
                 Close #4
             EndIf
 
             ! Confirm command execution
             Open replyfile$ for append as #4
-            Print #4, clientid, command_no, "DONE", response$
+            Print #4, currentclinetid, command_no, "DONE", response$
             Close #4
         EndIf
 
@@ -155,7 +159,7 @@ EndMacro
 !* Function to run the MonitorFile in the background
 Name HPLCTalk_Loop
 
-    MonitorFile "C:\Users\group\command", "C:\Users\group\reply"
+    MonitorFile "C:\Users\group\command", "C:\Users\group\reply", "C:\Users\group\hplc_log"
 
 EndMacro
 
