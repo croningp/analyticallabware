@@ -30,19 +30,6 @@
 !*    - RESPONSE - response string from the instrument. " " if no response
 !*        required.
 
-!* Declare log file
-Name DeclareLogFile
-    Parameter logfile_$
-
-    ! Declare "global" variable
-    logfile$ = logfile_$
-
-    ! Probing
-    Open logfile$ for input as #5
-    Close #5
-
-EndMacro
-
 
 !* Monitoring given COMMAND and REPLY files in a loop, until "Exit" is
 !* requested. The incomming command is split according to the command string
@@ -52,11 +39,18 @@ EndMacro
 !* Parameters:
 !*    commandfile - filepath to the input file (where commands are read).
 !*    replyfile - filepath to the output file (where replys are written).
+!*    logfile - filepath to "log" executed commands.
 Name MonitorFile
 
-    Parameter commandfile$, replyfile$
+    Parameter commandfile$, replyfile$, logfile$
     Local input_$, command_no, command$, response$, last_command_no, clientid$
-    Print "commandfile: ", commandfile$, "replyfile: ", replyfile$
+
+    ! "Global" variable for storing current client id
+    currentclinetid$ = "00000000"
+
+    Open logfile$ for append as #5
+    Print #5, Time$(), "Starting. Commandfile: ", commandfile$, "Replyfile: ", replyfile$
+    Close #5
 
     ! Overwrite files
     Open commandfile$ for output as #3
@@ -94,6 +88,11 @@ Name MonitorFile
         command$ = input_$[15:Len(input_$)]
 
         If command_no > last_command_no Then
+            ! Logging
+            Open logfile$ for append as #5
+            Print #5, Time$(), "New incomming command: ", input_$
+            Close #5
+
             last_command_no = command_no
 
             Print "Executing: ", in$
@@ -106,6 +105,7 @@ Name MonitorFile
             If command$ = "Exit" Then
                 ! Do nothing
             Else
+                ! Evaluating
                 Evaluate command$
                 On Error HandleError clientid$, command_no, command$, replyfile$
             EndIf
@@ -127,6 +127,11 @@ Name MonitorFile
     Until command$ = "Exit"
 
     Print "Idle"
+
+    ! Logging
+    Open logfile$ for append as #5
+    Print #5, Time$(), "Finished."
+    Close #5
 
 EndMacro
 
