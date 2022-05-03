@@ -1,10 +1,11 @@
 !* This file contains the macros necessary to operate Agilent HPLC system
 !* using remote communication through COMMAND/REPLY files. Once this file is
 !* loaded - the system will continuosly monitor for new commands in COMMAND
-!* file, read it and evaluate given command. The replys are saved as text
+!* file, read it and evaluate given command. The replies are saved as text
 !* string into REPLY file.
 !*
 !* The following convention is used for the commands:
+!* (whitespace " " is used as separator)
 !* <CLIENTID> <COMMAND_NO> <COMMAND>
 !* where
 !*    - CLIENTID - 8 character identifying client for multiclient operation.
@@ -14,15 +15,17 @@
 !*    - COMMAND - actual command string, evaluated and executed by the
 !*        ChemStation command line.
 !*
-!* The following convention is used for the replys:
+!* The following convention is used for the replies:
+!* (whitespace " " is used as separator)
 !* <CLIENTID> <COMMAND_NO> <REPLY> <RESPONSE>
 !* where
 !*    - CLIENTID - 8 character identifying client that currently running the
 !*        HPLC. If HPLC is currently idle, the client ID from the incomming
-!*        command will be returned.
+!*        command will be returned. Is printed as is and should be parsed
+!*        using whitespace as separator.
 !*    - COMMAND_NO - command number to identify new incomming command from
-!*        client. Should always be 4-character in XXXX format, prepended
-!*        with 0 if needed (e.g. 0004).
+!*        client. Is printed as is, should be parsed using whitespace as
+!*        separator.
 !*    - REPLY - reply string, identifying the status of the command:
 !*        "ACK" - command received and acknowledged.
 !*        "DONE" - command executed.
@@ -38,15 +41,15 @@
 !*
 !* Parameters:
 !*    commandfile - filepath to the input file (where commands are read).
-!*    replyfile - filepath to the output file (where replys are written).
+!*    replyfile - filepath to the output file (where replies are written).
 !*    logfile - filepath to "log" executed commands.
 Name MonitorFile
 
     Parameter commandfile$, replyfile$, logfile$
-    Local input_$, command_no, command$, response$, last_command_no, clientid$
+    Local input_$, command_no, command$, response$, last_command_no, clientid
 
     ! "Global" variable for storing current client id
-    currentclinetid$ = "00000000"
+    currentclinetid = 0
 
     Open logfile$ for append as #5
     Print #5, Time$(), "Starting. Commandfile: ", commandfile$, "Replyfile: ", replyfile$
@@ -76,7 +79,7 @@ Name MonitorFile
         ! *** PARSING THE STRING ***
         ! Checking for client ID - first 8 characters.
         ! The numeration here starts with 1, not 0.
-        clientid$ = input_$[1:8]
+        clientid = Val (input_$[1:8])
 
         ! Command number
         ! Characters from 10 to 14, inclusive
@@ -99,7 +102,7 @@ Name MonitorFile
 
             ! Acknowledge reading command
             Open replyfile$ for output as #4
-            Print #4, clientid$, command_no, "ACK"
+            Print #4, clientid, command_no, "ACK"
             Close #4
 
             If command$ = "Exit" Then
@@ -107,19 +110,19 @@ Name MonitorFile
             Else
                 ! Evaluating
                 Evaluate command$
-                On Error HandleError clientid$, command_no, command$, replyfile$
+                On Error HandleError clientid, command_no, command$, replyfile$
             EndIf
 
             If errorflag = 0 Then
                 ! Write output
                 Open replyfile$ for append as #4
-                Print #4, clientid$, command_no, "ACK", response$
+                Print #4, clientid, command_no, "ACK", response$
                 Close #4
             EndIf
 
             ! Confirm command execution
             Open replyfile$ for append as #4
-            Print #4, clientid$, command_no, "DONE", response$
+            Print #4, clientid, command_no, "DONE", response$
             Close #4
         EndIf
 
@@ -139,11 +142,11 @@ EndMacro
 !* Handling errors if any happens during command execution
 Name HandleError
 
-    Parameter clientid$, command_no, command$, replyfile$
+    Parameter clientid, command_no, command$, replyfile$
 
     errorflag = 1
     Open replyfile$ for append as #4
-    Print #4, clientid$, command_no, "ERROR", command$, "caused Error #", _Error
+    Print #4, clientid, command_no, "ERROR", command$, "caused Error #", _Error
     Close #4
 
 EndMacro
