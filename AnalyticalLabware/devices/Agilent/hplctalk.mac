@@ -48,7 +48,12 @@ EndMacro
 !* requested. The incomming command is split according to the command string
 !* definitions and evalutated. The REPLY file is then populated with
 !* corresponding reply.
+!*
+!* Parameters:
+!*    commandfile - filepath to the input file (where commands are read).
+!*    replyfile - filepath to the output file (where replys are written).
 Name MonitorFile
+
     Parameter commandfile$, replyfile$
     Local input_$, command_no, command$, response$, last_command_no, clientid$
     Print "commandfile: ", commandfile$, "replyfile: ", replyfile$
@@ -102,7 +107,7 @@ Name MonitorFile
                 ! Do nothing
             Else
                 Evaluate command$
-                On Error HandleError command_no, command$, replyfile$
+                On Error HandleError clientid$, command_no, command$, replyfile$
             EndIf
 
             If errorflag = 0 Then
@@ -125,25 +130,40 @@ Name MonitorFile
 
 EndMacro
 
+
+!* Handling errors if any happens during command execution
 Name HandleError
-    Parameter command_no, command$, replyfile$
+
+    Parameter clientid$, command_no, command$, replyfile$
+
     errorflag = 1
     Open replyfile$ for append as #4
-    Print #4, "ERROR:", command_no, command$, "caused Error #", _Error
+    Print #4, clientid$, command_no, "ERROR", command$, "caused Error #", _Error
     Close #4
+
 EndMacro
 
+
+!* Function to run the MonitorFile in the background
 Name HPLCTalk_Loop
+
     MonitorFile "C:\Users\group\command", "C:\Users\group\reply"
+
 EndMacro
 
+
+!* Starting the background file monitoring
 Name HPLCTalk_Run
+
     If CPExists(HPLCTalk_Cp) = 0 Then
         CpStart HPLCTalk_Cp
     EndIf
+
     CpRequest HPLCTalk_Cp, HPLCTalk_Loop
 EndMacro
 
+
+!* Stopping background file monitoring
 Name HPLCTalk_Stop
     CpTerminate HPLCTalk_Cp
 EndMacro
