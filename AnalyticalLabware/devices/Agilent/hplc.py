@@ -10,9 +10,9 @@ been processed.
 .. moduleauthor:: Alexander Hammer, Hessam Mehr, Artem Leonov
 """
 
-import time
-import os
 import logging
+import time
+from pathlib import Path
 
 from .chromatogram import AgilentHPLCChromatogram, TIME_FORMAT
 
@@ -83,7 +83,7 @@ class HPLCController:
 
     def __init__(
         self,
-        comm_dir: str,
+        comm_dir: str = None,
         data_dir: str = None,
         cmd_file: str = "cmd",
         reply_file: str = "reply",
@@ -91,28 +91,37 @@ class HPLCController:
     ):
         """
         Initialize HPLC controller.
-        comm_dir: Name of directory for communication.
-        data_dir: path to where chemstation will save the data.
-                    If None, data will be saved in default folder Chem32\\1\\Data
-        cmd_file: name of command file
-        reply_file: name of reply file
+        comm_dir: Name of directory for communication. Defaults to the current
+            user (group) home directory.
+        data_dir: Path to where chemstation will save the data. If None, data
+            will be saved in default folder C:\\Chem32\\1\\Data
+        cmd_file: Name of command file, defaults to `cmd`.
+        reply_file: Name of reply file, defaults to `reply`.
+
         The macro must be loaded in the Chemstation software.
         dir and filenames must match those specified in the Macro.
         """
-        self.cmd_file = os.path.join(comm_dir, cmd_file)
-        self.reply_file = os.path.join(comm_dir, reply_file)
+
+        # Loading default paths
+        if comm_dir is not None:
+            comm_dir = Path(comm_dir)
+        else:
+            comm_dir = Path.home()
+
+        # Declaring file paths
+        self.cmd_file = comm_dir.joinpath(cmd_file)
+        self.reply_file = comm_dir.joinpath(reply_file)
         self.cmd_no = 0
         self.cmd = HPLCControllerCommands()
 
         if data_dir is None:
-            if os.path.isdir(DEFAULT_DATA_DIR):
-                self.data_dir = DEFAULT_DATA_DIR
-            else:
+            self.data_dir = Path(DEFAULT_DATA_DIR)
+            if not self.data_dir.is_dir():
                 raise FileNotFoundError(
                     f"Default data_dir {DEFAULT_DATA_DIR} not found."
                 )
         else:
-            self.data_dir = data_dir
+            self.data_dir = Path(data_dir)
 
         self.spectra = {
             "A": AgilentHPLCChromatogram(self.data_dir),
@@ -383,7 +392,7 @@ class HPLCController:
         )
 
         folder_name = f"{experiment_name}_{timestamp}.D"
-        self.data_files.append(os.path.join(data_dir, folder_name))
+        self.data_files.append(Path(data_dir).joinpath(folder_name))
         self.logger.info("Started HPLC run:  %s.", folder_name)
 
     def stop_method(self):
@@ -407,6 +416,7 @@ class HPLCController:
 
 if __name__ == "__main__":
     import sys
+    import os
 
     logging.basicConfig(level=logging.DEBUG)
 
