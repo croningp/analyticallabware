@@ -262,5 +262,14 @@ EndMacro
 
 !* Stopping background file monitoring
 Name HPLCTalk_Stop
+    ! Issuing command to stop monitoring
+    Open commandfile$ for output as #3
+    Print #3, "00000000 9999 Exit"
+    Close #3
+
+    ! Stopping background process
     CpTerminate HPLCTalk_Cp
+
+    ! Removing clients object
+    DelObj Clients
 EndMacro
