@@ -4,6 +4,16 @@
 !* file, read it and evaluate given command. The replies are saved as text
 !* string into REPLY file.
 !*
+!* The multiclient operation is managed by registering clients in the ClientList
+!* table (a part of Clients register, see documentation for user defined tables,
+!* registers and objects in the ChemStation MACROS reference manual). The clients
+!* are registered with their ID, tracking the registration time, last executed
+!* command and its number. That number is used to track the execution flow.
+!*
+!* Special variable ("currentclientid") is used to keep track of the client that
+!* holds the control (i.e. running the method) at the moment. Client program is
+!* responsible to modify this variable when needed.
+!*
 !* The following convention is used for the commands:
 !* (whitespace " " is used as separator)
 !* <CLIENTID> <COMMAND_NO> <COMMAND>
@@ -34,6 +44,63 @@
 !*        required.
 
 
+!* Register new object with table containing data on the clients.
+!* Declares "global" object Clients, with ClientList table in it
+Name DeclareClientsTable
+    ! Declaring new object to store client IDs
+    NewObj Clients, 1, 1, 1
+    ! Declaring table to store the actual ids and registration time
+    NewTab Clients, "ClientList"
+    NewColText Clients, "ClientList", "ClientID"
+    NewColText Clients, "ClientList", "RegisteredTime"
+    NewColVal Clients, "ClientList", "LastCommandNumber"
+    NewColText Clients, "ClientList", "LastCommand"
+EndMacro
+
+
+!* Register new client with its CLIENTID. Returns its ROWID in the client table.
+!* Parameters:
+!*    ClientID (integer) - Client ID to register within the clients table.
+!*    logfile (string) - Path to the logfile.
+!* Returns:
+!*    ClientRowID (integer) - Row ID of the registered client
+Name RegisterClient
+
+    Local ClientRowID, ClientIDStr$, ClientRegistrationTime$
+
+    Parameter ClientID, logfile$
+
+    ! Converting to string for table search
+    ClientIDStr$ = Val$(ClientID)
+
+    ! Opening logfile
+    Open logfile$ for append as #5
+
+    ! Try search if client is already registered
+    ClientRowID = RowByText(Clients, "ClientList", , "ClientID", "=", ClientIDStr$)
+    If ClientRowID = -1 Then
+        ! Registering client in table
+        InsTabRow Clients, "ClientList"
+        ClientRowID = TabHdrVal(Clients, "ClientList", "NumberOfRows")
+        SetTabText Clients, "ClientList", ClientRowID, "ClientID", ClientIDStr$
+        SetTabText Clients, "ClientList", ClientRowID, "RegisteredTime", Time$()
+        SetTabVal Clients, "ClientList", ClientRowID, "LastCommandNumber", 0
+        SetTabText Clients, "ClientList", ClientRowID, "LastCommand", " "
+
+        Print #5, Time$(), "Registered new client with ID ", ClientID, " at ", Time$(), " with ROWID ", ClientRow
+
+    Else
+        ClientRegistrationTime$ = TabText$ (Clients, "ClientList", ClientRowID, "RegisteredTime")
+
+    EndIf
+
+    Close #5
+
+    Return (ClientRowID)
+
+EndMacro
+
+
 !* Monitoring given COMMAND and REPLY files in a loop, until "Exit" is
 !* requested. The incomming command is split according to the command string
 !* definitions and evalutated. The REPLY file is then populated with
@@ -45,11 +112,16 @@
 !*    logfile - filepath to "log" executed commands.
 Name MonitorFile
 
-    Parameter commandfile$, replyfile$, logfile$
-    Local input_$, command_no, command$, response$, last_command_no, clientid
+    Parameter commandfile_$, replyfile_$, logfile_$
+    Local input_$, command_no, command$, response$, last_command_no, clientid, clientrowid
 
     ! "Global" variable for storing current client id
-    currentclinetid = 0
+    currentclientid = 0
+
+    ! Declaring filenames for "global" access
+    commandfile$ = commandfile_$
+    replyfile$ = replyfile_$
+    logfile$ = logfile_$
 
     Open logfile$ for append as #5
     Print #5, Time$(), "Starting. Commandfile: ", commandfile$, "Replyfile: ", replyfile$
@@ -90,23 +162,34 @@ Name MonitorFile
         ! Characters 15 to end
         command$ = input_$[15:Len(input_$)]
 
+        ! Registering new client
+        clientrowid = RegisterClient(clientid, logfile$)
+
+        ! Querying last command number for THIS client
+        last_command_no = TabVal(Clients, "ClientList", clientrowid, "LastCommandNumber")
+
         ! Handling incoming commands
         ! Either when new client is querying
         ! or new command from the current client is comming
-        If ((command_no != last_command_no) or (clientid != currentclinetid)) Then
+        If (command_no <> last_command_no) Then
 
             ! Logging
             Open logfile$ for append as #5
             Print #5, Time$(), "New incomming command: ", input_$
+            Print #5, "Last command for client ", clientid, last_command_no
             Close #5
 
-            last_command_no = command_no
+            ! Updating clients table
+            SetTabVal Clients, "ClientList", clientrowid, "LastCommandNumber", command_no
+            SetTabText Clients, "ClientList", clientrowid, "LastCommand", command$
 
-            Print "Executing: ", in$
+            ! Just returning the command sent, unless command modifies
+            ! response explicitly
+            response$ = command$
 
             ! Acknowledge reading command
             Open replyfile$ for output as #4
-            Print #4, currentclinetid, command_no, "ACK"
+            Print #4, currentclientid, command_no, "ACK", response$
             Close #4
 
             If command$ = "Exit" Then
@@ -114,19 +197,19 @@ Name MonitorFile
             Else
                 ! Evaluating
                 Evaluate command$
-                On Error HandleError currentclinetid, command_no, command$, replyfile$
+                On Error HandleError currentclientid, command_no, command$, replyfile$
             EndIf
 
             If errorflag = 0 Then
                 ! Write output
                 Open replyfile$ for append as #4
-                Print #4, currentclinetid, command_no, "ACK", response$
+                Print #4, currentclientid, command_no, "ACK", response$
                 Close #4
             EndIf
 
             ! Confirm command execution
             Open replyfile$ for append as #4
-            Print #4, currentclinetid, command_no, "DONE", response$
+            Print #4, currentclientid, command_no, "DONE", response$
             Close #4
         EndIf
 
@@ -166,6 +249,8 @@ EndMacro
 
 !* Starting the background file monitoring
 Name HPLCTalk_Run
+
+    DeclareClientsTable
 
     If CPExists(HPLCTalk_Cp) = 0 Then
         CpStart HPLCTalk_Cp
