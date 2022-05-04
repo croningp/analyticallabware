@@ -10,10 +10,10 @@ been processed.
 .. moduleauthor:: Alexander Hammer, Hessam Mehr, Artem Leonov
 """
 
-import logging
 import time
 from pathlib import Path
 
+from .hplc_logging import get_logger
 from .chromatogram import AgilentHPLCChromatogram, TIME_FORMAT
 
 # maximum command number
@@ -139,8 +139,7 @@ class HPLCController:
         if logger:
             self.logger = logger
         else:
-            self.logger = logging.getLogger("hplc_logger")
-            self.logger.addHandler(logging.NullHandler())
+            self.logger = get_logger()
 
         self.reset_cmd_counter()
 
@@ -417,6 +416,7 @@ class HPLCController:
 if __name__ == "__main__":
     import sys
     import os
+    import logging
 
     logging.basicConfig(level=logging.DEBUG)
 
