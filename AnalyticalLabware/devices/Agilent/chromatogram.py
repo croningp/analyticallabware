@@ -18,21 +18,27 @@ if TYPE_CHECKING:
 # Chemstation data path
 DATA_DIR = r"C:\Chem32\1\Data"
 
-
-# standard filenames for spectral data
+# Standard filenames for spectral data
 CHANNELS = {"A": "01", "B": "02", "C": "03", "D": "04"}
 
 ACQUISITION_PARAMETERS = "acq.txt"
 
-# format used in acquisition parameters
+# Format used in acquisition parameters
 TIME_FORMAT = r"%d-%b-%y, %H:%M:%S"
 
-# file format for DAD detectors
+# File format for DAD detectors
 DAD_FILE_FORMAT = "DAD1{}"
 
-# file suffixes
+# File suffixes
 NPZ_FILE_SUFFIX = ".npz"
 CHEMSTATION_FILE_SUFFIX = ".ch"
+
+# Found experimentally
+BASELINE_CORRECTION_CONFIG = {
+    "lmbd": 1e5,
+    "p": 0.0001,
+    "n_iter": 10,
+}
 
 
 class AgilentHPLCChromatogram(AbstractSpectrum):
@@ -46,7 +52,7 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
         "data_path",
     }
 
-    # set of properties to be saved
+    # Set of properties to be saved
     PUBLIC_PROPERTIES = {
         "x",
         "y",
@@ -71,16 +77,16 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
             data_path (str): Path where HPLC data has been saved.
         """
 
-        # get raw data
+        # Get raw data
         x, y, metadata = self.extract_rawdata(data_path, channel)
 
-        # extracting timestamp from metadata
+        # Extracting timestamp from metadata
         try:
             timestamp = time.mktime(
                 time.strptime(metadata['date'], TIME_FORMAT)
             )
-        # if no date information in metadata
-        # set timestamp to 0
+        # If no date information in metadata
+        # Set timestamp to 0
         except KeyError:
             timestamp = 0.0
 
@@ -152,19 +158,14 @@ pickled files.", FutureWarning)
         Args:
             experiment_dir: .D directory with the report files
         """
-        # filename = os.path.join(experiment_dir, f"REPORT{CHANNELS[channel]}.csv")
-        # TODO parse file properly
-        # data = np.genfromtxt(filename, delimiter=',')
-        # return data
-        pass
+        raise NotImplementedError
 
     def default_processing(self):
         """
         Processes the chromatogram in place.
         """
-        # trim first 5 min and last 3 min of run
-        self.trim(5, 25)
-        # parameters found to work best for chromatogram data
-        self.correct_baseline(lmbd=1e5, p=0.0001, n_iter=10)
-        # get all peaks in processed chromatogram
+        # Parameters found to work best for chromatogram data
+        self.correct_baseline(BASELINE_CORRECTION_CONFIG)
+
+        # Get all peaks in processed chromatogram
         self.find_peaks()
