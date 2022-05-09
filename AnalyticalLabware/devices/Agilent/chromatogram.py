@@ -70,11 +70,18 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
 
         super().__init__(path=path, autosaving=autosaving)
 
-    def load_spectrum(self, data_path, channel="A"):
+    def load_spectrum(
+        self,
+        data_path: Union[str, 'os.PathLike'],
+        channel: str = "A"
+    ) -> None:
         """Loads the spectra from the given folder.
 
         Args:
-            data_path (str): Path where HPLC data has been saved.
+            data_path (Union[str, os.PathLike]): Path where HPLC data has been
+                saved.
+            channel (str): Detector channel. Depends on the method used and
+                detector installed, defaults to "A" for DAD detector.
         """
 
         # Get raw data
@@ -90,7 +97,7 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
         except KeyError:
             timestamp = 0.0
 
-        # loading all data
+        # Loading all data
         super().load_spectrum(x, y, timestamp)
 
     ### PUBLIC METHODS TO LOAD RAW DATA ###
@@ -99,7 +106,7 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
         self,
         experiment_dir: Union[str, 'os.PathLike'],
         channel: str,
-    ) -> tuple(np.array, np.array, dict[str, Any]):
+    ) -> tuple['np.ndarray', 'np.ndarray', dict[str, Any]]:
         """ Reads raw data and metadata from Chemstation .CH files.
 
         Args:
@@ -108,10 +115,10 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
             channel (str): Selected channel in the detector.
 
         Returns:
-            tuple(np.array, np.array, dict[str, Any]): Tuple of raw
+            tuple[np.ndarray, np.ndarray, dict[str, Any]]: Tuple of raw
                 chromatographic data and metadata:
-                    - times (np.array): Time scale.
-                    - values (np.array): Readings from the detector.
+                    - times (np.ndarray): Time scale.
+                    - values (np.ndarray): Readings from the detector.
                     - metadata (dict[str, Any]): Dictionary with metadata,
                         associated with the given acquisition.
 
@@ -140,7 +147,7 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
     def _treat_npz_file(
         self,
         npz_filepath: Union[str, 'os.PathLike']
-    ) -> tuple(np.array, np.array, dict[str, Any]):
+    ) -> tuple['np.ndarray', 'np.ndarray', dict[str, Any]]:
         """ Legacy method to read from .npz compressed arrays. """
 
         warnings.warn("Manipulating .npz files is deprecated and will be \
