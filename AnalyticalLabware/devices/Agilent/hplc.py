@@ -16,14 +16,17 @@ from pathlib import Path
 from .hplc_logging import get_logger
 from .chromatogram import AgilentHPLCChromatogram, TIME_FORMAT
 
-# maximum command number
+# Maximum command number
 MAX_CMD_NO = 255
 
 # Default Chemstation data directory
-DEFAULT_DATA_DIR = "C:\\Chem32\\1\\Data"
+DEFAULT_DATA_DIR = r"C:\Chem32\1\Data"
 
 # Default Chemstation methods directory
 DEFAULT_METHOD_DIR = ""
+
+# Default command/reply folder
+DEFAULT_CMD_REPLY_DIR = r"C:\Users\group\Code\analyticallabware\AnalyticalLabware\test"
 
 
 class HPLCControllerCommands():
@@ -91,8 +94,7 @@ class HPLCController:
     ):
         """
         Initialize HPLC controller.
-        comm_dir: Name of directory for communication. Defaults to the current
-            user (group) home directory.
+        comm_dir: Name of directory for communication.
         data_dir: Path to where chemstation will save the data. If None, data
             will be saved in default folder C:\\Chem32\\1\\Data
         cmd_file: Name of command file, defaults to `cmd`.
@@ -106,7 +108,14 @@ class HPLCController:
         if comm_dir is not None:
             comm_dir = Path(comm_dir)
         else:
-            comm_dir = Path.home()
+            comm_dir = Path(DEFAULT_CMD_REPLY_DIR)
+            # Create paths if needed
+            try:
+                comm_dir.mkdir(parents=True, exist_ok=True)
+
+            except OSError as e:
+                raise OSError(f"Could not create folder ({comm_dir}) for \
+cmd/reply files.") from e
 
         # Declaring file paths
         self.cmd_file = comm_dir.joinpath(cmd_file)

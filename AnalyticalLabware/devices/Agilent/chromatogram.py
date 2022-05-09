@@ -99,6 +99,7 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
 
         # Loading all data
         super().load_spectrum(x, y, timestamp)
+        self.parameters = metadata
 
     ### PUBLIC METHODS TO LOAD RAW DATA ###
 
