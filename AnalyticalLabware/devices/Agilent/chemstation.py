@@ -80,7 +80,7 @@ class CHFile(object):
     is understood.
 
     Attributes:
-        values (numpy.array): The internsity values (y-value) or the
+        values (numpy.array): The intensity values (y-value) or the
         spectrum. The unit for the values is given in `metadata['units']`
 
         metadata (dict): The extracted metadata
@@ -210,7 +210,7 @@ class CHFile(object):
 
             # We do not know about a data field at this position If we have
             # already collected 4 zero bytes, assume that we are done with
-            # this unkonw field, print and reset
+            # this unknown field, print and reset
             else:
                 if unknown_bytes[-4:] == b"\x00\x00\x00\x00":
                     print(

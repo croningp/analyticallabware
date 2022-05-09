@@ -1,8 +1,8 @@
 """Module for HPLC chromatogram data loading and manipulating"""
 
-import os
 import logging
 import time
+from pathlib import Path
 
 import numpy as np
 
@@ -44,12 +44,9 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
 
     def __init__(self, path=None, autosaving=False):
 
-        if path is not None:
-            os.makedirs(path, exist_ok=True)
-            self.path = path
-        else:
-            self.path = os.path.join(".", "hplc_data")
-            os.makedirs(self.path, exist_ok=True)
+        # Creating path if None
+        if path is None:
+            path = Path(".", "hplc_data")
 
         self.logger = logging.getLogger("AgilentHPLCChromatogram")
 
@@ -90,16 +87,16 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
         Returns:
             np.array(times), np.array(values)   Raw chromatogram data
         """
-        filename = os.path.join(experiment_dir, f"DAD1{channel}")
-        npz_file = filename + ".npz"
+        filename = Path(experiment_dir).joinpath(f"DAD1{channel}")
+        npz_file = filename.with_suffix(".npz")
 
-        if os.path.exists(npz_file):
+        if npz_file.is_file():
             # already processed
             data = np.load(npz_file)
             return data["times"], data["values"]
         else:
             self.logger.debug("NPZ file not found. First time loading data.")
-            ch_file = filename + ".ch"
+            ch_file = filename.with_suffix(".ch")
             data = CHFile(ch_file)
             np.savez_compressed(npz_file, times=data.times, values=data.values)
             return np.array(data.times), np.array(data.values)
