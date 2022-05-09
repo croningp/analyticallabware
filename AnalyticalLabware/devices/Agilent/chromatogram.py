@@ -25,7 +25,7 @@ CHANNELS = {"A": "01", "B": "02", "C": "03", "D": "04"}
 ACQUISITION_PARAMETERS = "acq.txt"
 
 # format used in acquisition parameters
-TIME_FORMAT = "%Y-%m-%d-%H-%M"
+TIME_FORMAT = r"%d-%b-%y, %H:%M:%S"
 
 # file format for DAD detectors
 DAD_FILE_FORMAT = "DAD1{}"
@@ -71,18 +71,18 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
             data_path (str): Path where HPLC data has been saved.
         """
 
-        # to avoid dropping parameters when called in parent class
-        if self.x is not None:
-            if self.autosaving:
-                self.save_data(filename=f"{data_path}_{channel}")
-                self._dump()
-
         # get raw data
-        x, y = self.extract_rawdata(data_path, channel)
+        x, y, metadata = self.extract_rawdata(data_path, channel)
 
-        # get timestamp
-        tstr = data_path.split(".")[0].split("_")[-1]
-        timestamp = time.mktime(time.strptime(tstr, TIME_FORMAT))
+        # extracting timestamp from metadata
+        try:
+            timestamp = time.mktime(
+                time.strptime(metadata['date'], TIME_FORMAT)
+            )
+        # if no date information in metadata
+        # set timestamp to 0
+        except KeyError:
+            timestamp = 0.0
 
         # loading all data
         super().load_spectrum(x, y, timestamp)
@@ -112,6 +112,7 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
         Notes:
             Only looks for DAD detector data.
         """
+
         filename = Path(experiment_dir).joinpath(
             DAD_FILE_FORMAT.format(channel))
         npz_file = filename.with_suffix(NPZ_FILE_SUFFIX)
@@ -121,15 +122,19 @@ class AgilentHPLCChromatogram(AbstractSpectrum):
             return self._treat_npz_file(npz_filepath=npz_file)
 
         self.logger.debug("NPZ file not found. First time loading data.")
-        ch_file = filename.with_suffix(CHEMSTATION_FILE_SUFFIX)
-        data = CHFile(ch_file)
+
+        # Loading data from chemstation file
+        data = CHFile(filename.with_suffix(CHEMSTATION_FILE_SUFFIX))
+
+        # Saving .npz for legacy use
         np.savez_compressed(npz_file, times=data.times, values=data.values)
-        return np.array(data.times), np.array(data.values)
+
+        return data.times, data.values, data.metadata
 
     def _treat_npz_file(
         self,
         npz_filepath: Union[str, 'os.PathLike']
-    ) -> tuple(np.array, np.array, str):
+    ) -> tuple(np.array, np.array, dict[str, Any]):
         """ Legacy method to read from .npz compressed arrays. """
 
         warnings.warn("Manipulating .npz files is deprecated and will be \
@@ -138,7 +143,7 @@ pickled files.", FutureWarning)
 
         data = np.load(npz_filepath)
 
-        return (data['times'], data['values'])
+        return (data['times'], data['values'], {})
 
     def extract_peakarea(self, experiment_dir: str):
         """
