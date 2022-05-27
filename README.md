@@ -179,6 +179,60 @@ data.write_npz("my_data.npz") # more space-efficient
 data.write_csv("my_data.csv")
 ```
 
+## Agilent HPLC System
+The following instructions are only valid for Agilent HPLC systems running with Agilent Chemstation v1.X.X software. The instrument control is achieved using the special macro in the Agilent Chemstation software.
+1. To activate the macro, copy the corresponding file `hplctalk.mac` from the [AnalyticalLabware](./AnalyticalLabware/devices/Agilent/hplctalk.mac) to the core folder of the Chemstation installation (`C:\Chem32\CORE` by default).
+2. Then activate it by typing the following commands in the Chemstation command line:
+    1. `macro hplctalk.mac` -> activate the macro.
+    2. `HPLCTalk_Run` -> start command monitoring.
+
+**Alternatively** after copying the macro file you can add the commands to the `user.mac` macro file (or create it if does not exist). The `user.mac` macro is executed every time the Chemstation software starts, so your script will run by default. Example of new `user.mac` file below:
+```
+macro hplctalk.mac
+HPLCTalk_Run
+```
+
+The following methods are available for the use from AnalyticalLabware HPLC module:
+```python
+from AnalyticalLabware.devices.agilent.hplc import HPLCController
+
+# Ensure path exists
+# Otherwise change the path in the macro file and restart the macro in chemstation
+default_command_path = "C:\\Users\\group\\Code\\analyticallabware\\AnalyticalLabware\\test"
+
+hplc = HPLCController(comm_dir=default_command_path)
+
+# Check the status
+hplc.status()
+
+# Prepare for running
+hplc.preprun()
+
+# Switch the method
+# ".M" is appended to the method name by default
+hplc.switch_method(method_name="my_method")
+
+# Execute the method and save the data in the target folder
+# Under experiment name
+hplc.run_method(
+    data_dir="path_to_target_folder",
+    experiment_name="name_of_your_experiment"
+)
+
+# Switch all modules into standby mode
+hplc.standby()
+
+# Obtain the last measure spectrum and store it in self.spectra collection
+# Channels A, B, C and D are read by default
+hplc.get_spectrum()
+
+# When spectra are loaded, use can access the collection by the channel name
+# And perform basic processing and analysis operations
+chrom = hplc.spectra['A']  # Chromatogram at channel A of the detector
+chrom.find_peaks()  # Find peaks
+chrom.show_spectrum()  # Display the chromatogram
+```
+
 ## Chemputer specific
 AnalyticalLabware devices can be used in chempiler enironment if added to the corresponding graph with the correct set of parameters.
 
