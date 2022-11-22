@@ -16,6 +16,7 @@ import ctypes
 import logging
 import numpy as np
 
+
 def _load_library() -> ctypes.CDLL:
     """Loads the appropriate library for USB Dr DAQ dependent on operating
     system.
@@ -48,8 +49,7 @@ def _load_library() -> ctypes.CDLL:
 
 
 class DrDAQDriver:
-    """Driver for the USB Dr DAQ Picoscope for pH measurements
-    """
+    """Driver for the USB Dr DAQ Picoscope for pH measurements"""
 
     def __init__(self):
         # Set the appropriate variables for measurements
@@ -89,8 +89,7 @@ class DrDAQDriver:
         return hdl
 
     def close_unit(self):
-        """Close connection to the Dr DAQ unit.
-        """
+        """Close connection to the Dr DAQ unit."""
 
         self.logger.debug("Closing Dr DAQ unit.")
         try:
@@ -100,8 +99,7 @@ class DrDAQDriver:
             self.logger.critical("Unable to close Dr DAQ unit.")
 
     def enable_rgb(self):
-        """Enable usage of the RGB LED on the Dr DAQ unit.
-        """
+        """Enable usage of the RGB LED on the Dr DAQ unit."""
 
         self.lib.UsbDrDaqEnableRGBLED(self.handle, ctypes.c_short(1))
 
@@ -115,10 +113,7 @@ class DrDAQDriver:
         """
 
         self.lib.UsbDrDaqSetRGBLED(
-            self.handle,
-            ctypes.c_ushort(r),
-            ctypes.c_ushort(g),
-            ctypes.c_ushort(b)
+            self.handle, ctypes.c_ushort(r), ctypes.c_ushort(g), ctypes.c_ushort(b)
         )
 
     def set_DAQ_interval(self) -> int:
@@ -134,7 +129,7 @@ class DrDAQDriver:
             ctypes.byref(self.recording_block),
             self.no_of_samples,
             ctypes.byref(self.channel),
-            self.no_of_active_channels
+            self.no_of_active_channels,
         )
         self.logger.debug(f"Status of Dr DAQ interval setting: {result}.")
 
@@ -201,13 +196,11 @@ class DrDAQDriver:
             ctypes.byref(self.measurement_results),
             ctypes.byref(no_of_values),
             ctypes.byref(overflow),
-            None
+            None,
         )
 
         self.logger.debug(f"Pico Status sampling: {result}")
-        self.logger.debug(
-            f"Dr DAQ number of samples measured: {self.no_of_samples}"
-        )
+        self.logger.debug(f"Dr DAQ number of samples measured: {self.no_of_samples}")
         self.logger.debug(f"Dr DAQ Channel with overflow: {overflow}")
 
         if result == 0:

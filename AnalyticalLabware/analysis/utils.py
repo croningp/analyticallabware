@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def find_nearest_value_index(array, value):
     """Returns closest value and its index in a given array.
 
@@ -13,6 +14,7 @@ def find_nearest_value_index(array, value):
 
     index_ = np.argmin(np.abs(array - value))
     return (array[index_], index_)
+
 
 def interpolate_to_index(array, ids, precision=100):
     """Find value in between arrays elements.
@@ -43,12 +45,12 @@ def interpolate_to_index(array, ids, precision=100):
     prec, ids = np.modf(ids)
 
     # rounding and switching type to int
-    prec = np.around(prec*precision).astype('int32')
-    ids = ids.astype('int32')
+    prec = np.around(prec * precision).astype("int32")
+    ids = ids.astype("int32")
 
     # linear interpolation for each data point
     # as (n x m) matrix where n is precision and m is number of indexes
-    space = np.linspace(array[ids], array[ids+1], precision)
+    space = np.linspace(array[ids], array[ids + 1], precision)
 
     # due to rounding error the index may become 100 in (100, ) array
     # as a consequence raising IndexError when such array is indexed
@@ -56,9 +58,8 @@ def interpolate_to_index(array, ids, precision=100):
     prec[prec == 100] = -1
 
     # precise slicing
-    true_values = np.array([
-        space[:, index[0]][value]
-        for index, value in np.ndenumerate(prec)
-    ])
+    true_values = np.array(
+        [space[:, index[0]][value] for index, value in np.ndenumerate(prec)]
+    )
 
     return true_values

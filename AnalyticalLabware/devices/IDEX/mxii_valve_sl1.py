@@ -7,21 +7,20 @@ from SerialLabware import IKARCTDigital
 
 class IDEXMXIIValve(SerialDevice):
     """Two-position IDEX MX Series II HPLC valve."""
+
     def __init__(self, *params, **kwargs):
         self.baudrate = 19200
-        self.command_termination = '\r'
+        self.command_termination = "\r"
         super().__init__(*params, **kwargs)
-        self.cmd = {
-            "MOVE_TO_1":    "P01\r",
-            "MOVE_TO_2":    "P02\r",
-            "READ_STATUS":  "S00\r"}
+        self.cmd = {"MOVE_TO_1": "P01\r", "MOVE_TO_2": "P02\r", "READ_STATUS": "S00\r"}
         self.status_codes = {
             44: "Data CRC error",
             55: "Data integrity error",
             66: "Valve positioning error",
             77: "Valve configuration error or command error",
             88: "Non-volatile memory error",
-            99: "Valve cannot be homed"}
+            99: "Valve cannot be homed",
+        }
 
     @property
     @command
@@ -37,8 +36,11 @@ class IDEXMXIIValve(SerialDevice):
     def status(self) -> int:
         status = self.send_message(self.cmd["READ_STATUS"], get_return=True)
         # Look up error code; status is okay if no error.
-        self.logger.debug("IDEX valve :: OK - status = %s (%s).", status,
-                          self.status_codes.get(status, "OK"))
+        self.logger.debug(
+            "IDEX valve :: OK - status = %s (%s).",
+            status,
+            self.status_codes.get(status, "OK"),
+        )
         return int(status.strip())
 
     def is_ready(self) -> bool:

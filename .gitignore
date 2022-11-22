@@ -7,3 +7,5 @@ test/163122-1D PROTON-Unknown
 /test/nmr_data
 **/shimming.json
 /.eggs
+venv
+build

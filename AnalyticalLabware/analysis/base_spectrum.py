@@ -7,11 +7,12 @@ from abc import ABC, abstractmethod
 import numpy as np
 import matplotlib.pyplot as plt
 
-from scipy import (sparse,
-                   signal,
-                   interpolate,
-                   integrate,
-                   )
+from scipy import (
+    sparse,
+    signal,
+    interpolate,
+    integrate,
+)
 
 from .utils import interpolate_to_index, find_nearest_value_index
 
@@ -28,21 +29,21 @@ class AbstractSpectrum(ABC):
 
     # for plotting
     AXIS_MAPPING = {
-        'x': 'x_data',
-        'y': 'y_data',
+        "x": "x_data",
+        "y": "y_data",
     }
 
     # list of properties to be saved
     PUBLIC_PROPERTIES = {
-        'x',
-        'y',
-        'peaks',
-        'timestamp',
+        "x",
+        "y",
+        "peaks",
+        "timestamp",
     }
 
     # list of internal properties to be dumped during new data loading
     INTERNAL_PROPERTIES = {
-        'baseline',
+        "baseline",
     }
 
     def __init__(self, path=None, autosaving=True):
@@ -69,22 +70,21 @@ class AbstractSpectrum(ABC):
 
         # creating data path
         if path is None:
-            self.path = os.path.join('.', 'spectrum')
+            self.path = os.path.join(".", "spectrum")
             os.makedirs(self.path, exist_ok=True)
         else:
             try:
                 os.makedirs(path, exist_ok=True)
                 self.path = path
-            except TypeError: # type(path) -> bool
-                self.path = '.'
+            except TypeError:  # type(path) -> bool
+                self.path = "."
 
         # creating logger
-        if not hasattr(self, 'logger'):
+        if not hasattr(self, "logger"):
             self.logger = logging.getLogger(self.__class__.__name__)
 
     def _dump(self):
-        """Dummy method to dump all spectral data. Used before loading new data.
-        """
+        """Dummy method to dump all spectral data. Used before loading new data."""
 
         self.__init__(path=self.path, autosaving=self.autosaving)
 
@@ -103,7 +103,7 @@ class AbstractSpectrum(ABC):
         try:
             assert x.shape == y.shape
         except AssertionError:
-            raise ValueError('X and Y data must have same dimension.') from None
+            raise ValueError("X and Y data must have same dimension.") from None
 
         if self.x is not None:
             if self.autosaving:
@@ -124,10 +124,10 @@ class AbstractSpectrum(ABC):
                 well. Default: False.
         """
         if filename is None:
-            filename = f'{self.timestamp}.pickle'
+            filename = f"{self.timestamp}.pickle"
         else:
             # file extension used from python 3. documentation
-            filename += '.pickle'
+            filename += ".pickle"
 
         path = os.path.join(self.path, filename)
 
@@ -138,16 +138,18 @@ class AbstractSpectrum(ABC):
         }
 
         if verbose:
-            data.update({
-                prop: self.__dict__[prop]
-                for prop in self.INTERNAL_PROPERTIES
-                if self.__dict__[prop] is not None
-            })
+            data.update(
+                {
+                    prop: self.__dict__[prop]
+                    for prop in self.INTERNAL_PROPERTIES
+                    if self.__dict__[prop] is not None
+                }
+            )
 
-        with open(path, 'wb') as f:
+        with open(path, "wb") as f:
             pickle.dump(data, f)
 
-        self.logger.info('Saved in %s', path)
+        self.logger.info("Saved in %s", path)
 
     def load_data(self, path):
         """Loads the data from saved pickle file.
@@ -162,7 +164,7 @@ class AbstractSpectrum(ABC):
             self._dump()
 
         # TODO add exception handling
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             data = pickle.load(f)
 
         self.__dict__.update(data)
@@ -198,12 +200,12 @@ class AbstractSpectrum(ABC):
             return (self.x.copy()[full_mask], self.y.copy()[full_mask])
 
     def show_spectrum(
-            self,
-            filename=None,
-            title=None,
-            label=None,
+        self,
+        filename=None,
+        title=None,
+        label=None,
     ):
-        """ Plots the spectral data using matplotlib.pyplot module.
+        """Plots the spectral data using matplotlib.pyplot module.
 
         Args:
             filename (str, optional): Filename for the current plot. If omitted,
@@ -214,19 +216,19 @@ class AbstractSpectrum(ABC):
                 the spectrum timestamp.
         """
         if label is None:
-            label = f'{self.timestamp}'
+            label = f"{self.timestamp}"
 
         fig, ax = plt.subplots(figsize=(12, 8))
 
         ax.plot(
             self.x,
             self.y,
-            color='xkcd:navy blue',
+            color="xkcd:navy blue",
             label=label,
         )
 
-        ax.set_xlabel(self.AXIS_MAPPING['x'])
-        ax.set_ylabel(self.AXIS_MAPPING['y'])
+        ax.set_xlabel(self.AXIS_MAPPING["x"])
+        ax.set_ylabel(self.AXIS_MAPPING["y"])
 
         if title is not None:
             ax.set_title(title)
@@ -236,8 +238,8 @@ class AbstractSpectrum(ABC):
             plt.scatter(
                 self.peaks[:, 1],
                 self.peaks[:, 2],
-                label='found peaks',
-                color='xkcd:tangerine',
+                label="found peaks",
+                color="xkcd:tangerine",
             )
 
         ax.legend()
@@ -246,9 +248,9 @@ class AbstractSpectrum(ABC):
             fig.show()
 
         else:
-            path = os.path.join(self.path, 'images')
+            path = os.path.join(self.path, "images")
             os.makedirs(path, exist_ok=True)
-            fig.savefig(os.path.join(path, f'{filename}.png'), dpi=150)
+            fig.savefig(os.path.join(path, f"{filename}.png"), dpi=150)
 
     def find_peaks(self, threshold=0.1, min_width=2, min_dist=None, area=None):
         """Finds all peaks above the threshold with at least min_width width.
@@ -289,12 +291,9 @@ class AbstractSpectrum(ABC):
         else:
             spec_y = self.y.copy()
 
-        threshold *= (self.y.max() - self.y.min())
+        threshold *= self.y.max() - self.y.min()
         peaks, _ = signal.find_peaks(
-            spec_y,
-            height=threshold,
-            width=min_width,
-            distance=min_dist
+            spec_y, height=threshold, width=min_width, distance=min_dist
         )
 
         # obtaining width for full peak height
@@ -312,22 +311,26 @@ class AbstractSpectrum(ABC):
 
         if area is None:
             # updating only if area is not specified
-            self.peaks = np.hstack((
+            self.peaks = np.hstack(
+                (
+                    peaks_ids,
+                    peak_xs,
+                    peak_ys,
+                    peaks_left_ids,
+                    peaks_right_ids,
+                )
+            )
+            return peaks_ids
+
+        return np.hstack(
+            (
                 peaks_ids,
                 peak_xs,
                 peak_ys,
                 peaks_left_ids,
                 peaks_right_ids,
-            ))
-            return peaks_ids
-
-        return np.hstack((
-            peaks_ids,
-            peak_xs,
-            peak_ys,
-            peaks_left_ids,
-            peaks_right_ids,
-        ))
+            )
+        )
 
     def correct_baseline(self, lmbd=1e3, p=0.01, n_iter=10):
         """Generates and subtracts the baseline for the given spectrum.
@@ -364,9 +367,9 @@ class AbstractSpectrum(ABC):
         # subtracting the baseline
         # TODO update peak coordinates if peaks were present
         self.y -= z
-        self.logger.info('Baseline corrected')
+        self.logger.info("Baseline corrected")
 
-    def integrate_area(self, area, rule='trapz'):
+    def integrate_area(self, area, rule="trapz"):
         """Integrate the spectrum within given area
 
         Args:
@@ -383,23 +386,23 @@ class AbstractSpectrum(ABC):
         _, left_idx = find_nearest_value_index(self.x, area[0])
         _, right_idx = find_nearest_value_index(self.x, area[1])
 
-        if rule == 'trapz':
+        if rule == "trapz":
             return integrate.trapz(
-                self.y[left_idx:right_idx+1],
-                self.x[left_idx:right_idx+1]
+                self.y[left_idx : right_idx + 1], self.x[left_idx : right_idx + 1]
             )
 
-        elif rule == 'simps':
+        elif rule == "simps":
             return integrate.simps(
-                self.y[left_idx:right_idx+1],
-                self.x[left_idx:right_idx+1]
+                self.y[left_idx : right_idx + 1], self.x[left_idx : right_idx + 1]
             )
 
         else:
-            raise ValueError('Only trapezoidal "trapz" or Simpson\'s "simps" \
-rules are supported!')
+            raise ValueError(
+                'Only trapezoidal "trapz" or Simpson\'s "simps" \
+rules are supported!'
+            )
 
-    def integrate_peak(self, peak, rule='trapz'):
+    def integrate_peak(self, peak, rule="trapz"):
         """Calculate an area for a given peak
 
         Args:
@@ -418,8 +421,9 @@ rules are supported!')
         true_peak, idx = find_nearest_value_index(self.peaks[:, 0], peak)
         _, _, _, left, right = self.peaks[idx]
 
-        self.logger.debug('Integrating peak found at %s, borders %.02f-%.02f',
-                          true_peak, left, right)
+        self.logger.debug(
+            "Integrating peak found at %s, borders %.02f-%.02f", true_peak, left, right
+        )
 
         return self.integrate_area((left, right), rule=rule)
 
@@ -443,9 +447,7 @@ rules are supported!')
 
         if in_place:
             self.y = signal.savgol_filter(
-                self.y,
-                window_length=window_length,
-                polyorder=polyorder
+                self.y, window_length=window_length, polyorder=polyorder
             )
             return True
 
@@ -470,7 +472,7 @@ rules are supported!')
 
     @classmethod
     def from_data(cls, data):
-        """ Class method to instantiate the class from the saved data file.
+        """Class method to instantiate the class from the saved data file.
 
         Args:
             data (str): Path to spectral data file (as pickle).
@@ -479,8 +481,8 @@ rules are supported!')
             New instance with all data inside.
         """
 
-        if 'pickle' not in data:
-            raise AttributeError('Only .pickle files are supported')
+        if "pickle" not in data:
+            raise AttributeError("Only .pickle files are supported")
 
         path = os.path.abspath(os.path.dirname(data))
 
@@ -490,7 +492,7 @@ rules are supported!')
         return spec
 
     def copy(self):
-        """ Dummy class to return a new instance with the same data as the
+        """Dummy class to return a new instance with the same data as the
         current.
 
         Returns:
