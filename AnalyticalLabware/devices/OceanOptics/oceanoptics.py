@@ -6,24 +6,20 @@ import time
 import logging
 import numpy as np
 import seabreeze
-seabreeze.use('cseabreeze')
+
+seabreeze.use("cseabreeze")
 import seabreeze.spectrometers as sb
 
 # Spectrometer Types:
-SPECS = {
-    "UV": "2192",
-    "RAMAN": "QE-PRO",
-    "IR": "NIRQUEST"
-}
+SPECS = {"UV": "2192", "RAMAN": "QE-PRO", "IR": "NIRQUEST"}
+
 
 class UnsupportedSpectrometer(Exception):
-    """Exception for unsupported spectrometer types
-    """
+    """Exception for unsupported spectrometer types"""
 
 
 class NoSpectrometerDetected(Exception):
-    """Exception for when no spectrometer is detected
-    """
+    """Exception for when no spectrometer is detected"""
 
 
 def _get_spectrometer(spec_type: str) -> str:
@@ -49,7 +45,8 @@ def _get_spectrometer(spec_type: str) -> str:
                 return dev
     raise UnsupportedSpectrometer("Spectrometer {} unsupported!".format(spec_type))
 
-class OceanOpticsSpectrometer():
+
+class OceanOpticsSpectrometer:
     """Base class for interfacing with OceanOptics Spectrometers"""
 
     def __init__(self, spec_type, name=None):
@@ -58,20 +55,21 @@ class OceanOpticsSpectrometer():
             spec_type (str): The type of spectrometer, e.g. 'IR', 'raman', etc.
             name (str, optional): Device name for easier access
         """
-        self.integration_time = 0.01 # in seconds
+        self.integration_time = 0.01  # in seconds
         self.__spec = _get_spectrometer(spec_type)
         self._spectrometer = sb.Spectrometer(self.__spec)
         self.name = name
         self._delay = 0.01
 
-        self.logger = logging.getLogger('oceanoptics.spectrometer')
+        self.logger = logging.getLogger("oceanoptics.spectrometer")
         self.logger.setLevel(logging.INFO)
         # Removing default handlers
         self.logger.handlers = []
         ch = logging.StreamHandler()
         ch.setLevel(logging.INFO)
         console_formatter = logging.Formatter(
-            "%(asctime)s ; %(module)s ; %(name)s ; %(message)s")
+            "%(asctime)s ; %(module)s ; %(name)s ; %(message)s"
+        )
         ch.setFormatter(console_formatter)
         self.logger.addHandler(ch)
         self.set_integration_time(self.integration_time)
@@ -85,8 +83,10 @@ class OceanOpticsSpectrometer():
 
         self._spectrometer.open()
         self.integration_time = integration_time
-        integration_time *= 1000 * 1000 # converting to microseconds
-        self.logger.debug('Setting the integration time to %s microseconds', integration_time)
+        integration_time *= 1000 * 1000  # converting to microseconds
+        self.logger.debug(
+            "Setting the integration time to %s microseconds", integration_time
+        )
         self._spectrometer.integration_time_micros(integration_time)
         self._spectrometer.close()
 
@@ -102,7 +102,7 @@ class OceanOpticsSpectrometer():
         """
 
         i_mean = []
-        self.logger.debug('Scanning')
+        self.logger.debug("Scanning")
         self._spectrometer.open()
         for i in range(n):
             wavelengths, intensities = self._spectrometer.spectrum()

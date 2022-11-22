@@ -12,7 +12,11 @@ cd analyticallabware
 ```bash
 pip install -r requirements.txt
 ```
-3) Install AnalyticalLabware with the extra dependencies needed for your instrument, i.e.
+3) Setup `pre-commit` to automatically lint code and apply formatting where applicable on each commit:
+```bash
+pre-commit install
+```
+4) Install AnalyticalLabware with the extra dependencies needed for your instrument, i.e.
 ```bash
 # For the Magritek Spinsolve NMR
 pip install -e .[spinsolve]

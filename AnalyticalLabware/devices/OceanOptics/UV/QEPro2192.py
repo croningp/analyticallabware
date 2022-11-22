@@ -15,9 +15,10 @@ from .uv_spectrum import UVSpectrum
 from typing import Optional, Union, Dict
 from ..oceanoptics import OceanOpticsSpectrometer
 
+
 class NoReferenceException(Exception):
-    """Exception for calling spectrum without a reference
-    """
+    """Exception for calling spectrum without a reference"""
+
 
 class QEPro2192(OceanOpticsSpectrometer):
     """Class representing the QEPro2192 spectrometer
@@ -49,12 +50,10 @@ class QEPro2192(OceanOpticsSpectrometer):
         elif isinstance(ref, dict):
             self.reference = ref
             self.__ref_called = True
-        
+
         # Not supported
         else:
-            self.logger.warning(
-                f'Reference {ref} is unsupported. Not loading'
-            )
+            self.logger.warning(f"Reference {ref} is unsupported. Not loading")
 
     def obtain_reference_spectrum(self) -> UVSpectrum:
         """Obtain a reference spectrum.

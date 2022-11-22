@@ -13,6 +13,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def _write_json(data: dict, filename: str):
     """Write data out to a JSON file
 
@@ -38,22 +39,24 @@ def _load_json(filename: str) -> dict:
     with open(filename) as f_d:
         return json.load(f_d)
 
+
 def _ensure_serializable(data: dict) -> dict:
     """Ensures the output data is serializable
 
     Args:
         data (Dict): Data to check
-    
+
     Returns:
         Dict: Serializable data
     """
 
-    for k,v in data.items():
+    for k, v in data.items():
         if isinstance(v, np.ndarray):
             data[k] = v.tolist()
         elif isinstance(v, dict):
             data[k] = _ensure_serializable(v)
     return data
+
 
 def trim_data(self, data: list, lower_range: int, upper_range: int) -> np.ndarray:
     """Trims data within a certain range
@@ -95,7 +98,6 @@ class IRSpectrum:
             self.convert_intensities_to_transmittance()
             self.convert_wavelength_to_wavenumber()
 
-
     @classmethod
     def load_spectrum(cls, filepath: str):
         """Class method for loading spectrum data from a file
@@ -110,30 +112,25 @@ class IRSpectrum:
         data = _load_json(filepath)
         return cls(data["wavelength"], data["intensities"], ref=data["reference"])
 
-
     def convert_intensities_to_transmittance(self):
-        """Converts intensities to transmittance
-        """
+        """Converts intensities to transmittance"""
 
-        self.transmittance = list(reversed([
-            (s / r) * 100 for (s, r) in zip(self.intensities, self.reference["intensities"])
-        ]))
-
+        self.transmittance = list(
+            reversed(
+                [
+                    (s / r) * 100
+                    for (s, r) in zip(self.intensities, self.reference["intensities"])
+                ]
+            )
+        )
 
     def convert_wavelength_to_wavenumber(self):
-        """Converts Wavelengths to Wavenumbers
-        """
+        """Converts Wavelengths to Wavenumbers"""
 
-        self.wavenumbers = list(reversed([
-            (10 ** 7) / nm for nm in self.wavelengths
-        ]))
-
+        self.wavenumbers = list(reversed([(10**7) / nm for nm in self.wavelengths]))
 
     def plot_spectrum(
-        self,
-        display: bool = False,
-        savepath: str = "",
-        limits: tuple = ()
+        self, display: bool = False, savepath: str = "", limits: tuple = ()
     ):
         """Plots the spectral data
 
@@ -153,24 +150,14 @@ class IRSpectrum:
             plt.xlabel("Wavenumber (cm-1)")
             plt.ylabel("Transmittance (%)")
             plt.title("IR Spectrum")
-            plt.plot(
-                self.wavenumbers,
-                self.transmittance,
-                color="black",
-                linewidth=0.5
-            )
+            plt.plot(self.wavenumbers, self.transmittance, color="black", linewidth=0.5)
 
         # No reference set, reference spectrum
         else:
             plt.xlabel("Wavelength (nm)")
             plt.ylabel("Intensities")
             plt.title("Reference IR Spectrum")
-            plt.plot(
-                self.wavelengths,
-                self.intensities,
-                color="black",
-                linewidth=0.5
-            )
+            plt.plot(self.wavelengths, self.intensities, color="black", linewidth=0.5)
 
         # Set limits after plotting
         plt.gca().set_ylim(bottom=0)
@@ -182,7 +169,6 @@ class IRSpectrum:
         # Display the plot on screen
         if display:
             plt.show()
-
 
     def dump_spectrum(self, filename: str):
         """Dump spectral data out to disk
@@ -197,7 +183,7 @@ class IRSpectrum:
             "wavelength": self.wavelengths,
             "intensities": self.intensities,
             "reference": self.reference,
-            "timestamp": time.strftime("%d_%m_%Y_%H:%M:%S")
+            "timestamp": time.strftime("%d_%m_%Y_%H:%M:%S"),
         }
 
         out = _ensure_serializable(out)

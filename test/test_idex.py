@@ -3,8 +3,9 @@ from AnalyticalLabware import IDEXMXIIValve
 
 logging.basicConfig(level=logging.DEBUG)
 connection_params = {"address": "192.168.1.100", "port": 5000}
-valve = IDEXMXIIValve("valve_hplc", connection_mode="tcpip", 
-                      connection_parameters=connection_params)
+valve = IDEXMXIIValve(
+    "valve_hplc", connection_mode="tcpip", connection_parameters=connection_params
+)
 
 # status querying
 logging.info(valve.is_connected())

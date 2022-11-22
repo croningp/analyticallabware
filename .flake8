@@ -1,0 +1,24 @@
+[flake8]
+ignore = E302,W503,E203,E266
+max-line-length = 88
+exclude = *__init__.py,venv,test,.tox
+# TODO: Cleanup the ignore rules here
+extend-ignore =
+    E501  # "Line too long (82 >= 79 characters)" - allow comments and strings to pass
+    F401  # imported but unused
+    E402  # module level import not at top of file
+    E741  # ambiguous variable name
+    E401  # multiple imports on one line
+    F403  # unable to detect undefined names
+    F405  # may be undefined, or defined from star imports
+    E722  # do not use bare 'except'
+require-plugins =
+    dlint # DUO***
+    flake8-2020 # YTT***
+    flake8-bugbear # B***
+    flake8-builtins # A***
+    flake8-comprehensions # C4**
+    flake8-deprecated # D***
+    # flake8-variables-names # VNE***
+    mccabe # C9**
+    # pep8-naming # N8**
