@@ -9,7 +9,7 @@ Name MonitorFile
     Close #3
     Open outfile$ for output as #4
     Close #4
-    
+
     last_cmd_no = 0
 
     Repeat
@@ -36,7 +36,7 @@ Name MonitorFile
 
             If cmd$ = "Exit" Then
                 ! do nothing
-            Else 
+            Else
                 Evaluate cmd$
                 On Error HandleError cmd_no, cmd$, outfile$
             EndIf
@@ -63,7 +63,7 @@ Name HandleError
     Open outfile$ for append as #4
     Print #4, "ERROR:", cmd_no, cmd$, "caused Error #", _Error
     Close #4
-EndMacro    
+EndMacro
 
 Name HPLCTalk_Loop
     MonitorFile "C:\Users\group\Code\analyticallabware\AnalyticalLabware\test\cmd", "C:\Users\group\Code\analyticallabware\AnalyticalLabware\test\reply"

@@ -40,17 +40,18 @@ def _load_json(filename: str) -> dict:
     with open(filename) as f_d:
         return json.load(f_d)
 
+
 def _ensure_serializable(data: dict) -> dict:
     """Ensures the output data is serializable
 
     Args:
         data (Dict): Data to check
-    
+
     Returns:
         Dict: Serializable data
     """
 
-    for k,v in data.items():
+    for k, v in data.items():
         if isinstance(v, np.ndarray):
             data[k] = v.tolist()
         elif isinstance(v, dict):
@@ -99,7 +100,6 @@ class UVSpectrum:
         if self.reference:
             self.beer_lambert()
 
-
     @classmethod
     def load_spectrum(cls, filepath: str):
         """Class method for loading spectrum data from file
@@ -113,7 +113,6 @@ class UVSpectrum:
 
         data = _load_json(filepath)
         return cls(data["wavelength"], data["intensities"], ref=data["reference"])
-
 
     def beer_lambert(self):
         """Beer-Lambert relation.
@@ -134,13 +133,12 @@ class UVSpectrum:
         # Find the maximum peak
         self.max_peak = self.wavelengths[np.argmax(self.absorbances)]
 
-
     def plot_spectrum(
         self,
         display: bool = False,
         legend: bool = False,
         savepath: str = "",
-        limits: tuple = ()
+        limits: tuple = (),
     ):
         """Plot spectrum.
 
@@ -168,7 +166,6 @@ class UVSpectrum:
             if len(self.absorbances) > 0:
                 self.absorbances = self.absorbances[trimmed]
 
-
         # Display different labels for Measured spectrum
         # We have a reference spectrum already, means this is a measured sample
         if self.reference:
@@ -192,7 +189,7 @@ class UVSpectrum:
                 ymax=max(self.absorbances),
                 color="g",
                 zorder=3,
-                label=leg_label
+                label=leg_label,
             )
             leg = plt.legend()
             for legobj in leg.legendHandles:
@@ -209,7 +206,6 @@ class UVSpectrum:
         if display:
             plt.show()
 
-
     def dump_spectrum(self, filename: str):
         """Dump spectrum data to JSON file
 
@@ -223,7 +219,7 @@ class UVSpectrum:
             "intensities": self.intensities,
             "reference": self.reference,
             "max_peak": self.max_peak,
-            "timestamp": time.strftime("%d_%m_%Y_%H:%M:%S")
+            "timestamp": time.strftime("%d_%m_%Y_%H:%M:%S"),
         }
 
         out = _ensure_serializable(out)

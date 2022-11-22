@@ -16,9 +16,10 @@ from typing import Union, Dict
 from .ir_spectrum import IRSpectrum
 from ..oceanoptics import OceanOpticsSpectrometer
 
+
 class NoReferenceException(Exception):
-    """Exception for calling spectrum without a reference
-    """
+    """Exception for calling spectrum without a reference"""
+
 
 class NIRQuest512(OceanOpticsSpectrometer):
     """Class representing the NIRQuest512 Near-IR spectrometer
@@ -50,12 +51,10 @@ class NIRQuest512(OceanOpticsSpectrometer):
         elif isinstance(ref, dict):
             self.reference = ref
             self.__ref_called = True
-        
+
         # Not supported
         else:
-            self.logger.warning(
-                f'Reference {ref} is unsupported. Not loading'
-            )
+            self.logger.warning(f"Reference {ref} is unsupported. Not loading")
 
     def obtain_reference_spectrum(self) -> IRSpectrum:
         """Obtain a reference spectrum

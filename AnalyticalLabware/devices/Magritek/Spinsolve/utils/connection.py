@@ -51,7 +51,9 @@ class SpinsolveConnection:
         """Open a socket connection to the Spinsolve software"""
 
         if self._connection is not None:
-            self.logger.warning("You are trying to open connection that is already open")
+            self.logger.warning(
+                "You are trying to open connection that is already open"
+            )
             return
 
         # Creating socket
@@ -62,10 +64,16 @@ class SpinsolveConnection:
         try:
             self._connection.connect((self.HOST, self.PORT))
         except ConnectionRefusedError:
-            self._connection = None # Resetting the internal attribute
-            raise ConnectionRefusedError('Please run Spinsolve software and enable remote control!')
+            self._connection = None  # Resetting the internal attribute
+            raise ConnectionRefusedError(
+                "Please run Spinsolve software and enable remote control!"
+            )
         self.logger.debug("Connection at %s:%s is opened", self.HOST, self.PORT)
-        self._listener = threading.Thread(target=self.connection_listener, name="{}_listener".format(__name__), daemon=False)
+        self._listener = threading.Thread(
+            target=self.connection_listener,
+            name="{}_listener".format(__name__),
+            daemon=False,
+        )
         self._listener.start()
         self.logger.info("Connection created")
 
@@ -106,8 +114,11 @@ class SpinsolveConnection:
         while True:
             try:
                 unprocessed = self.response_queue.get_nowait()
-                self.logger.error('Unprocessed message obtained from the response queue, \
-see below:\n%s', unprocessed)
+                self.logger.error(
+                    "Unprocessed message obtained from the response queue, \
+see below:\n%s",
+                    unprocessed,
+                )
             except queue.Empty:
                 break
         self._connection.send(msg)
@@ -131,7 +142,7 @@ see below:\n%s', unprocessed)
         if self._connection is not None:
             self._connection.shutdown(socket.SHUT_RDWR)
             self._connection.close()
-            self._connection = None # To available subsequent calls to open_connection after connection was once closed
+            self._connection = None  # To available subsequent calls to open_connection after connection was once closed
             self._connection_close_requested.clear()
             self.logger.info("Socket connection closed")
         else:
@@ -144,7 +155,9 @@ see below:\n%s', unprocessed)
             try:
                 data = self.response_queue.get_nowait()
                 if data:
-                    self.logger.warning("Response queue flushed, something inside %s", data)
+                    self.logger.warning(
+                        "Response queue flushed, something inside %s", data
+                    )
                 self.response_queue.task_done()
             except queue.Empty:
                 break

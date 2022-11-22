@@ -5,18 +5,14 @@ import numpy as np
 
 from ChemputerAPI import ChemputerDevice
 
-from . import (
-    IDEXMXIIValve,
-    SpinsolveNMR,
-    OceanOpticsRaman,
-    HPLCController
-)
+from . import IDEXMXIIValve, SpinsolveNMR, OceanOpticsRaman, HPLCController
 
 from .Magritek.Spinsolve.spectrum import SpinsolveNMRSpectrum
 
 from ..analysis.base_spectrum import AbstractSpectrum
 
 ### Physical devices ###
+
 
 class ChemputerIDEX(IDEXMXIIValve, ChemputerDevice):
     def __init__(self, name, address, port, mode="serial"):
@@ -36,6 +32,7 @@ class ChemputerIDEX(IDEXMXIIValve, ChemputerDevice):
     def wait_until_ready(self):
         pass
 
+
 class ChemputerNMR(SpinsolveNMR, ChemputerDevice):
     def __init__(self, name):
         ChemputerDevice.__init__(self, name)
@@ -45,16 +42,17 @@ class ChemputerNMR(SpinsolveNMR, ChemputerDevice):
     def capabilities(self):
         return [("sink", 0)]
 
+
 ### Simulated devices ###
 
-class _SimulatedSpectrum(AbstractSpectrum):
 
+class _SimulatedSpectrum(AbstractSpectrum):
     def __init__(self, *args, **kwargs):
         super().__init__(path=False)
 
     def load_spectrum(self, *args, **kwargs):
         x = np.linspace(-100, 100, 1000)
-        y = 1/(1 + x**2)
+        y = 1 / (1 + x**2)
         super().load_spectrum(x=x, y=y, timestamp=time.time())
 
     def save_data(self, *args, **kwargs):
@@ -63,15 +61,15 @@ class _SimulatedSpectrum(AbstractSpectrum):
     def default_processing(self, *args, **kwargs):
         return self.x, self.y, 42.0
 
-class _SimulatedNMRSpectrum(SpinsolveNMRSpectrum):
 
+class _SimulatedNMRSpectrum(SpinsolveNMRSpectrum):
     def __init__(self, *args, **kwargs):
         self.rng: np.random.Generator = np.random.default_rng(42)
         super().__init__(path=False)
 
     def load_spectrum(self, *args, **kwargs):
         """Simulate spectrum with random number of peaks"""
-        n_peaks = kwargs.get('n_peaks', self.rng.integers(5, 15))
+        n_peaks = kwargs.get("n_peaks", self.rng.integers(5, 15))
         # Generating random spectrum
         p = np.linspace(0, -10, 10000)
         y = np.zeros_like(p)
@@ -89,10 +87,10 @@ class _SimulatedNMRSpectrum(SpinsolveNMRSpectrum):
         self.x = p[::-1]
         self.y = y
         # Changing axis mapping
-        self.AXIS_MAPPING['x'] = 'ppm'
+        self.AXIS_MAPPING["x"] = "ppm"
         # Channel used in analysis, so setting to ''
         # TODO Add additional parameters if needed!
-        self.parameters = {'rxChannel': ''}
+        self.parameters = {"rxChannel": ""}
 
     def default_processing(self):
         pass
@@ -103,6 +101,7 @@ class _SimulatedNMRSpectrum(SpinsolveNMRSpectrum):
     def integrate_regions(self, regions):
         # Not working if no unit conversion attribute is set.
         raise NotImplementedError
+
 
 class SimChemputerNMR(ChemputerDevice):
     def __init__(self, name):
@@ -116,10 +115,10 @@ class SimChemputerNMR(ChemputerDevice):
     def capabilities(self):
         return [("sink", 0)]
 
-class SimOceanOpticsRaman():
 
+class SimOceanOpticsRaman:
     def __init__(self, *args, **kwargs):
-        self.logger = logging.getLogger('simulated.oceanopticsraman')
+        self.logger = logging.getLogger("simulated.oceanopticsraman")
         self.spectrum = _SimulatedSpectrum()
 
     def get_spectrum(self):
@@ -127,6 +126,7 @@ class SimOceanOpticsRaman():
 
     def obtain_reference_spectrum(self):
         pass
+
 
 class SimChemputerIDEX(IDEXMXIIValve, ChemputerDevice):
     def __init__(self, name, address, port=5000):
@@ -145,11 +145,13 @@ class SimChemputerIDEX(IDEXMXIIValve, ChemputerDevice):
     def sample(self, time):
         self.logger.info("Valving sampling!")
 
+
 # Generator to simulate change of HPLC status
 def alternate():
     while True:
         yield ["PRERUN"]
         yield ["NOTREADY"]
+
 
 class SimHPLCController(HPLCController, ChemputerDevice):
 
@@ -159,11 +161,11 @@ class SimHPLCController(HPLCController, ChemputerDevice):
         ChemputerDevice.__init__(self, name)
         self.data_dir = "dummy_dir"
         self.spectra = {
-            "A":_SimulatedSpectrum(),
-            "B":_SimulatedSpectrum(),
-            "C":_SimulatedSpectrum(),
-            "D":_SimulatedSpectrum()
-            }
+            "A": _SimulatedSpectrum(),
+            "B": _SimulatedSpectrum(),
+            "C": _SimulatedSpectrum(),
+            "D": _SimulatedSpectrum(),
+        }
 
     def switch_method(self, name):
         pass
