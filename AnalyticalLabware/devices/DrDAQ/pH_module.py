@@ -36,19 +36,17 @@ class DrDaqPHModule:
         calibrations (list, optional): Calibrations for the pH measurements.
     """
 
-    def __init__(self, calibrations: list = [400., 700., 1000.]):
+    def __init__(self, calibrations: list = [400.0, 700.0, 1000.0]):
         self.driver = _init_driver()
         self.calibrations = calibrations
 
     def __del__(self):
-        """Kill the connection to the device.
-        """
+        """Kill the connection to the device."""
 
         self.close_device()
 
     def close_device(self):
-        """Close the connection to the device.
-        """
+        """Close the connection to the device."""
 
         # Set RGB to red.
         self.driver.set_rgb(255, 0, 0)
@@ -75,7 +73,7 @@ class DrDaqPHModule:
         """
 
         x = np.array(self.calibrations, dtype=np.float64)
-        y = np.array([4., 7., 10.], dtype=np.float64)
+        y = np.array([4.0, 7.0, 10.0], dtype=np.float64)
         fit = np.polyfit(x, y, 1)
 
         return float(value) * fit[0] + fit[1]
@@ -93,7 +91,7 @@ class DrDaqPHModule:
         # Obtain measurement from the device.
         self.driver.run_single_shot()
         self.driver.sampling_done()
-        time.sleep(1.)
+        time.sleep(1.0)
         self.driver.sampling_done()
 
         # Obtain the raw sample form the device

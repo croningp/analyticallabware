@@ -147,13 +147,13 @@
   <xsd:complexType name='SelectionSubscriptionType'>
       <xsd:attribute name='subscribe' type='xsd:boolean' use='required'/>
   </xsd:complexType>
-  
+
   <xsd:complexType name='SelectionNotificationType'>
   <xsd:attribute name='protocol' type='xsd:string' use='required'/>
   <xsd:attribute name='option'   type='xsd:string' use='optional'/>
   <xsd:attribute name='value'    type='xsd:string' use='optional'/>
   </xsd:complexType>
-  
+
   <xsd:complexType name='SelectionType'>
   <xsd:sequence>
       <xsd:element name='Option' minOccurs='0' maxOccurs='unbounded'>
@@ -167,7 +167,7 @@
   </xsd:complexType>
 
   <!-- ==== Available protocols ==== -->
-  <xsd:complexType name='AvailableProtocolsRequestType' /> 
+  <xsd:complexType name='AvailableProtocolsRequestType' />
   <xsd:complexType name='AvailableProtocolsResponseType'>
     <xsd:sequence>
         <xsd:element name='Protocol' type='xsd:string' minOccurs='0' maxOccurs='unbounded'/>
@@ -214,8 +214,8 @@
       </xsd:element>
     </xsd:sequence>
   </xsd:complexType>
-  
-  
+
+
   <!-- ==== Available protocol options ==== -->
   <xsd:complexType name='ProtocolOptionsRequestType' >
       <xsd:attribute name='protocol' type='xsd:string' use='required'/>
@@ -232,7 +232,7 @@
     <xsd:attribute name='protocol'  type='xsd:string' use='required'/>
     <xsd:attribute name='error'     type='xsd:string' use='optional'/>
   </xsd:complexType>
-  
+
   <!-- ==== run protocol ==== -->
 <!--
   <xsd:complexType name='RunProtocolRequestType' >
@@ -241,7 +241,7 @@
         <xsd:complexType>
           <xsd:attribute name='name'  type='xsd:string' use='required'/>
           <xsd:attribute name='value' type='xsd:string' use='required'/>
-        </xsd:complexType>                    
+        </xsd:complexType>
       </xsd:element>
       <xsd:element name='Processing' minOccurs='0' maxOccurs='1'>
         <xsd:complexType>
@@ -257,7 +257,7 @@
             </xsd:element>
           </xsd:sequence>
         </xsd:complexType>
-      </xsd:element>        
+      </xsd:element>
     </xsd:sequence>
     <xsd:attribute name='protocol' type='xsd:string' use='required'/>
   </xsd:complexType>
@@ -267,7 +267,7 @@
         <xsd:complexType>
           <xsd:attribute name='name'  type='xsd:string' use='required'/>
           <xsd:attribute name='value' type='xsd:string' use='required'/>
-        </xsd:complexType>                    
+        </xsd:complexType>
       </xsd:element>
       <xsd:element name='Processing' minOccurs='0' maxOccurs='1'>
         <xsd:complexType>
@@ -283,14 +283,14 @@
             </xsd:element>
           </xsd:sequence>
         </xsd:complexType>
-      </xsd:element>        
+      </xsd:element>
     </xsd:sequence>
     <xsd:attribute name='protocol'  type='xsd:string'  use='required'/>
     <xsd:attribute name='succesful' type='xsd:boolean' use='required'/>
     <xsd:attribute name='error'     type='xsd:string'  use='optional'/>
   </xsd:complexType>
 -->
-  
+
   <!-- ==== Estimate Duration ==== -->
   <xsd:complexType name='EstimateDurationRequestType'>
     <xsd:sequence>
@@ -497,7 +497,7 @@
         <xsd:complexType>
           <xsd:attribute name='name'  type='xsd:string' use='required'/>
           <xsd:attribute name='value' type='xsd:string' use='required'/>
-        </xsd:complexType>                    
+        </xsd:complexType>
       </xsd:element>
       <xsd:element name='Processing' minOccurs='0' maxOccurs='1'>
         <xsd:complexType>
@@ -513,7 +513,7 @@
             </xsd:element>
           </xsd:sequence>
         </xsd:complexType>
-      </xsd:element>        
+      </xsd:element>
     </xsd:sequence>
     <xsd:attribute name='protocol' type='xsd:string' use='required'/>
   </xsd:complexType>
@@ -527,7 +527,7 @@
       <xsd:element name='Script' minOccurs='1' maxOccurs='1'>
         <xsd:simpleType>
           <xsd:restriction base='xsd:string' />
-        </xsd:simpleType>            
+        </xsd:simpleType>
       </xsd:element>
     </xsd:sequence>
   </xsd:complexType>
@@ -542,7 +542,7 @@
     </xsd:choice>
     <xsd:attribute name='timestamp' type='xsd:string' use='required'/>
   </xsd:complexType>
-    
+
   <!-- ==== State Notification ==== -->
   <xsd:complexType name='StateNotificationType'>
     <xsd:attribute name='protocol'          type='xsd:string'   use='required'/>
@@ -557,24 +557,24 @@
     </xsd:attribute>
     <xsd:attribute name='dataFolder'        type='xsd:string'   use='required'/>
   </xsd:complexType>
-    
+
   <!-- ==== Progress Notification ==== -->
   <xsd:complexType name='ProgressNotificationType'>
     <xsd:attribute name='protocol'          type='xsd:string'   use='required'/>
     <xsd:attribute name='percentage'        type='xsd:int'      use='required'/>
   </xsd:complexType>
-   
+
   <!-- ==== Completed Notification ==== -->
   <xsd:complexType name='CompletedNotificationType'>
     <xsd:attribute name='protocol'          type='xsd:string'   use='required'/>
     <xsd:attribute name='completed'         type='xsd:boolean'  use='required'/>
     <xsd:attribute name='successful'        type='xsd:boolean'  use='required'/>
-  </xsd:complexType>   
+  </xsd:complexType>
 
   <!-- ==== Error Notification ==== -->
   <xsd:complexType name='ErrorNotificationType'>
     <xsd:attribute name='protocol'          type='xsd:string'   use='required'/>
     <xsd:attribute name='error'             type='xsd:string'   use='required'/>
-  </xsd:complexType> 
- 
+  </xsd:complexType>
+
 </xsd:schema>

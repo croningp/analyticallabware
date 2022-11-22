@@ -17,6 +17,7 @@ LASER_POWER = 785
 MIN_X = 780
 MAX_X = 1006
 
+
 def _convert_wavelength_to_wavenumber(data):
     """Converts x from spectrometer to Raman shift in wavenumbers
 
@@ -31,6 +32,7 @@ def _convert_wavelength_to_wavenumber(data):
 
     return np.array(wavenumbers)
 
+
 class RamanSpectrum(AbstractSpectrum):
     """Defines methods for Raman spectroscopic data handling
 
@@ -40,23 +42,22 @@ class RamanSpectrum(AbstractSpectrum):
     """
 
     AXIS_MAPPING = {
-        'x': 'wavelength',
-        'y': 'intensities',
+        "x": "wavelength",
+        "y": "intensities",
     }
 
     INTERNAL_PROPERTIES = {
-        'reference',
-        'original',
-        'baseline',
+        "reference",
+        "original",
+        "baseline",
     }
 
     def __init__(self, path=None, autosaving=True):
 
         if path is not None:
-            path = os.path.join('.', 'raman_data')
+            path = os.path.join(".", "raman_data")
 
-        self.logger = logging.getLogger(
-            'oceanoptics.spectrometer.raman.spectrum')
+        self.logger = logging.getLogger("oceanoptics.spectrometer.raman.spectrum")
 
         super().__init__(path, autosaving)
 
@@ -70,7 +71,9 @@ class RamanSpectrum(AbstractSpectrum):
         """
 
         gradient = np.linspace(self.y.max(), self.y.min(), steps)
-        pl = [0,] # peaks length
+        pl = [
+            0,
+        ]  # peaks length
 
         # Looking for peaks and decreasing height
         for i, n in enumerate(gradient):
@@ -78,12 +81,17 @@ class RamanSpectrum(AbstractSpectrum):
             pl.append(len(peaks))
             diff = pl[-1] - pl[-2]
             if diff > limit:
-                self.logger.debug('Stopped at iteration %s, with height %s, \
-diff - %s', i+1, n, diff)
+                self.logger.debug(
+                    "Stopped at iteration %s, with height %s, \
+diff - %s",
+                    i + 1,
+                    n,
+                    diff,
+                )
                 break
 
         # Final peaks at previous iteration
-        peaks, _ = signal.find_peaks(self.y, height=gradient[i-1])
+        peaks, _ = signal.find_peaks(self.y, height=gradient[i - 1])
 
         # Updating widths
         pw = signal.peak_widths(self.y, peaks, rel_height=0.95)
@@ -94,13 +102,15 @@ diff - %s', i+1, n, diff)
         peaks_right_ids = interpolate_to_index(self.x, pw[3])[:, np.newaxis]
 
         # Packing for peak array
-        self.peaks = np.hstack((
-            peaks_ids,
-            peak_xs,
-            peak_ys,
-            peaks_left_ids,
-            peaks_right_ids,
-        ))
+        self.peaks = np.hstack(
+            (
+                peaks_ids,
+                peak_xs,
+                peak_ys,
+                peaks_left_ids,
+                peaks_right_ids,
+            )
+        )
 
         return peaks_ids
 
@@ -124,7 +134,7 @@ diff - %s', i+1, n, diff)
         """Subtracts reference spectrum and updates the current one"""
 
         if self.reference is None:
-            raise ValueError('Please upload the reference first')
+            raise ValueError("Please upload the reference first")
 
         self.y -= self.reference
 

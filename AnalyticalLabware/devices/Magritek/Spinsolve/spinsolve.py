@@ -17,19 +17,17 @@ from .spectrum import SpinsolveNMRSpectrum
 
 # shimming parameters are stored here
 # after shimming operation has been performed
-SHIMMING_PATH = os.path.join(
-    os.path.dirname(__file__),
-    'utils',
-    'shimming.json'
-)
+SHIMMING_PATH = os.path.join(os.path.dirname(__file__), "utils", "shimming.json")
 
 
 class SpinsolveNMR:
-    """ Python class to handle Magritek Spinsolve NMR instrument """
+    """Python class to handle Magritek Spinsolve NMR instrument"""
 
-    DEFAULT_EXPERIMENT = ('1D PROTON', {'Scan': 'StandardScan'})
+    DEFAULT_EXPERIMENT = ("1D PROTON", {"Scan": "StandardScan"})
 
-    def __init__(self, spinsolve_options_path=None, address=None, port=13000, auto_connect=True):
+    def __init__(
+        self, spinsolve_options_path=None, address=None, port=13000, auto_connect=True
+    ):
         """
         Args:
             spinsolve_options_path (str, optional): Valid path to the ProtocolOptions.xml
@@ -67,7 +65,7 @@ class SpinsolveNMR:
         self._sample = None
 
     def check_last_shimming(self):
-        """ Checks last shimming.
+        """Checks last shimming.
 
         Returns:
             bool: False if shimming procedure is required, True otherwise.
@@ -77,14 +75,18 @@ class SpinsolveNMR:
                 with open(SHIMMING_PATH) as fobj:
                     self.last_shimming_results = json.load(fobj)
             except FileNotFoundError:
-                self.logger.warning('Last shimming was not recorded, please run\
- any shimming protocol to update!')
+                self.logger.warning(
+                    "Last shimming was not recorded, please run\
+ any shimming protocol to update!"
+                )
                 return False
         now = time.time()
         # if the last shimming was performed more than 24 hours ago
-        if now - self.last_shimming_results['timestamp'] > 24*3600:
-            self.logger.critical('Last shimming was performed more than 24 \
-hours ago, please perform CheckShim to check spectrometer performance!')
+        if now - self.last_shimming_results["timestamp"] > 24 * 3600:
+            self.logger.critical(
+                "Last shimming was performed more than 24 \
+hours ago, please perform CheckShim to check spectrometer performance!"
+            )
             return False
         return True
 
@@ -105,7 +107,9 @@ hours ago, please perform CheckShim to check spectrometer performance!')
         """Sends the message to the instrument"""
 
         if self._parser.connected_tag != "true":
-            raise HardwareError("The instrument is not connected, check the Spinsolve software")
+            raise HardwareError(
+                "The instrument is not connected, check the Spinsolve software"
+            )
         self.logger.debug("Waiting for the device to be ready")
         self._device_ready_flag.wait()
         self.logger.debug("Sending the message \n%s", msg)
@@ -146,16 +150,19 @@ hours ago, please perform CheckShim to check spectrometer performance!')
         self.send_message(cmd)
         reply = self.receive_reply()
         self.cmd.reload_commands(reply)
-        self.logger.info("Commands updated, see available protocols \n <%s>", list(self.cmd._protocols.keys())) # pylint: disable=protected-access
+        self.logger.info(
+            "Commands updated, see available protocols \n <%s>",
+            list(self.cmd._protocols.keys()),
+        )  # pylint: disable=protected-access
 
     @shimming
     def shim(
-            self,
-            option="CheckShimRequest",
-            *,
-            line_width_threshold=1,
-            base_width_threshold=40,
-        ):
+        self,
+        option="CheckShimRequest",
+        *,
+        line_width_threshold=1,
+        base_width_threshold=40,
+    ):
         """Initialise shimming protocol
 
         Consider checking <Spinsolve>.cmd.get_protocol(<Spinsolve>.cmd.SHIM_PROTOCOL) for available options
@@ -173,7 +180,14 @@ hours ago, please perform CheckShim to check spectrometer performance!')
         return self.receive_reply()
 
     @shimming
-    def shim_on_sample(self, reference_peak, option="LockAndCalibrateOnly", *, line_width_threshold=1, base_width_threshold=40):
+    def shim_on_sample(
+        self,
+        reference_peak,
+        option="LockAndCalibrateOnly",
+        *,
+        line_width_threshold=1,
+        base_width_threshold=40,
+    ):
         """Initialise shimming on sample protocol
 
         Consider checking <Spinsolve>.cmd.get_protocol(<Spinsolve>.cmd.SHIM_ON_SAMPLE_PROTOCOL) for available options
@@ -215,7 +229,7 @@ hours ago, please perform CheckShim to check spectrometer performance!')
 
     @property
     def user_data(self):
-        """ Dictionary with user specific data. """
+        """Dictionary with user specific data."""
         if not self._user_data:
             user_data_req = self.req_cmd.get_user_data()
             self.send_message(user_data_req)
@@ -225,7 +239,7 @@ hours ago, please perform CheckShim to check spectrometer performance!')
 
     @user_data.setter
     def user_data(self, user_data):
-        """ Sets the user data.
+        """Sets the user data.
 
         Args:
             user_data (Dict): Dictionary with user data.
@@ -238,11 +252,11 @@ hours ago, please perform CheckShim to check spectrometer performance!')
 
     @user_data.deleter
     def user_data(self):
-        """ Removes previously stored user data. """
+        """Removes previously stored user data."""
 
         # generating command to reset the data in spinsolve
         empty_user_data_command = self.req_cmd.set_user_data(
-            {key: '' for key in self._user_data}
+            {key: "" for key in self._user_data}
         )
         self.send_message(empty_user_data_command)
 
@@ -251,7 +265,7 @@ hours ago, please perform CheckShim to check spectrometer performance!')
 
     @property
     def solvent(self):
-        """ Solvent record to be stored with spectrum acquisition params. """
+        """Solvent record to be stored with spectrum acquisition params."""
         if self._solvent is None:
             solvent_req = self.req_cmd.get_solvent()
             self.send_message(solvent_req)
@@ -260,21 +274,21 @@ hours ago, please perform CheckShim to check spectrometer performance!')
 
     @solvent.setter
     def solvent(self, solvent):
-        """ Sets the solvent record for the current experiment. """
+        """Sets the solvent record for the current experiment."""
         self._solvent = solvent
         solvent_data_cmd = self.req_cmd.set_solvent_data(solvent)
         self.send_message(solvent_data_cmd)
 
     @solvent.deleter
     def solvent(self):
-        """ Removes the solvent record for the current experiment. """
+        """Removes the solvent record for the current experiment."""
         self._solvent = None
-        empty_solvent_data_cmd = self.req_cmd.set_solvent_data('')
+        empty_solvent_data_cmd = self.req_cmd.set_solvent_data("")
         self.send_message(empty_solvent_data_cmd)
 
     @property
     def sample(self):
-        """ Sample record to be stored with spectrum acquisition params. """
+        """Sample record to be stored with spectrum acquisition params."""
         if self._sample is None:
             sample_req = self.req_cmd.get_sample()
             self.send_message(sample_req)
@@ -283,7 +297,7 @@ hours ago, please perform CheckShim to check spectrometer performance!')
 
     @sample.setter
     def sample(self, sample):
-        """ Sets the sample record for the current experiment.
+        """Sets the sample record for the current experiment.
 
         Also sets the folder to save the spectrum, so avoid special characters.
         """
@@ -293,9 +307,9 @@ hours ago, please perform CheckShim to check spectrometer performance!')
 
     @sample.deleter
     def sample(self):
-        """ Removes the sample record for the current experiment. """
+        """Removes the sample record for the current experiment."""
         self._sample = None
-        empty_sample_data_cmd = self.req_cmd.set_sample_data('')
+        empty_sample_data_cmd = self.req_cmd.set_sample_data("")
         self.send_message(empty_sample_data_cmd)
 
     def get_duration(self, protocol, options):
@@ -306,7 +320,9 @@ hours ago, please perform CheckShim to check spectrometer performance!')
             options (dict): Options for the selected protocol
         """
 
-        cmd = self.cmd.generate_command((protocol, options), self.cmd.ESTIMATE_DURATION_REQUEST)
+        cmd = self.cmd.generate_command(
+            (protocol, options), self.cmd.ESTIMATE_DURATION_REQUEST
+        )
         self.send_message(cmd)
         return self.receive_reply()
 
@@ -379,11 +395,12 @@ hours ago, please perform CheckShim to check spectrometer performance!')
         """
 
         if self.data_folder_queue.empty():
-            self.logger.warning('No previous data.')
+            self.logger.warning("No previous data.")
             if protocol is None:
                 protocol = self.DEFAULT_EXPERIMENT
-                self.logger.warning('Running default <%s> protocol.',
-                                    self.DEFAULT_EXPERIMENT[0])
+                self.logger.warning(
+                    "Running default <%s> protocol.", self.DEFAULT_EXPERIMENT[0]
+                )
             cmd = self.cmd.generate_command(protocol)
             self.send_message(cmd)
             self.receive_reply()
@@ -400,13 +417,9 @@ to the documentation for its usage.'
         warnings.warn(warning_message, DeprecationWarning)
 
         # for backwards compatibility
-        data1d = os.path.join(data_folder, 'data.1d')
+        data1d = os.path.join(data_folder, "data.1d")
         _, fid_real, fid_img = self.spectrum.extract_data(data1d)
 
-        fid_complex = [
-            complex(real, img)
-            for real, img
-            in zip(fid_real, fid_img)
-        ]
+        fid_complex = [complex(real, img) for real, img in zip(fid_real, fid_img)]
 
         return fid_complex

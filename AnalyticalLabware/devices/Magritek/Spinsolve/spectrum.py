@@ -15,55 +15,53 @@ from ....analysis import AbstractSpectrum
 from ....analysis.spec_utils import *
 
 # standard filenames for spectral data
-FID_DATA = 'data.1d'
-ACQUISITION_PARAMETERS = 'acqu.par'
-PROCESSED_SPECTRUM = 'spectrum_processed.1d' # not always present
-PROTOCOL_PARAMETERS = 'protocol.par'
+FID_DATA = "data.1d"
+ACQUISITION_PARAMETERS = "acqu.par"
+PROCESSED_SPECTRUM = "spectrum_processed.1d"  # not always present
+PROTOCOL_PARAMETERS = "protocol.par"
 
 # format used in acquisition parameters
-TIME_FORMAT = r'%Y-%m-%dT%H:%M:%S.%f'
+TIME_FORMAT = r"%Y-%m-%dT%H:%M:%S.%f"
 
 # reserved for future use
-JCAMP_DX_SPECTRUM = 'nmr_fid.dx'
-CSV_SPECTRUM = 'spectrum.csv'
+JCAMP_DX_SPECTRUM = "nmr_fid.dx"
+CSV_SPECTRUM = "spectrum.csv"
 
 # filename for shimming parameters
-SHIMMING_PARAMETERS = 'shim.par'
-SHIMMING_FID = 'sample_fid.1d'
-SHIMMING_SPECTRUM = 'spectrum.1d'
+SHIMMING_PARAMETERS = "shim.par"
+SHIMMING_FID = "sample_fid.1d"
+SHIMMING_SPECTRUM = "spectrum.1d"
+
 
 class SpinsolveNMRSpectrum(AbstractSpectrum):
     """Class for NMR spectrum loading and handling."""
 
-    AXIS_MAPPING = {
-        'x': 'time',
-        'y': ''
-    }
+    AXIS_MAPPING = {"x": "time", "y": ""}
 
     INTERNAL_PROPERTIES = {
-        'baseline',
-        'data_path',
-        '_uc',
+        "baseline",
+        "data_path",
+        "_uc",
     }
 
     def __init__(self, path=None, autosaving=False):
 
         if path is None:
-            path = os.path.join('.', 'nmr_data')
+            path = os.path.join(".", "nmr_data")
 
-        self.logger = logging.getLogger('spinsolve.spectrum')
+        self.logger = logging.getLogger("spinsolve.spectrum")
 
         # updating public properties to include the universal dictionary
-        self.PUBLIC_PROPERTIES.add('udic')
+        self.PUBLIC_PROPERTIES.add("udic")
         # and parameters
-        self.PUBLIC_PROPERTIES.add('parameters')
+        self.PUBLIC_PROPERTIES.add("parameters")
 
         # autosaving set to False, since spectra are saved by Spinsolve anyway
         super().__init__(path, autosaving)
 
         # universal dictionary for the acquisition parameters
         # placeholder, will be updated when spectral data is loaded
-        self.udic = ng.fileio.fileiobase.create_blank_udic(1) # 1D spectrum
+        self.udic = ng.fileio.fileiobase.create_blank_udic(1)  # 1D spectrum
 
         # placeholder to store shimming parameters in the current session
         self.last_shimming_time = None
@@ -110,13 +108,12 @@ class SpinsolveNMRSpectrum(AbstractSpectrum):
             self.last_shimming_results = {
                 parameter: self.parameters[parameter]
                 for parameter in self.parameters
-                if parameter.startswith('shim')
+                if parameter.startswith("shim")
             }
 
             # updating last shimming time
             self.last_shimming_time = time.strptime(
-                self.parameters['CurrentTime'],
-                TIME_FORMAT
+                self.parameters["CurrentTime"], TIME_FORMAT
             )
 
             # updating file names for the shimming
@@ -128,10 +125,7 @@ class SpinsolveNMRSpectrum(AbstractSpectrum):
         self.data_path = data_path
 
         # extracting the time from acquisition parameters
-        spectrum_time = time.strptime(
-            self.parameters['CurrentTime'],
-            TIME_FORMAT
-        )
+        spectrum_time = time.strptime(self.parameters["CurrentTime"], TIME_FORMAT)
 
         if start_time is not None:
             timestamp = round(time.mktime(spectrum_time) - start_time)
@@ -141,27 +135,27 @@ class SpinsolveNMRSpectrum(AbstractSpectrum):
         # loading raw fid data
         if not preprocessed:
             x_axis, y_real, y_img = self.extract_data(fid_path)
-            spectrum_data = np.array(y_real + y_img*1j)
+            spectrum_data = np.array(y_real + y_img * 1j)
 
             # updating the universal dictionary
             self.udic[0].update(
                 # spectral width in kHz
-                sw=self.parameters['bandwidth'] * 1e3,
+                sw=self.parameters["bandwidth"] * 1e3,
                 # carrier frequency
-                car=self.parameters['bandwidth'] * 1e3 / 2 \
-                    + self.parameters['lowestFrequency'],
+                car=self.parameters["bandwidth"] * 1e3 / 2
+                + self.parameters["lowestFrequency"],
                 # observed frequency
-                obs=self.parameters['b1Freq'],
+                obs=self.parameters["b1Freq"],
                 # number of points
-                size=self.parameters['nrPnts'],
+                size=self.parameters["nrPnts"],
                 # time domain
                 time=True,
                 # label, e.g. 1H
-                label=self.parameters['rxChannel'],
+                label=self.parameters["rxChannel"],
             )
 
             # changing axis mapping according to raw FID
-            self.AXIS_MAPPING.update(x='time')
+            self.AXIS_MAPPING.update(x="time")
 
             # creating unit conversion object
             self._uc = ng.fileio.fileiobase.uc_from_udic(self.udic)
@@ -175,14 +169,18 @@ class SpinsolveNMRSpectrum(AbstractSpectrum):
             x_axis = x_axis[::-1]
             spectrum_data = spectrum_data[::-1]
             # updating axis mapping
-            self.AXIS_MAPPING.update(x='ppm')
+            self.AXIS_MAPPING.update(x="ppm")
 
         else:
-            self.logger.warning('Current version of SpinsolveNMRSpectrum does \
+            self.logger.warning(
+                "Current version of SpinsolveNMRSpectrum does \
 not support raw FID data and no processed spectrum was found. Please change \
-settings of the Spinsolve Software to enable default processing')
-            raise AttributeError(f'Processed spectrum was not found in the \
-supplied directory <{data_path}>')
+settings of the Spinsolve Software to enable default processing"
+            )
+            raise AttributeError(
+                f"Processed spectrum was not found in the \
+supplied directory <{data_path}>"
+            )
 
         # loading all data
         super().load_spectrum(x_axis, spectrum_data, int(timestamp))
@@ -216,13 +214,13 @@ supplied directory <{data_path}>')
 
         # reading data with numpy fromfile
         # the header is discarded
-        spectrum_data = np.fromfile(spectrum_path, dtype='<f')[8:]
+        spectrum_data = np.fromfile(spectrum_path, dtype="<f")[8:]
 
-        x_axis = spectrum_data[:len(spectrum_data) // 3]
+        x_axis = spectrum_data[: len(spectrum_data) // 3]
 
         # breaking the rest of the data into real and imaginary part
-        y_real = spectrum_data[len(spectrum_data) // 3:][::2]
-        y_img = spectrum_data[len(spectrum_data) // 3:][1::2]
+        y_real = spectrum_data[len(spectrum_data) // 3 :][::2]
+        y_img = spectrum_data[len(spectrum_data) // 3 :][1::2]
 
         return (x_axis, y_real, y_img)
 
@@ -242,17 +240,17 @@ supplied directory <{data_path}>')
             param = fileobj.readline()
             while param:
                 # in form of "Param"       = "Value"\n
-                parameter, value = param.split('=', maxsplit=1)
+                parameter, value = param.split("=", maxsplit=1)
                 # stripping from whitespaces, newlines and extra doublequotes
                 parameter = parameter.strip()
                 value = value.strip(' \n"')
                 # special case: userData
                 # converting to nested dict
-                if parameter == 'userData' and value:
-                    values = value.split(';')
+                if parameter == "userData" and value:
+                    values = value.split(";")
                     value = {}
                     for key_value in values:
-                        key, val = key_value.split('=')
+                        key, val = key_value.split("=")
                         value[key] = val
                 # converting values to float if possible
                 try:
@@ -264,12 +262,12 @@ supplied directory <{data_path}>')
         return spec_params
 
     def show_spectrum(
-            self,
-            filename=None,
-            title=None,
-            label=None,
+        self,
+        filename=None,
+        title=None,
+        label=None,
     ):
-        """ Plots the spectral data using matplotlib.pyplot module.
+        """Plots the spectral data using matplotlib.pyplot module.
 
         Redefined from ancestor class to support axis inverting.
 
@@ -282,19 +280,19 @@ supplied directory <{data_path}>')
                 the spectrum timestamp.
         """
         if label is None:
-            label = f'{self.timestamp}'
+            label = f"{self.timestamp}"
 
         fig, ax = plt.subplots(figsize=(12, 8))
 
         ax.plot(
             self.x,
             self.y,
-            color='xkcd:navy blue',
+            color="xkcd:navy blue",
             label=label,
         )
 
-        ax.set_xlabel(self.AXIS_MAPPING['x'])
-        ax.set_ylabel(self.AXIS_MAPPING['y'])
+        ax.set_xlabel(self.AXIS_MAPPING["x"])
+        ax.set_ylabel(self.AXIS_MAPPING["y"])
 
         if title is not None:
             ax.set_title(title)
@@ -304,26 +302,26 @@ supplied directory <{data_path}>')
             plt.scatter(
                 self.peaks[:, 1],
                 self.peaks[:, 2],
-                label='found peaks',
-                color='xkcd:tangerine',
+                label="found peaks",
+                color="xkcd:tangerine",
             )
 
         ax.legend()
 
         # inverting if ppm scale
-        if self.AXIS_MAPPING['x'] == 'ppm':
+        if self.AXIS_MAPPING["x"] == "ppm":
             ax.invert_xaxis()
 
         if filename is None:
             fig.show()
 
         else:
-            path = os.path.join(self.path, 'images')
+            path = os.path.join(self.path, "images")
             os.makedirs(path, exist_ok=True)
-            fig.savefig(os.path.join(path, f'{filename}.png'), dpi=150)
+            fig.savefig(os.path.join(path, f"{filename}.png"), dpi=150)
 
     def fft(self, in_place=True):
-        """ Fourier transformation, NMR ordering of the results.
+        """Fourier transformation, NMR ordering of the results.
 
         This is the wrapper around nmrglue.process.proc_base.fft function.
         Please refer to original function documentation for details.
@@ -341,18 +339,18 @@ supplied directory <{data_path}>')
             self.y = ng.proc_base.fft(self.y)
 
             # updating x and y axis
-            self.AXIS_MAPPING.update(x='ppm')
+            self.AXIS_MAPPING.update(x="ppm")
             self.x = self._uc.ppm_scale()
 
             # updating the udic to frequency domain
-            self.udic[0]['time'] = False
-            self.udic[0]['freq'] = True
+            self.udic[0]["time"] = False
+            self.udic[0]["freq"] = True
 
         else:
             return ng.proc_base.fft(self.y)
 
-    def autophase(self, in_place=True, function='peak_minima', p0=0.0, p1=0.0):
-        """ Automatic linear phase correction. FFT is performed!
+    def autophase(self, in_place=True, function="peak_minima", p0=0.0, p1=0.0):
+        """Automatic linear phase correction. FFT is performed!
 
         This is the wrapper around nmrglue.process.proc_autophase.autops
         function. Please refer to original function documentation for details.
@@ -374,15 +372,10 @@ supplied directory <{data_path}>')
         """
 
         # check if fft was performed
-        if self.AXIS_MAPPING['x'] == 'time':
+        if self.AXIS_MAPPING["x"] == "time":
             self.fft()
 
-        autophased = ng.process.proc_autophase.autops(
-            self.y,
-            function,
-            p0,
-            p1
-        )
+        autophased = ng.process.proc_autophase.autops(self.y, function, p0, p1)
 
         if in_place:
             self.y = autophased
@@ -391,7 +384,7 @@ supplied directory <{data_path}>')
         return autophased
 
     def correct_baseline(self, in_place=True, wd=20):
-        """ Automatic baseline correction using distribution based
+        """Automatic baseline correction using distribution based
             classification method.
 
         Algorithm described in: Wang et al. Anal. Chem. 2013, 85, 1231-1239
@@ -410,7 +403,7 @@ supplied directory <{data_path}>')
         """
 
         # check if fft was performed
-        if self.AXIS_MAPPING['x'] == 'time':
+        if self.AXIS_MAPPING["x"] == "time":
             self.fft()
 
         corrected = ng.process.proc_bl.baseline_corrector(self.y, wd)
@@ -427,14 +420,14 @@ supplied directory <{data_path}>')
         self._uc = ng.fileio.fileiobase.uc_from_udic(self.udic)
 
         # updating axis mapping from "time" default
-        if self.udic[0]['freq']:
-            self.AXIS_MAPPING.update(x='ppm')
+        if self.udic[0]["freq"]:
+            self.AXIS_MAPPING.update(x="ppm")
 
-        elif self.udic[0]['time']:
-            self.AXIS_MAPPING.update(x='time')
+        elif self.udic[0]["time"]:
+            self.AXIS_MAPPING.update(x="time")
 
-    def smooth_spectrum(self, in_place=True, routine='ng', **params):
-        """ Smoothes the spectrum.
+    def smooth_spectrum(self, in_place=True, routine="ng", **params):
+        """Smoothes the spectrum.
 
         Depending on the routine chosen will use either Savitsky-Golay filter
         from scipy.signal module or nmrglue custom function.
@@ -471,13 +464,13 @@ supplied directory <{data_path}>')
                 after baseline correction.
         """
 
-        if routine == 'savgol':
+        if routine == "savgol":
             super().smooth_spectrum(in_place=in_place, **params)
 
-        elif routine == 'ng':
+        elif routine == "ng":
             # using default value
             if not params:
-                params = {'n': 5}
+                params = {"n": 5}
 
             if in_place:
                 self.y = ng.process.proc_base.smo(self.y, **params)
@@ -486,11 +479,13 @@ supplied directory <{data_path}>')
             return ng.process.proc_base.smo(self.y, **params)
 
         else:
-            raise ValueError('Please choose either nmrglue ("ng") or Savitsky-\
-Golay ("savgol") smoothing routine')
+            raise ValueError(
+                'Please choose either nmrglue ("ng") or Savitsky-\
+Golay ("savgol") smoothing routine'
+            )
 
-    def apodization(self, in_place=True, function='em', **params):
-        """ Applies a chosen window function.
+    def apodization(self, in_place=True, function="em", **params):
+        """Applies a chosen window function.
 
         Args:
             in_place (bool, optional): If True (default), self.y is updated;
@@ -559,11 +554,11 @@ Golay ("savgol") smoothing routine')
         """
         # TODO check for Fourier transformation!
 
-        if function == 'em':
+        if function == "em":
             # converting lb value to NMRPipe-like
-            if 'lb' in params:
+            if "lb" in params:
                 # deviding by spectral width in Hz
-                params['lb'] = params['lb']/ self.udic[0]['sw']
+                params["lb"] = params["lb"] / self.udic[0]["sw"]
 
             if in_place:
                 self.y = ng.process.proc_base.em(self.y, **params)
@@ -571,13 +566,13 @@ Golay ("savgol") smoothing routine')
 
             return ng.process.proc_base.em(self.y, **params)
 
-        elif function == 'gm':
+        elif function == "gm":
             # converting values into NMRPipe-like
-            if 'g1' in params:
-                params['g1'] = params['g1'] / self.udic[0]['sw']
+            if "g1" in params:
+                params["g1"] = params["g1"] / self.udic[0]["sw"]
 
-            if 'g2' in params:
-                params['g2'] = params['g2'] / self.udic[0]['sw']
+            if "g2" in params:
+                params["g2"] = params["g2"] / self.udic[0]["sw"]
 
             if in_place:
                 self.y = ng.process.proc_base.gm(self.y, **params)
@@ -585,17 +580,17 @@ Golay ("savgol") smoothing routine')
 
             return ng.process.proc_base.gm(self.y, **params)
 
-        elif function == 'gmb':
+        elif function == "gmb":
             # converting values into NMRPipe-like
             # for formula reference see documentation and source code of
             # nmrglue.proc_base.gmb function and NMRPipe GMB command reference
-            if 'lb' in params:
-                a = np.pi * params['lb'] / self.udic[0]['sw']
+            if "lb" in params:
+                a = np.pi * params["lb"] / self.udic[0]["sw"]
             else:
                 a = 0.0
 
-            if 'gb' in params:
-                b = -a / (2.0 * params['gb'] * self.udic[0]['size'])
+            if "gb" in params:
+                b = -a / (2.0 * params["gb"] * self.udic[0]["size"])
             else:
                 b = 0.0
 
@@ -606,7 +601,7 @@ Golay ("savgol") smoothing routine')
             return ng.process.proc_base.gmb(self.y, a=a, b=b)
 
     def zero_fill(self, n=1, in_place=True):
-        """ Zero filling the data by 2**n.
+        """Zero filling the data by 2**n.
 
         Args:
             n (int): power of 2 to append 0 to the data.
@@ -620,16 +615,18 @@ Golay ("savgol") smoothing routine')
 
         if in_place:
             # zero fill is useless when fft performed
-            if self.AXIS_MAPPING['x'] == 'ppm':
-                self.logger.warning('FFT already performed, zero filling \
-skipped')
+            if self.AXIS_MAPPING["x"] == "ppm":
+                self.logger.warning(
+                    "FFT already performed, zero filling \
+skipped"
+                )
                 return
 
             # extending y axis
             self.y = ng.process.proc_base.zf_double(self.y, n)
 
             # extending x axis
-            self.x = np.linspace(self.x[0], self.x[-1]*2**n, self.y.shape[0])
+            self.x = np.linspace(self.x[0], self.x[-1] * 2**n, self.y.shape[0])
 
             # updating udic and uc
             self.udic[0].update(size=self.x.size)
@@ -639,14 +636,14 @@ skipped')
         return ng.process.proc_base.zf_double(self.y, n)
 
     def generate_peak_regions(
-            self,
-            magnitude=True,
-            derivative=True,
-            smoothed=True,
-            d_merge=0.056,
-            d_expand=0.0,
+        self,
+        magnitude=True,
+        derivative=True,
+        smoothed=True,
+        d_merge=0.056,
+        d_expand=0.0,
     ):
-        """ Generate regions if interest potentially containing compound peaks
+        """Generate regions if interest potentially containing compound peaks
             from the spectral data.
 
         Args:
@@ -661,8 +658,8 @@ skipped')
         """
 
         # check if fft was performed
-        if self.AXIS_MAPPING['x'] != 'ppm':
-            self.logger.warning('Please perform FFT first.')
+        if self.AXIS_MAPPING["x"] != "ppm":
+            self.logger.warning("Please perform FFT first.")
             return np.array([[]])
 
         # placeholder
@@ -672,16 +669,16 @@ skipped')
             # looking for peaks in magnitude mode
             magnitude_spectrum = np.sqrt(self.y.real**2 + self.y.imag**2)
             # mapping
-            peak_map = np.logical_or(create_binary_peak_map(magnitude_spectrum),
-                                     peak_map)
+            peak_map = np.logical_or(
+                create_binary_peak_map(magnitude_spectrum), peak_map
+            )
         else:
             peak_map = np.logical_or(create_binary_peak_map(self.y), peak_map)
 
         # additionally in the derivative
         if derivative:
             try:
-                derivative_map = create_binary_peak_map(
-                    np.gradient(magnitude_spectrum))
+                derivative_map = create_binary_peak_map(np.gradient(magnitude_spectrum))
             except NameError:
                 derivative_map = create_binary_peak_map(np.gradient(self.y))
             # combining
@@ -690,8 +687,7 @@ skipped')
         # and in the smoothed version
         if smoothed:
             try:
-                smoothed = scipy.ndimage.gaussian_filter1d(
-                    magnitude_spectrum, 3)
+                smoothed = scipy.ndimage.gaussian_filter1d(magnitude_spectrum, 3)
             except NameError:
                 # smoothing only supported on non-complex data
                 smoothed = scipy.ndimage.gaussian_filter1d(self.y.real, 3)
@@ -716,23 +712,23 @@ skipped')
         return regions
 
     def default_processing(self):
-        """ Default processing.
+        """Default processing.
 
         Performs several processing methods with attributes chosen
         experimentally to achieve best results for the purpose of "fast",
         "reliable" and "reproducible" NMR analysis.
         """
         # TODO add processing for various nucleus
-        if self.parameters['rxChannel'] == '19F':
-            self.apodization(function='gm', g1=1.2, g2=4.5)
+        if self.parameters["rxChannel"] == "19F":
+            self.apodization(function="gm", g1=1.2, g2=4.5)
             self.zero_fill()
             self.fft()
             self.correct_baseline()
             self.autophase()
             self.correct_baseline()
 
-    def integrate_area(self, area, rule='trapz'):
-        """ Integrate the spectrum within given area.
+    def integrate_area(self, area, rule="trapz"):
+        """Integrate the spectrum within given area.
 
         Redefined from ancestor method to discard imaginary part of the
         resulting integral.
@@ -754,7 +750,7 @@ skipped')
         return abs(result.real)
 
     def integrate_regions(self, regions):
-        """ Integrate the given regions using nmrglue integration method.
+        """Integrate the given regions using nmrglue integration method.
 
         Check the corresponding documentation for details.
 
@@ -771,18 +767,18 @@ skipped')
         result = ng.analysis.integration.integrate(
             data=self.y,
             unit_conv=self._uc,
-            limits=self.x[regions], # directly get the ppm values
+            limits=self.x[regions],  # directly get the ppm values
         )
 
         # discarding imaginary part
         return np.abs(np.real(result))
 
     def reference_spectrum(
-            self,
-            new_position: float,
-            reference: Union[float, str] = 'highest',
+        self,
+        new_position: float,
+        reference: Union[float, str] = "highest",
     ) -> None:
-        """ Shifts the spectrum x axis according to the new reference.
+        """Shifts the spectrum x axis according to the new reference.
 
         If old reference is omitted will shift the spectrum according to the
         highest peak.
@@ -797,26 +793,26 @@ skipped')
 
         # find reference if not given
         if isinstance(reference, str):
-            if reference == 'highest':
+            if reference == "highest":
                 # Looking for highest point
                 reference = self.x[np.argmax(self.y)]
-            elif reference == 'closest':
+            elif reference == "closest":
                 # Looking for closest peak among found across whole spectrum
                 # Specifying area not to update self.peaks
                 peaks = self.find_peaks(area=(self.x.min(), self.x.max()))
                 # x coordinate
                 peaks_xs = peaks[:, 1].real
-                reference = peaks[
-                    np.argmin(np.abs(peaks_xs - new_position))
-                ][1].real
+                reference = peaks[np.argmin(np.abs(peaks_xs - new_position))][1].real
             else:
-                self.logger.warning('Please use either "highest" or "closest"\
-reference, or give exact value.')
+                self.logger.warning(
+                    'Please use either "highest" or "closest"\
+reference, or give exact value.'
+                )
                 return
 
         new_position, _ = find_nearest_value_index(self.x, new_position)
 
-        diff = (new_position - reference)
+        diff = new_position - reference
 
         # shifting the axis
         self.x = self.x + diff

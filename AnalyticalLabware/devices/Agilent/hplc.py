@@ -267,7 +267,7 @@ class HPLCController:
         """
         self.send(STOP_MACRO_CMD)
 
-    def switch_method(self, method_name: str, method_dir = DEFAULT_METHOD_DIR):
+    def switch_method(self, method_name: str, method_dir=DEFAULT_METHOD_DIR):
         """
         Allows the user to switch between pre-programmed methods.
 
@@ -279,9 +279,7 @@ class HPLCController:
             AssertionError: The desired method is not selected. Try again.
         """
         self.send(
-            SWITCH_METHOD_CMD.format(
-                method_dir=method_dir, method_name=method_name
-            )
+            SWITCH_METHOD_CMD.format(method_dir=method_dir, method_name=method_name)
         )
 
         time.sleep(2)

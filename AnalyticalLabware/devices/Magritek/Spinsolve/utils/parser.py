@@ -38,7 +38,7 @@ class ReplyParser:
 
         self.device_ready_flag = device_ready_flag
         self.data_folder_queue = data_folder_queue
-        self.connected_tag = None # String to indicate if the instrument is connected, updated with HardwareRequest
+        self.connected_tag = None  # String to indicate if the instrument is connected, updated with HardwareRequest
 
         self.logger = logging.getLogger("spinsolve.parser")
 
@@ -61,11 +61,21 @@ class ReplyParser:
         try:
             msg_root = ET.fromstring(message)
         except ParseError:
-            self.logger.error("ParseError: invalid XML message received, check the full message \n <%s>", message.decode())
-            raise ParseError("Invalid XML message received from the instrument, please check the log for the full message") from None
+            self.logger.error(
+                "ParseError: invalid XML message received, check the full message \n <%s>",
+                message.decode(),
+            )
+            raise ParseError(
+                "Invalid XML message received from the instrument, please check the log for the full message"
+            ) from None
         if msg_root.tag != "Message" or len(msg_root) > 1:
-            self.logger.error("ParseError: incorrect message received, check the full message \n <%s>", message.decode())
-            raise ParseError("Incorrect message received from the instrument, please check the log for the full message")
+            self.logger.error(
+                "ParseError: incorrect message received, check the full message \n <%s>",
+                message.decode(),
+            )
+            raise ParseError(
+                "Incorrect message received from the instrument, please check the log for the full message"
+            )
 
         # Main message element
         msg_element = msg_root[0]
@@ -75,16 +85,25 @@ class ReplyParser:
             return self.hardware_processing(msg_element)
         elif msg_element.tag == self.AVAILABLE_PROTOCOL_OPTIONS_RESPONSE_TAG:
             return message
-        elif msg_element.tag in [self.CHECK_SHIM_RESPONSE_TAG, self.QUICK_SHIM_RESPONSE_TAG, self.POWER_SHIM_RESPONSE_TAG]:
+        elif msg_element.tag in [
+            self.CHECK_SHIM_RESPONSE_TAG,
+            self.QUICK_SHIM_RESPONSE_TAG,
+            self.POWER_SHIM_RESPONSE_TAG,
+        ]:
             return self.shimming_processing(msg_element)
-        elif msg_element.tag == self.STATUS_TAG or msg_element.tag == self.COMPLETED_NOTIFICATION_TAG:
+        elif (
+            msg_element.tag == self.STATUS_TAG
+            or msg_element.tag == self.COMPLETED_NOTIFICATION_TAG
+        ):
             return self.status_processing(msg_element)
         elif msg_element.tag == self.ESTIMATE_DURATION_RESPONSE_TAG:
             return self.estimate_duration_processing(msg_element)
         elif msg_element.tag == self.GET_RESPONSE_TAG:
             return self.data_response_processing(msg_element)
         else:
-            self.logger.info("No specific parser requested, returning full decoded message")
+            self.logger.info(
+                "No specific parser requested, returning full decoded message"
+            )
             return message.decode()
 
     def hardware_processing(self, element):
@@ -111,19 +130,30 @@ class ReplyParser:
 
         spinsolve_tag = element.find(".//SpinsolveType").text
 
-        self.logger.info("The %s NMR instrument is successfully connected \nRunning under %s Spinsolve software version", spinsolve_tag, software_tag)
+        self.logger.info(
+            "The %s NMR instrument is successfully connected \nRunning under %s Spinsolve software version",
+            spinsolve_tag,
+            software_tag,
+        )
         if software_tag[:6] != CURRENT_SPINSOLVE_VERSION:
-            self.logger.warning("The current software version <%s> was not tested, please update or use at your own risk", software_tag)
+            self.logger.warning(
+                "The current software version <%s> was not tested, please update or use at your own risk",
+                software_tag,
+            )
 
         # If the instrument is connected, setting the ready flag
         self.device_ready_flag.set()
 
-        usefull_information_dict = {"Connected": f"{self.connected_tag}", "SoftwareVersion": f"{software_tag}", "InstrumentType": f"{spinsolve_tag}"}
+        usefull_information_dict = {
+            "Connected": f"{self.connected_tag}",
+            "SoftwareVersion": f"{software_tag}",
+            "InstrumentType": f"{spinsolve_tag}",
+        }
 
         return usefull_information_dict
 
     def data_response_processing(self, element):
-        """ Process the message if the user parameters response is present.
+        """Process the message if the user parameters response is present.
 
         Args:
             element (:obj: xml.etree.ElementTree.Element): An element containing
@@ -138,16 +168,18 @@ class ReplyParser:
         self.logger.debug("Parsing message with <%s> tag", element.tag)
         # messages with GetResponse have only one child
         if len(element) > 1:
-            raise RequestError('Returned response for user data is incorrect, \
-check log files for details!')
+            raise RequestError(
+                "Returned response for user data is incorrect, \
+check log files for details!"
+            )
 
         chelement = element[0]
 
         # special case for user data
         if chelement.tag == USER_DATA_TAG:
             return {
-                subel.attrib['key']: subel.attrib['value']
-                for subel in chelement # iterating over subelements
+                subel.attrib["key"]: subel.attrib["value"]
+                for subel in chelement  # iterating over subelements
             }
 
         return chelement.text
@@ -172,10 +204,15 @@ check log files for details!')
 
         error_text = element.get("error")
         if error_text:
-            self.logger.error("ShimmingError: check the error message below\
-\n%s", error_text)
-            if self.shimming_base_width_threshold == 40 and\
-                self.shimming_line_width_threshold == 1:
+            self.logger.error(
+                "ShimmingError: check the error message below\
+\n%s",
+                error_text,
+            )
+            if (
+                self.shimming_base_width_threshold == 40
+                and self.shimming_line_width_threshold == 1
+            ):
                 # only raise error if default line widths were used as the
                 # reference point
                 raise ShimmingError(f"Shimming error: {error_text}")
@@ -190,11 +227,21 @@ check log files for details!')
 
         # Checking shimming criteria
         if line_width > self.shimming_line_width_threshold:
-            self.logger.critical("Shimming line width <%.2f> is above requested threshold <%.2f>, consider running another shimming method", line_width, self.shimming_line_width_threshold)
+            self.logger.critical(
+                "Shimming line width <%.2f> is above requested threshold <%.2f>, consider running another shimming method",
+                line_width,
+                self.shimming_line_width_threshold,
+            )
         if base_width > self.shimming_base_width_threshold:
-            self.logger.critical("Shimming line width <%.2f> is above requested threshold <%.2f>, consider running another shimming method", line_width, self.shimming_line_width_threshold)
+            self.logger.critical(
+                "Shimming line width <%.2f> is above requested threshold <%.2f>, consider running another shimming method",
+                line_width,
+                self.shimming_line_width_threshold,
+            )
         if system_ready != "true":
-            self.logger.critical("System is not ready after shimming, consider running another shimming method")
+            self.logger.critical(
+                "System is not ready after shimming, consider running another shimming method"
+            )
             return False
         else:
             return True
@@ -230,8 +277,7 @@ check log files for details!')
         # TODO add an option to handle the error and stop the execution
         if error_attrib:
             self.logger.error(
-                "NMRError: <%s>, check the log for the full message",
-                error_attrib
+                "NMRError: <%s>, check the log for the full message", error_attrib
             )
             # raise NMRError(f"Error running the protocol <{protocol_attrib}>: {error_attrib}")
 
@@ -252,12 +298,21 @@ check log files for details!')
                 if protocol_attrib != "SHIM":
                     self.device_ready_flag.set()
                 data_folder = state_elem.get("dataFolder")
-                self.logger.info("The protocol <%s> is complete, the NMR data is saved in <%s>", protocol_attrib, data_folder)
+                self.logger.info(
+                    "The protocol <%s> is complete, the NMR data is saved in <%s>",
+                    protocol_attrib,
+                    data_folder,
+                )
                 self.data_folder_queue.put(data_folder)
                 return data_folder
 
         if state_tag == "Progress":
-            self.logger.info("The protocol <%s> is performing, %s%% completed, %s seconds remain", protocol_attrib, percentage_attrib, seconds_remaining_attrib)
+            self.logger.info(
+                "The protocol <%s> is performing, %s%% completed, %s seconds remain",
+                protocol_attrib,
+                percentage_attrib,
+                seconds_remaining_attrib,
+            )
 
     def estimate_duration_processing(self, element):
         """Process the message if protocol duration was requested
