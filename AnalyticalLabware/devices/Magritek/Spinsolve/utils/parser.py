@@ -60,14 +60,20 @@ class ReplyParser:
         # Checking the obtained message
         try:
             msg_root = ET.fromstring(message)
-        except ParseError:
-            self.logger.error(
-                "ParseError: invalid XML message received, check the full message \n <%s>",
-                message.decode(),
-            )
-            raise ParseError(
-                "Invalid XML message received from the instrument, please check the log for the full message"
-            ) from None
+        except ParseError as e:
+            if e.msg[0:4] == "junk":
+                header = '<?xml version="1.0" encoding="utf-8"?>'
+                msg_list = message.split(header)
+                new_msg = header + msg_list[-1]
+                msg_root = ET.fromstring(new_msg)
+            else:
+                self.logger.error(
+                    "ParseError: invalid XML message received, check the full message \n <%s>",
+                    message.decode(),
+                )
+                raise ParseError(
+                    "Invalid XML message received from the instrument, please check the log for the full message"
+                ) from None
         if msg_root.tag != "Message" or len(msg_root) > 1:
             self.logger.error(
                 "ParseError: incorrect message received, check the full message \n <%s>",
